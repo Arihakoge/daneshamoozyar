@@ -26,6 +26,7 @@ export default function Layout({ children, currentPageName }) {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [theme, setTheme] = useState("dark");
 
   const getRandomColor = useCallback(() => {
     const colors = ["#8B5CF6", "#EC4899", "#06B6D4", "#10B981", "#F59E0B"];
@@ -115,6 +116,14 @@ export default function Layout({ children, currentPageName }) {
       }
 
       setCurrentUser(user);
+      
+      // Load theme from settings
+      const settings = await base44.entities.UserSettings.filter({ user_id: user.id });
+      if (settings.length > 0 && settings[0].theme) {
+        setTheme(settings[0].theme);
+        document.documentElement.classList.toggle('light-theme', settings[0].theme === 'light');
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error("خطا در بارگیری کاربر:", error);
@@ -208,9 +217,42 @@ export default function Layout({ children, currentPageName }) {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+    <div dir="rtl" className={`min-h-screen ${theme === 'light' ? 'bg-gradient-to-br from-purple-100 via-blue-100 to-indigo-100' : 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900'}`}>
       <style>
         {`
+          ${theme === 'light' ? `
+          .clay-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.1), -8px -8px 16px rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(200, 200, 220, 0.4);
+            color: #1e293b;
+          }
+
+          .clay-button {
+            background: linear-gradient(145deg, rgba(240, 240, 250, 0.9), rgba(250, 250, 255, 0.6));
+            border-radius: 16px;
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1), -4px -4px 8px rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(200, 200, 220, 0.5);
+            transition: all 0.2s ease;
+            color: #334155;
+            font-weight: 500;
+          }
+
+          .clay-button:hover {
+            box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.1), inset -4px -4px 8px rgba(255, 255, 255, 0.5);
+            color: #8B5CF6;
+            transform: translateY(1px);
+          }
+
+          .clay-button.active {
+            box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.15), inset -4px -4px 8px rgba(255, 255, 255, 0.6);
+            background: rgba(139, 92, 246, 0.15);
+            color: #8B5CF6;
+            font-weight: 600;
+          }
+          ` : `
           .clay-card {
             background: rgba(15, 23, 42, 0.6);
             border-radius: 20px;
@@ -242,6 +284,7 @@ export default function Layout({ children, currentPageName }) {
             color: #8B5CF6;
             font-weight: 600;
           }
+          `}
         `}
       </style>
 
