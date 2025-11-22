@@ -177,6 +177,7 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد", url: createPageUrl("TeacherDashboard"), icon: LayoutDashboard },
         { title: "مدیریت تکالیف", url: createPageUrl("TeacherAssignments"), icon: FileText },
+        { title: "گزارش‌های عملکرد", url: createPageUrl("TeacherReports"), icon: FileText },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "تابلوی امتیازات", url: createPageUrl("TeacherScoreboard"), icon: Trophy },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },

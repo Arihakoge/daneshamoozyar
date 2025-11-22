@@ -15,6 +15,7 @@ import TeacherScoreboard from './pages/TeacherScoreboard';
 import AdminScoreboard from './pages/AdminScoreboard';
 import EditProfile from './pages/EditProfile';
 import AdminEditUser from './pages/AdminEditUser';
+import TeacherReports from './pages/TeacherReports';
 import __Layout from './Layout.jsx';
 
 
@@ -36,6 +37,7 @@ export const PAGES = {
     "AdminScoreboard": AdminScoreboard,
     "EditProfile": EditProfile,
     "AdminEditUser": AdminEditUser,
+    "TeacherReports": TeacherReports,
 }
 
 export const pagesConfig = {
