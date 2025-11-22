@@ -11,7 +11,9 @@ import {
   FileText,
   Upload,
   X,
-  CheckCircle
+  CheckCircle,
+  Bookmark,
+  BookmarkCheck
 } from "lucide-react";
 import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber } from "@/components/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,6 +22,7 @@ export default function StudentAssignments() {
   const [user, setUser] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [bookmarks, setBookmarks] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [submissionContent, setSubmissionContent] = useState("");
   const [submissionFile, setSubmissionFile] = useState(null);
@@ -48,11 +51,38 @@ export default function StudentAssignments() {
           "-created_date"
         );
         setSubmissions(userSubmissions);
+
+        const userBookmarks = await base44.entities.Bookmark.filter({ user_id: currentUser.id });
+        setBookmarks(userBookmarks);
       }
     } catch (error) {
       console.error("خطا در بارگیری داده‌ها:", error);
     }
     setLoading(false);
+  };
+
+  const toggleBookmark = async (assignmentId) => {
+    try {
+      const existingBookmark = bookmarks.find(b => b.assignment_id === assignmentId);
+      
+      if (existingBookmark) {
+        await base44.entities.Bookmark.delete(existingBookmark.id);
+        setBookmarks(bookmarks.filter(b => b.id !== existingBookmark.id));
+      } else {
+        const newBookmark = await base44.entities.Bookmark.create({
+          user_id: user.id,
+          assignment_id: assignmentId,
+          priority: "medium"
+        });
+        setBookmarks([...bookmarks, newBookmark]);
+      }
+    } catch (error) {
+      console.error("خطا در بوکمارک:", error);
+    }
+  };
+
+  const isBookmarked = (assignmentId) => {
+    return bookmarks.some(b => b.assignment_id === assignmentId);
   };
 
   const getAssignmentStatus = (assignment) => {
@@ -187,10 +217,25 @@ export default function StudentAssignments() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-xl text-white mb-2">
-                        {assignment.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CardTitle className="text-xl text-white">
+                          {assignment.title}
+                        </CardTitle>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBookmark(assignment.id);
+                          }}
+                          className="clay-button p-2 hover:bg-yellow-500/20 transition-colors"
+                        >
+                          {isBookmarked(assignment.id) ? (
+                            <BookmarkCheck className="w-5 h-5 text-yellow-400" />
+                          ) : (
+                            <Bookmark className="w-5 h-5 text-gray-400" />
+                          )}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge className="bg-purple-100 text-purple-800">
                           📚 {assignment.subject}
                         </Badge>
