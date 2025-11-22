@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { createPageUrl, toPersianNumber } from "@/utils";
+import { createPageUrl } from "@/utils";
+import { toPersianNumber } from "@/components/utils";
 
 export default function StudentProfile() {
   const [user, setUser] = useState(null);
