@@ -7,7 +7,8 @@ import { motion } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { createPageUrl, toPersianDate } from "@/utils";
+import { createPageUrl } from "@/utils";
+import { toPersianDate } from "@/components/utils";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);

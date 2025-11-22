@@ -5,7 +5,7 @@ import { GraduationCap, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { toPersianDate } from "@/utils";
+import { toPersianDate } from "@/components/utils";
 
 export default function AdminClasses() {
   const [classes, setClasses] = useState([]);

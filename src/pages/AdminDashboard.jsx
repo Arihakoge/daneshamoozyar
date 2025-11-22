@@ -4,7 +4,7 @@ import { Users, GraduationCap, BookOpen, UserPlus } from "lucide-react";
 import StatsCard from "../components/shared/StatsCard";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toPersianDate, toPersianNumber } from "@/utils";
+import { toPersianDate, toPersianNumber } from "@/components/utils";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ users: 0, classes: 0, assignments: 0 });

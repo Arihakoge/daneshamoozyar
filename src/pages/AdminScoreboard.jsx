@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, TrendingUp, Calendar, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toPersianNumber } from "@/utils";
+import { toPersianNumber } from "@/components/utils";
 
 export default function AdminScoreboard() {
   const [students, setStudents] = useState([]);
