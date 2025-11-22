@@ -15,7 +15,7 @@ import TeacherScoreboard from './pages/TeacherScoreboard';
 import AdminScoreboard from './pages/AdminScoreboard';
 import EditProfile from './pages/EditProfile';
 import AdminEditUser from './pages/AdminEditUser';
-import Layout from './Layout.jsx';
+import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
@@ -41,5 +41,5 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "StudentDashboard",
     Pages: PAGES,
-    Layout: Layout,
+    Layout: __Layout,
 };

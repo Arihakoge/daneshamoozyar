@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { createPageUrl, toPersianDate, toPersianNumber } from "@/components/utils";
+import { toPersianDate, toPersianNumber } from "@/components/utils";
+import { createPageUrl } from "@/utils";
 
 function StatsCard({ title, value, icon: Icon, color = "purple", delay = 0 }) {
   const colorClasses = {
