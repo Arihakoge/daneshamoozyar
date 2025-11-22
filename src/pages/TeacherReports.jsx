@@ -23,6 +23,7 @@ export default function TeacherReports() {
   
   const [timeRange, setTimeRange] = useState("all");
   const [selectedStudent, setSelectedStudent] = useState("all");
+  const [userSettings, setUserSettings] = useState(null);
   
   useEffect(() => {
     loadReportData();
@@ -32,6 +33,13 @@ export default function TeacherReports() {
     try {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
+
+      // Load user settings for default time range
+      const settings = await base44.entities.UserSettings.filter({ user_id: currentUser.id });
+      if (settings.length > 0) {
+        setUserSettings(settings[0]);
+        setTimeRange(settings[0].default_time_range || "all");
+      }
 
       const teacherAssignments = await base44.entities.Assignment.filter({
         teacher_id: currentUser.id,

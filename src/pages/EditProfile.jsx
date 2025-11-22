@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User as UserIcon, Upload, Save, AlertCircle, CheckCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User as UserIcon, Upload, Save, AlertCircle, CheckCircle, Sun, Moon, Type, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -23,6 +24,11 @@ export default function EditProfile() {
   const [telegram, setTelegram] = useState("");
   const [profileImage, setProfileImage] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+  
+  // Settings
+  const [theme, setTheme] = useState("dark");
+  const [fontSize, setFontSize] = useState("medium");
+  const [defaultTimeRange, setDefaultTimeRange] = useState("all");
   
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -43,6 +49,14 @@ export default function EditProfile() {
       setTelegram(user.social_links?.telegram || "");
       setProfileImage(user.profile_image_url || "");
       setIsPublic(user.is_profile_public !== false);
+      
+      // Load settings
+      const settings = await base44.entities.UserSettings.filter({ user_id: user.id });
+      if (settings.length > 0) {
+        setTheme(settings[0].theme || "dark");
+        setFontSize(settings[0].font_size || "medium");
+        setDefaultTimeRange(settings[0].default_time_range || "all");
+      }
       
     } catch (error) {
       console.error("خطا در بارگیری پروفایل:", error);
@@ -102,6 +116,21 @@ export default function EditProfile() {
       console.log("💾 بروزرسانی با داده‌ها:", updateData);
       
       await base44.auth.updateMe(updateData);
+      
+      // بروزرسانی تنظیمات
+      const settingsData = {
+        user_id: currentUser.id,
+        theme,
+        font_size: fontSize,
+        default_time_range: defaultTimeRange
+      };
+      
+      const existingSettings = await base44.entities.UserSettings.filter({ user_id: currentUser.id });
+      if (existingSettings.length > 0) {
+        await base44.entities.UserSettings.update(existingSettings[0].id, settingsData);
+      } else {
+        await base44.entities.UserSettings.create(settingsData);
+      }
       
       // بروزرسانی پروفایل عمومی
       try {
@@ -312,6 +341,88 @@ export default function EditProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Appearance Settings */}
+        <Card className="clay-card">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Sun className="w-5 h-5 text-yellow-400" />
+              تنظیمات ظاهری
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                تم رنگی
+              </label>
+              <Select value={theme} onValueChange={setTheme}>
+                <SelectTrigger className="clay-card text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dark">
+                    <div className="flex items-center gap-2">
+                      <Moon className="w-4 h-4" />
+                      تیره
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="light">
+                    <div className="flex items-center gap-2">
+                      <Sun className="w-4 h-4" />
+                      روشن
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                اندازه فونت
+              </label>
+              <Select value={fontSize} onValueChange={setFontSize}>
+                <SelectTrigger className="clay-card text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="small">کوچک</SelectItem>
+                  <SelectItem value="medium">متوسط</SelectItem>
+                  <SelectItem value="large">بزرگ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Teacher Settings */}
+        {currentUser?.student_role === "teacher" && (
+          <Card className="clay-card">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-400" />
+                تنظیمات معلم
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  بازه زمانی پیش‌فرض گزارش‌ها
+                </label>
+                <Select value={defaultTimeRange} onValueChange={setDefaultTimeRange}>
+                  <SelectTrigger className="clay-card text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="week">هفته اخیر</SelectItem>
+                    <SelectItem value="month">ماه اخیر</SelectItem>
+                    <SelectItem value="semester">نیمسال جاری</SelectItem>
+                    <SelectItem value="all">همه زمان‌ها</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Privacy */}
         <Card className="clay-card">
