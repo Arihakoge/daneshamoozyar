@@ -3,10 +3,13 @@ import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
 import { Trophy, Star, Target, TrendingUp, Award, Flame, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import BadgeCard, { badgeConfigs } from "@/components/gamification/BadgeCard";
 import LevelProgress from "@/components/gamification/LevelProgress";
 import ProgressRing from "@/components/gamification/ProgressRing";
+import StreakDisplay from "@/components/gamification/StreakDisplay";
+import LeaderboardTabs from "@/components/gamification/LeaderboardTabs";
+import SubjectProgressChart from "@/components/gamification/SubjectProgressChart";
 import { toPersianNumber, toPersianDate } from "@/components/utils";
 
 export default function Achievements() {
@@ -14,6 +17,8 @@ export default function Achievements() {
   const [badges, setBadges] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [assignments, setAssignments] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [streakData, setStreakData] = useState({ current: 0, longest: 0, weeklyActivity: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,17 +39,89 @@ export default function Achievements() {
       if (currentUser.grade) {
         const gradeAssignments = await base44.entities.Assignment.filter({ grade: currentUser.grade });
         setAssignments(gradeAssignments);
+
+        // Load all students for leaderboard
+        const profiles = await base44.entities.PublicProfile.filter({ grade: currentUser.grade, student_role: "student" });
+        const allSubs = await base44.entities.Submission.list();
+        const studentsWithSubs = profiles.map(p => ({
+          ...p,
+          submissions: allSubs.filter(s => s.student_id === p.user_id)
+        }));
+        setAllStudents(studentsWithSubs);
       }
 
+      // Calculate streak
+      const streak = calculateStreak(userSubmissions);
+      setStreakData(streak);
+
       // Check and award badges
-      await checkAndAwardBadges(currentUser, userSubmissions, userBadges);
+      await checkAndAwardBadges(currentUser, userSubmissions, userBadges, gradeAssignments || []);
     } catch (error) {
       console.error("Error loading achievements:", error);
     }
     setLoading(false);
   };
 
-  const checkAndAwardBadges = async (user, submissions, existingBadges) => {
+  const calculateStreak = (submissions) => {
+    if (!submissions || submissions.length === 0) {
+      return { current: 0, longest: 0, weeklyActivity: [false, false, false, false, false, false, false] };
+    }
+
+    const dates = submissions
+      .map(s => new Date(s.created_date).toDateString())
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort((a, b) => new Date(b) - new Date(a));
+
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 1;
+
+    const today = new Date();
+    const todayStr = today.toDateString();
+    const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toDateString();
+
+    if (dates.includes(todayStr) || dates.includes(yesterdayStr)) {
+      currentStreak = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const curr = new Date(dates[i - 1]);
+        const prev = new Date(dates[i]);
+        const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+        if (diff === 1) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    for (let i = 1; i < dates.length; i++) {
+      const curr = new Date(dates[i - 1]);
+      const prev = new Date(dates[i]);
+      const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+      if (diff === 1) {
+        tempStreak++;
+        longestStreak = Math.max(longestStreak, tempStreak);
+      } else {
+        tempStreak = 1;
+      }
+    }
+    longestStreak = Math.max(longestStreak, currentStreak);
+
+    // Weekly activity (Saturday to Friday)
+    const weeklyActivity = [];
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() - 1); // Saturday
+    
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + i);
+      weeklyActivity.push(dates.includes(day.toDateString()));
+    }
+
+    return { current: currentStreak, longest: longestStreak, weeklyActivity };
+  };
+
+  const checkAndAwardBadges = async (user, submissions, existingBadges, assignments) => {
     const earnedTypes = existingBadges.map(b => b.badge_type);
     const newBadges = [];
 
@@ -71,6 +148,63 @@ export default function Achievements() {
       if (avg >= 15 && !earnedTypes.includes("consistent")) {
         newBadges.push({ user_id: user.id, badge_type: "consistent", earned_at: new Date().toISOString() });
       }
+    }
+
+    // Streak badges
+    const streak = calculateStreak(submissions);
+    if (streak.current >= 3 && !earnedTypes.includes("streak_3")) {
+      newBadges.push({ user_id: user.id, badge_type: "streak_3", earned_at: new Date().toISOString() });
+    }
+    if (streak.current >= 7 && !earnedTypes.includes("streak_7")) {
+      newBadges.push({ user_id: user.id, badge_type: "streak_7", earned_at: new Date().toISOString() });
+    }
+    if (streak.current >= 30 && !earnedTypes.includes("streak_30")) {
+      newBadges.push({ user_id: user.id, badge_type: "streak_30", earned_at: new Date().toISOString() });
+    }
+
+    // Early bird (5 early submissions)
+    const earlySubmissions = submissions.filter(s => {
+      const assignment = assignments.find(a => a.id === s.assignment_id);
+      if (!assignment || !assignment.due_date) return false;
+      return new Date(s.created_date) < new Date(assignment.due_date);
+    });
+    if (earlySubmissions.length >= 5 && !earnedTypes.includes("early_bird")) {
+      newBadges.push({ user_id: user.id, badge_type: "early_bird", earned_at: new Date().toISOString() });
+    }
+
+    // Subject master badges
+    const subjectStats = {};
+    submissions.forEach(sub => {
+      const assignment = assignments.find(a => a.id === sub.assignment_id);
+      if (assignment && sub.score !== null) {
+        if (!subjectStats[assignment.subject]) {
+          subjectStats[assignment.subject] = { total: 0, count: 0 };
+        }
+        subjectStats[assignment.subject].total += sub.score;
+        subjectStats[assignment.subject].count += 1;
+      }
+    });
+
+    Object.entries(subjectStats).forEach(([subject, data]) => {
+      if (data.count >= 3) {
+        const avg = data.total / data.count;
+        if (avg >= 18) {
+          if (subject === "ریاضی" && !earnedTypes.includes("math_master")) {
+            newBadges.push({ user_id: user.id, badge_type: "math_master", earned_at: new Date().toISOString() });
+          } else if (subject === "علوم" && !earnedTypes.includes("science_master")) {
+            newBadges.push({ user_id: user.id, badge_type: "science_master", earned_at: new Date().toISOString() });
+          } else if (subject === "فارسی" && !earnedTypes.includes("literature_master")) {
+            newBadges.push({ user_id: user.id, badge_type: "literature_master", earned_at: new Date().toISOString() });
+          }
+        }
+      }
+    });
+
+    // All subjects badge
+    const allSubjectsGood = Object.values(subjectStats).length >= 3 && 
+      Object.values(subjectStats).every(s => s.count >= 1 && (s.total / s.count) >= 15);
+    if (allSubjectsGood && !earnedTypes.includes("all_subjects")) {
+      newBadges.push({ user_id: user.id, badge_type: "all_subjects", earned_at: new Date().toISOString() });
     }
 
     // Create new badges
@@ -157,15 +291,27 @@ export default function Achievements() {
         <p className="text-gray-300 text-lg">مسیر موفقیت تو اینجاست!</p>
       </motion.div>
 
-      {/* Level Progress */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mb-8"
-      >
-        <LevelProgress level={user?.level || 1} coins={user?.coins || 0} />
-      </motion.div>
+      {/* Level Progress & Streak */}
+      <div className="grid lg:grid-cols-2 gap-6 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <LevelProgress level={user?.level || 1} coins={user?.coins || 0} />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <StreakDisplay 
+            currentStreak={streakData.current} 
+            longestStreak={streakData.longest} 
+            weeklyActivity={streakData.weeklyActivity} 
+          />
+        </motion.div>
+      </div>
 
       {/* Stats Overview */}
       <motion.div
@@ -227,93 +373,68 @@ export default function Achievements() {
       </motion.div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Progress Chart */}
+        {/* Weekly/Monthly Leaderboard */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Card className="clay-card h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <TrendingUp className="w-6 h-6 text-green-400" />
-                نمودار پیشرفت
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {progressData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <AreaChart data={progressData}>
-                    <defs>
-                      <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="name" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" domain={[0, 20]} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                      labelStyle={{ color: '#F3F4F6' }}
-                    />
-                    <Area type="monotone" dataKey="score" stroke="#8B5CF6" fillOpacity={1} fill="url(#colorScore)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="text-center py-12 text-gray-400">
-                  <TrendingUp className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>هنوز داده‌ای برای نمایش وجود ندارد</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <LeaderboardTabs students={allStudents} currentUserId={user?.id} />
         </motion.div>
 
-        {/* Subject Performance */}
+        {/* Subject Progress Chart */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card className="clay-card h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Target className="w-6 h-6 text-blue-400" />
-                عملکرد در هر درس
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {subjectStats.length > 0 ? (
-                  subjectStats.map((stat) => (
-                    <div key={stat.subject} className="clay-card p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-white">📚 {stat.subject}</span>
-                        <span className="text-purple-400 font-bold">{toPersianNumber(stat.average)}/۲۰</span>
-                      </div>
-                      <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(stat.average / 20) * 100}%` }}
-                          transition={{ duration: 1, delay: 0.5 }}
-                          className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-                        />
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">{toPersianNumber(stat.count)} تکلیف</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-12 text-gray-400">
-                    <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                    <p>هنوز نمره‌ای ثبت نشده</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <SubjectProgressChart subjectStats={subjectStats} viewType="bar" />
         </motion.div>
       </div>
+
+      {/* Progress Chart */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.55 }}
+        className="mt-8"
+      >
+        <Card className="clay-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-white">
+              <TrendingUp className="w-6 h-6 text-green-400" />
+              نمودار پیشرفت در طول زمان
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {progressData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <AreaChart data={progressData}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="name" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" domain={[0, 20]} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
+                    labelStyle={{ color: '#F3F4F6' }}
+                  />
+                  <Area type="monotone" dataKey="score" stroke="#8B5CF6" fillOpacity={1} fill="url(#colorScore)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-12 text-gray-400">
+                <TrendingUp className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>هنوز داده‌ای برای نمایش وجود ندارد</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Tips Section */}
       <motion.div
