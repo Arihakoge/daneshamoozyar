@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toPersianDate, toPersianDateShort, toPersianNumber } from "@/components/utils";
+import PersianDatePicker from "@/components/ui/PersianDatePicker";
 
 function SubmissionGradingCard({ submission, student, onGrade, maxScore }) {
   const [score, setScore] = useState(submission.score || "");
@@ -299,13 +300,14 @@ export default function TeacherAssignments() {
                   required 
                   className="clay-card text-white"
                 />
-                <Input 
-                  type="date" 
-                  value={newAssignment.due_date} 
-                  onChange={e => setNewAssignment({...newAssignment, due_date: e.target.value})} 
-                  required 
-                  className="clay-card text-white"
-                />
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">مهلت تحویل</label>
+                  <PersianDatePicker
+                    value={newAssignment.due_date}
+                    onChange={(date) => setNewAssignment({...newAssignment, due_date: date})}
+                    placeholder="انتخاب تاریخ مهلت"
+                  />
+                </div>
                 <Input 
                   type="number" 
                   placeholder="حداکثر نمره" 
