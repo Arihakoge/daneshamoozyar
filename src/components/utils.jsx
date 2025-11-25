@@ -11,15 +11,35 @@ export function toPersianNumber(num) {
   return String(num).replace(/\d/g, x => persianDigits[parseInt(x)]);
 }
 
+// Convert Gregorian to Jalali
+function gregorianToJalali(gy, gm, gd) {
+  const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  let jy = (gy <= 1600) ? 0 : 979;
+  gy -= (gy <= 1600) ? 621 : 1600;
+  const gy2 = (gm > 2) ? (gy + 1) : gy;
+  let days = (365 * gy) + (Math.floor((gy2 + 3) / 4)) - (Math.floor((gy2 + 99) / 100)) + (Math.floor((gy2 + 399) / 400)) - 80 + gd + g_d_m[gm - 1];
+  jy += 33 * (Math.floor(days / 12053));
+  days %= 12053;
+  jy += 4 * (Math.floor(days / 1461));
+  days %= 1461;
+  jy += Math.floor((days - 1) / 365);
+  if (days > 365) days = (days - 1) % 365;
+  const jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+  const jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+  return [jy, jm, jd];
+}
+
+const persianMonthNames = [
+  "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
+  "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
+];
+
 export function toPersianDate(date) {
   if (!date) return '';
   try {
     const d = new Date(date);
-    return new Intl.DateTimeFormat('fa-IR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }).format(d);
+    const [jy, jm, jd] = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    return `${toPersianNumber(jd)} ${persianMonthNames[jm - 1]} ${toPersianNumber(jy)}`;
   } catch {
     return '';
   }
@@ -29,11 +49,8 @@ export function toPersianDateShort(date) {
   if (!date) return '';
   try {
     const d = new Date(date);
-    return new Intl.DateTimeFormat('fa-IR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    }).format(d);
+    const [jy, jm, jd] = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    return `${toPersianNumber(jd)} ${persianMonthNames[jm - 1]}`;
   } catch {
     return '';
   }
