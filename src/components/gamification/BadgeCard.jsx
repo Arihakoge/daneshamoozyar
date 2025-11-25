@@ -1,131 +1,121 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { 
-  Trophy, Star, Zap, Target, Heart, Send, 
-  Award, Crown, Gem, Flame 
+  Trophy, Star, Zap, Target, Crown, Medal, 
+  Flame, TrendingUp, Award, Heart 
 } from "lucide-react";
-import { toPersianDate } from "@/components/utils";
 
-const BADGE_CONFIG = {
+const badgeConfigs = {
   top_student: {
+    name: "دانش‌آموز برتر",
     icon: Crown,
-    title: "دانش‌آموز برتر",
-    description: "کسب بالاترین نمره در کلاس",
-    color: "from-yellow-400 to-orange-500",
-    bgColor: "bg-yellow-500/20"
+    color: "from-yellow-400 to-yellow-600",
+    description: "رتبه اول در تابلوی امتیازات"
   },
   perfect_score: {
+    name: "نمره کامل",
     icon: Star,
-    title: "نمره کامل",
-    description: "کسب نمره ۲۰ در یک تکلیف",
-    color: "from-purple-400 to-pink-500",
-    bgColor: "bg-purple-500/20"
-  },
-  fast_learner: {
-    icon: Zap,
-    title: "یادگیرنده سریع",
-    description: "ارسال تکلیف در کمتر از ۱ روز",
-    color: "from-blue-400 to-cyan-500",
-    bgColor: "bg-blue-500/20"
-  },
-  consistent: {
-    icon: Target,
-    title: "پایدار و مداوم",
-    description: "ارسال ۵ تکلیف متوالی به موقع",
-    color: "from-green-400 to-emerald-500",
-    bgColor: "bg-green-500/20"
-  },
-  helper: {
-    icon: Heart,
-    title: "یاری‌دهنده",
-    description: "کمک به هم‌کلاسی‌ها",
-    color: "from-pink-400 to-rose-500",
-    bgColor: "bg-pink-500/20"
+    color: "from-purple-400 to-purple-600",
+    description: "کسب نمره ۲۰ در یک تکلیف"
   },
   first_submission: {
-    icon: Send,
-    title: "اولین قدم",
-    description: "ارسال اولین تکلیف",
-    color: "from-indigo-400 to-purple-500",
-    bgColor: "bg-indigo-500/20"
+    name: "اولین قدم",
+    icon: Zap,
+    color: "from-blue-400 to-blue-600",
+    description: "ارسال اولین تکلیف"
   },
-  ten_submissions: {
-    icon: Award,
-    title: "۱۰ تکلیف",
-    description: "ارسال ۱۰ تکلیف موفق",
-    color: "from-teal-400 to-green-500",
-    bgColor: "bg-teal-500/20"
-  },
-  fifty_submissions: {
-    icon: Trophy,
-    title: "۵۰ تکلیف",
-    description: "ارسال ۵۰ تکلیف موفق",
-    color: "from-amber-400 to-yellow-500",
-    bgColor: "bg-amber-500/20"
-  },
-  level_5: {
-    icon: Gem,
-    title: "سطح ۵",
-    description: "رسیدن به سطح ۵",
-    color: "from-violet-400 to-purple-500",
-    bgColor: "bg-violet-500/20"
-  },
-  level_10: {
-    icon: Crown,
-    title: "سطح ۱۰",
-    description: "رسیدن به سطح ۱۰",
-    color: "from-rose-400 to-red-500",
-    bgColor: "bg-rose-500/20"
-  },
-  coin_master: {
+  streak_7: {
+    name: "هفته فعال",
     icon: Flame,
-    title: "سکه‌دار",
-    description: "جمع‌آوری ۵۰۰ سکه",
     color: "from-orange-400 to-red-500",
-    bgColor: "bg-orange-500/20"
+    description: "۷ روز فعالیت متوالی"
+  },
+  streak_30: {
+    name: "ماه درخشان",
+    icon: Flame,
+    color: "from-red-500 to-pink-600",
+    description: "۳۰ روز فعالیت متوالی"
+  },
+  helper: {
+    name: "یاریگر",
+    icon: Heart,
+    color: "from-pink-400 to-rose-500",
+    description: "کمک به همکلاسی‌ها"
+  },
+  fast_learner: {
+    name: "یادگیری سریع",
+    icon: Zap,
+    color: "from-cyan-400 to-blue-500",
+    description: "ارسال زودهنگام تکالیف"
+  },
+  consistent: {
+    name: "پایدار",
+    icon: Target,
+    color: "from-green-400 to-emerald-600",
+    description: "میانگین بالای ۱۵ در تمام دروس"
+  },
+  rising_star: {
+    name: "ستاره در حال طلوع",
+    icon: TrendingUp,
+    color: "from-indigo-400 to-purple-500",
+    description: "بهبود چشمگیر در نمرات"
+  },
+  champion: {
+    name: "قهرمان",
+    icon: Trophy,
+    color: "from-amber-400 to-yellow-500",
+    description: "کسب ۱۰۰۰ سکه"
   }
 };
 
-export default function BadgeCard({ badge, locked = false, size = "normal" }) {
-  const config = BADGE_CONFIG[badge?.badge_type] || BADGE_CONFIG.first_submission;
+export default function BadgeCard({ badgeType, earned = false, earnedAt, size = "medium" }) {
+  const config = badgeConfigs[badgeType];
+  if (!config) return null;
+
   const Icon = config.icon;
-  
-  const sizeClasses = size === "small" 
-    ? "w-16 h-16" 
-    : "w-24 h-24";
-  
-  const iconSize = size === "small" ? "w-6 h-6" : "w-10 h-10";
+  const sizeClasses = {
+    small: "w-16 h-16",
+    medium: "w-24 h-24",
+    large: "w-32 h-32"
+  };
+
+  const iconSizes = {
+    small: "w-6 h-6",
+    medium: "w-10 h-10",
+    large: "w-14 h-14"
+  };
 
   return (
     <motion.div
-      whileHover={{ scale: locked ? 1 : 1.05 }}
-      className={`relative flex flex-col items-center ${locked ? 'opacity-40 grayscale' : ''}`}
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      whileHover={{ scale: 1.05 }}
+      className={`relative ${earned ? '' : 'opacity-40 grayscale'}`}
     >
-      <div className={`${sizeClasses} rounded-full ${config.bgColor} flex items-center justify-center mb-2 relative`}>
-        <div className={`absolute inset-1 rounded-full bg-gradient-to-br ${config.color} opacity-20`} />
-        <Icon className={`${iconSize} text-white relative z-10`} />
-        {!locked && (
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className={`absolute inset-0 rounded-full bg-gradient-to-br ${config.color} opacity-30 blur-md`}
-          />
+      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${config.color} p-1 shadow-lg`}>
+        <div className="w-full h-full rounded-full bg-gray-900/80 flex items-center justify-center">
+          <Icon className={`${iconSizes[size]} text-white`} />
+        </div>
+      </div>
+      {earned && (
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+        >
+          <span className="text-white text-xs">✓</span>
+        </motion.div>
+      )}
+      <div className="text-center mt-2">
+        <p className={`font-bold text-white ${size === 'small' ? 'text-xs' : 'text-sm'}`}>
+          {config.name}
+        </p>
+        {size !== 'small' && (
+          <p className="text-xs text-gray-400 mt-1">{config.description}</p>
         )}
       </div>
-      <p className="text-sm font-bold text-white text-center">{config.title}</p>
-      {size !== "small" && (
-        <p className="text-xs text-gray-400 text-center mt-1">{config.description}</p>
-      )}
-      {badge?.earned_at && (
-        <p className="text-xs text-gray-500 mt-1">{toPersianDate(badge.earned_at)}</p>
-      )}
-      {locked && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-2xl">🔒</span>
-        </div>
-      )}
     </motion.div>
   );
 }
 
-export { BADGE_CONFIG };
+export { badgeConfigs };

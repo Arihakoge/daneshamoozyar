@@ -16,7 +16,7 @@ import AdminScoreboard from './pages/AdminScoreboard';
 import EditProfile from './pages/EditProfile';
 import AdminEditUser from './pages/AdminEditUser';
 import TeacherReports from './pages/TeacherReports';
-import Gamification from './pages/Gamification';
+import Achievements from './pages/Achievements';
 import __Layout from './Layout.jsx';
 
 
@@ -39,7 +39,7 @@ export const PAGES = {
     "EditProfile": EditProfile,
     "AdminEditUser": AdminEditUser,
     "TeacherReports": TeacherReports,
-    "Gamification": Gamification,
+    "Achievements": Achievements,
 }
 
 export const pagesConfig = {
