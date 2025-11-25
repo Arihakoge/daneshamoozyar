@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star } from "lucide-react";
-import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue } from "@/components/utils";
+import { Link } from "react-router-dom";
+import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star, Award, Target } from "lucide-react";
+import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber } from "@/components/utils";
+import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
+import BadgeCard from "@/components/gamification/BadgeCard";
+import LevelProgress from "@/components/gamification/LevelProgress";
 
 function StatsCard({ title, value, icon: Icon, color = "purple", trend, delay = 0 }) {
   const colorClasses = {
@@ -39,6 +43,7 @@ export default function StudentDashboard() {
   const [user, setUser] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,6 +67,9 @@ export default function StudentDashboard() {
           "-created_date"
         );
         setSubmissions(userSubmissions);
+
+        const userBadges = await base44.entities.Badge.filter({ user_id: currentUser.id });
+        setBadges(userBadges);
       }
     } catch (error) {
       console.error("خطا در بارگیری داده‌ها:", error);
@@ -210,28 +218,63 @@ export default function StudentDashboard() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.7 }}
           className="space-y-6">
+          
+          {/* Level Progress Card */}
+          <LevelProgress level={user?.level || 1} coins={user?.coins || 0} />
+
+          {/* Recent Badges */}
           <div className="clay-card p-6">
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 shadow-md">
+                  <Award className="w-6 h-6 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-white">نشان‌های اخیر</h2>
+              </div>
+              <Link to={createPageUrl("Achievements")} className="text-purple-400 text-sm hover:underline">
+                مشاهده همه
+              </Link>
+            </div>
+            
+            {badges.length > 0 ? (
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {badges.slice(0, 3).map((badge) => (
+                  <BadgeCard key={badge.id} badgeType={badge.badge_type} earned={true} size="small" />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-400">
+                <Target className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">هنوز نشانی کسب نشده</p>
+                <Link to={createPageUrl("Achievements")} className="text-purple-400 text-xs hover:underline">
+                  چگونه نشان کسب کنم؟
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Daily Stats */}
+          <div className="clay-card p-6">
+            <div className="flex items-center gap-3 mb-4">
               <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-md">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <h2 className="text-xl font-bold text-white">آمار امروز</h2>
             </div>
             
-            <div className="space-y-4">
-              <div className="clay-card p-4 bg-green-900/30">
-                <p className="text-green-300 text-base font-medium">تکالیف ارسال شده امروز</p>
-                <p className="text-2xl font-bold text-green-200 mt-1">
-                  {submissions.filter((sub) => {
+            <div className="grid grid-cols-2 gap-3">
+              <div className="clay-card p-3 bg-green-900/30 text-center">
+                <p className="text-2xl font-bold text-green-200">
+                  {toPersianNumber(submissions.filter((sub) => {
                     const today = new Date().toDateString();
                     return sub.created_date && new Date(sub.created_date).toDateString() === today;
-                  }).length}
+                  }).length)}
                 </p>
+                <p className="text-xs text-green-300">ارسالی امروز</p>
               </div>
-              
-              <div className="clay-card p-4 bg-blue-900/30">
-                <p className="text-blue-300 text-sm font-medium">نمره میانگین هفته</p>
-                <p className="text-2xl font-bold text-blue-200 mt-1">{getAverageScore()}</p>
+              <div className="clay-card p-3 bg-blue-900/30 text-center">
+                <p className="text-2xl font-bold text-blue-200">{toPersianNumber(getAverageScore())}</p>
+                <p className="text-xs text-blue-300">میانگین نمره</p>
               </div>
             </div>
           </div>
@@ -242,7 +285,7 @@ export default function StudentDashboard() {
               <h3 className="font-bold text-white">نکته روز</h3>
             </div>
             <p className="text-sm text-gray-200 leading-relaxed">
-              برای کسب سکه بیشتر، تکالیف را زودتر از مهلت ارسال کن و در بحث‌های کلاسی فعال باش!
+              برای کسب سکه بیشتر، تکالیف را زودتر از مهلت ارسال کن و نشان‌های جدید کسب کن!
             </p>
           </div>
         </motion.div>

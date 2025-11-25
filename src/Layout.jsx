@@ -14,8 +14,7 @@ import {
   LogOut,
   X,
   Users,
-  Edit,
-  Award
+  Edit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -178,10 +177,10 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد", url: createPageUrl("StudentDashboard"), icon: LayoutDashboard },
         { title: "تکالیف من", url: createPageUrl("StudentAssignments"), icon: BookOpen },
+        { title: "دستاوردها", url: createPageUrl("Achievements"), icon: Trophy },
         { title: "پروفایل من", url: createPageUrl("StudentProfile"), icon: UserIcon },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "تابلوی امتیازات", url: createPageUrl("Scoreboard"), icon: Trophy },
-      { title: "دستاوردها", url: createPageUrl("Gamification"), icon: Award },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
       ];
     } else if (role === "teacher") {
