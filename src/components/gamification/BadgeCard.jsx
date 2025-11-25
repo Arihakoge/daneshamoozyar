@@ -24,6 +24,12 @@ const badgeConfigs = {
     color: "from-blue-400 to-blue-600",
     description: "ارسال اولین تکلیف"
   },
+  streak_3: {
+    name: "شروع خوب",
+    icon: Flame,
+    color: "from-yellow-400 to-orange-400",
+    description: "۳ روز فعالیت متوالی"
+  },
   streak_7: {
     name: "هفته فعال",
     icon: Flame,
@@ -48,6 +54,12 @@ const badgeConfigs = {
     color: "from-cyan-400 to-blue-500",
     description: "ارسال زودهنگام تکالیف"
   },
+  early_bird: {
+    name: "سحرخیز",
+    icon: Zap,
+    color: "from-amber-400 to-orange-500",
+    description: "۵ تکلیف زودتر از مهلت"
+  },
   consistent: {
     name: "پایدار",
     icon: Target,
@@ -65,6 +77,42 @@ const badgeConfigs = {
     icon: Trophy,
     color: "from-amber-400 to-yellow-500",
     description: "کسب ۱۰۰۰ سکه"
+  },
+  math_master: {
+    name: "استاد ریاضی",
+    icon: Medal,
+    color: "from-blue-500 to-indigo-600",
+    description: "میانگین بالای ۱۸ در ریاضی"
+  },
+  science_master: {
+    name: "استاد علوم",
+    icon: Medal,
+    color: "from-green-500 to-emerald-600",
+    description: "میانگین بالای ۱۸ در علوم"
+  },
+  literature_master: {
+    name: "استاد فارسی",
+    icon: Medal,
+    color: "from-rose-500 to-pink-600",
+    description: "میانگین بالای ۱۸ در فارسی"
+  },
+  weekly_champion: {
+    name: "قهرمان هفته",
+    icon: Trophy,
+    color: "from-cyan-400 to-blue-500",
+    description: "رتبه اول هفته"
+  },
+  monthly_champion: {
+    name: "قهرمان ماه",
+    icon: Crown,
+    color: "from-purple-500 to-violet-600",
+    description: "رتبه اول ماه"
+  },
+  all_subjects: {
+    name: "همه‌فن‌حریف",
+    icon: Star,
+    color: "from-violet-400 to-fuchsia-500",
+    description: "نمره بالای ۱۵ در همه دروس"
   }
 };
 
