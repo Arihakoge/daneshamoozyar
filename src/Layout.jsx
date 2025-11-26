@@ -474,12 +474,12 @@ export default function Layout({ children, currentPageName }) {
                               className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
                               style={{ backgroundColor: currentUser.avatar_color }}
                             >
-                              {(currentUser.display_name || currentUser.full_name || "ک").charAt(0)}
+                              {(currentUser.full_name || "کاربر").charAt(0)}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-gray-200 truncate">
-                              {currentUser.display_name || currentUser.full_name || "کاربر"}
+                              {currentUser.full_name || "کاربر"}
                             </p>
                             <p className="text-sm text-gray-400">
                               {currentUser.student_role === "teacher" && `معلم ${currentUser.subject || ""}`}

@@ -129,7 +129,7 @@ export default function LeaderboardTabs({ students, currentUserId }) {
                         className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
                         style={{ backgroundColor: student.avatar_color || "#8B5CF6" }}
                       >
-                        {(student.display_name || student.full_name || "?").charAt(0)}
+                        {(student.full_name || "کاربر").charAt(0)}
                       </div>
                     )}
 
