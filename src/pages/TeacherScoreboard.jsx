@@ -180,10 +180,10 @@ export default function TeacherScoreboard() {
                 {students[1].profile_image_url ? (
                   <img src={students[1].profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  students[1].display_name?.charAt(0) || "د"
+                  (students[1].full_name || "کاربر").charAt(0)
                 )}
               </div>
-              <h3 className="font-bold text-white">{students[1].display_name || students[1].full_name}</h3>
+              <h3 className="font-bold text-white">{students[1].full_name || "کاربر"}</h3>
               <p className="text-sm text-gray-300">⭐ {toPersianNumber(students[1].averageScore)}</p>
               <p className="text-xs text-gray-400">{toPersianNumber(students[1].gradedSubmissions)} تکلیف</p>
             </div>
@@ -200,10 +200,10 @@ export default function TeacherScoreboard() {
                 {students[0].profile_image_url ? (
                   <img src={students[0].profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  students[0].display_name?.charAt(0) || "د"
+                  (students[0].full_name || "کاربر").charAt(0)
                 )}
               </div>
-              <h3 className="font-bold text-white text-lg">{students[0].display_name || students[0].full_name}</h3>
+              <h3 className="font-bold text-white text-lg">{students[0].full_name || "کاربر"}</h3>
               <p className="text-gray-300">⭐ {toPersianNumber(students[0].averageScore)}</p>
               <p className="text-sm text-gray-400">{toPersianNumber(students[0].gradedSubmissions)} تکلیف</p>
               <Badge className="bg-yellow-500 text-white mt-1">👑 برتر کلاس</Badge>
@@ -221,10 +221,10 @@ export default function TeacherScoreboard() {
                 {students[2].profile_image_url ? (
                   <img src={students[2].profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  students[2].display_name?.charAt(0) || "د"
+                  (students[2].full_name || "کاربر").charAt(0)
                 )}
               </div>
-              <h3 className="font-bold text-white">{students[2].display_name || students[2].full_name}</h3>
+              <h3 className="font-bold text-white">{students[2].full_name || "کاربر"}</h3>
               <p className="text-sm text-gray-300">⭐ {toPersianNumber(students[2].averageScore)}</p>
               <p className="text-xs text-gray-400">{toPersianNumber(students[2].gradedSubmissions)} تکلیف</p>
             </div>
@@ -272,13 +272,13 @@ export default function TeacherScoreboard() {
                         {student.profile_image_url ? (
                           <img src={student.profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                         ) : (
-                          student.display_name?.charAt(0) || "د"
+                          (student.full_name || "کاربر").charAt(0)
                         )}
                       </div>
 
                       <div className="flex-1">
                         <h3 className="font-bold text-white">
-                          {student.display_name || student.full_name}
+                          {student.full_name || "کاربر"}
                         </h3>
                         <div className="flex items-center gap-4 text-sm text-gray-300 mt-1">
                           <span>📚 {student.totalSubmissions} ارسالی</span>

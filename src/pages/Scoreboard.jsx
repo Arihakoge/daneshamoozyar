@@ -163,7 +163,7 @@ export default function Scoreboard() {
                 {filteredStudents[1].profile_image_url ? (
                   <img src={filteredStudents[1].profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  filteredStudents[1].display_name?.charAt(0) || "د"
+                  (filteredStudents[1].full_name || "کاربر").charAt(0)
                 )}
               </div>
               <h3 className="font-bold text-white text-lg mb-1">{filteredStudents[1].full_name || "کاربر"}</h3>
