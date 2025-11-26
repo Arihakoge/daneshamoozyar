@@ -166,7 +166,7 @@ export default function Scoreboard() {
                   filteredStudents[1].display_name?.charAt(0) || "د"
                 )}
               </div>
-              <h3 className="font-bold text-white text-lg mb-1">{filteredStudents[1].display_name || filteredStudents[1].full_name}</h3>
+              <h3 className="font-bold text-white text-lg mb-1">{filteredStudents[1].full_name || "کاربر"}</h3>
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Star className="w-5 h-5 text-yellow-400" />
                 <span className="text-2xl font-bold text-gray-200">{toPersianNumber(filteredStudents[1].averageScore)}</span>
@@ -193,10 +193,10 @@ export default function Scoreboard() {
                 {filteredStudents[0].profile_image_url ? (
                   <img src={filteredStudents[0].profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  filteredStudents[0].display_name?.charAt(0) || "د"
+                  (filteredStudents[0].full_name || "کاربر").charAt(0)
                 )}
               </div>
-              <h3 className="font-bold text-white text-2xl mb-2">{filteredStudents[0].display_name || filteredStudents[0].full_name}</h3>
+              <h3 className="font-bold text-white text-2xl mb-2">{filteredStudents[0].full_name || "کاربر"}</h3>
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Star className="w-6 h-6 text-yellow-300" />
                 <span className="text-3xl font-black text-yellow-200">{toPersianNumber(filteredStudents[0].averageScore)}</span>
@@ -223,10 +223,10 @@ export default function Scoreboard() {
                 {filteredStudents[2].profile_image_url ? (
                   <img src={filteredStudents[2].profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  filteredStudents[2].display_name?.charAt(0) || "د"
+                  (filteredStudents[2].full_name || "کاربر").charAt(0)
                 )}
               </div>
-              <h3 className="font-bold text-white text-lg mb-1">{filteredStudents[2].display_name || filteredStudents[2].full_name}</h3>
+              <h3 className="font-bold text-white text-lg mb-1">{filteredStudents[2].full_name || "کاربر"}</h3>
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Star className="w-5 h-5 text-yellow-400" />
                 <span className="text-2xl font-bold text-gray-200">{toPersianNumber(filteredStudents[2].averageScore)}</span>
@@ -282,13 +282,13 @@ export default function Scoreboard() {
                           {student.profile_image_url ? (
                             <img src={student.profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                           ) : (
-                            student.display_name?.charAt(0) || "د"
+                            (student.full_name || "کاربر").charAt(0)
                           )}
                         </div>
 
                         <div className="flex-1">
                           <h3 className="font-bold text-white text-lg flex items-center gap-2">
-                            {student.display_name || student.full_name}
+                            {student.full_name || "کاربر"}
                             {isCurrentUser && <Badge className="bg-purple-500 text-white text-xs">شما</Badge>}
                           </h3>
                           <div className="flex items-center gap-4 text-sm text-gray-300 mt-1">
