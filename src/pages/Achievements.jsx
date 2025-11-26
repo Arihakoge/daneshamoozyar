@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { motion } from "framer-motion";
-import { Trophy, Star, Target, TrendingUp, Award, Flame, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Trophy, Star, Target, TrendingUp, Award, Flame, Zap, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import BadgeCard, { badgeConfigs } from "@/components/gamification/BadgeCard";
@@ -20,6 +20,7 @@ export default function Achievements() {
   const [allStudents, setAllStudents] = useState([]);
   const [streakData, setStreakData] = useState({ current: 0, longest: 0, weeklyActivity: [] });
   const [loading, setLoading] = useState(true);
+  const [selectedBadge, setSelectedBadge] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -272,10 +273,14 @@ export default function Achievements() {
     );
   }
 
-  const allBadgeTypes = Object.keys(badgeConfigs);
-  const earnedBadgeTypes = badges.map(b => b.badge_type);
-  const progressData = getProgressData();
-  const subjectStats = getSubjectStats();
+  const allBadgeTypes = useMemo(() => Object.keys(badgeConfigs), []);
+  const earnedBadgeTypes = useMemo(() => badges.map(b => b.badge_type), [badges]);
+  const progressData = useMemo(() => getProgressData(), [submissions]);
+  const subjectStats = useMemo(() => getSubjectStats(), [submissions, assignments]);
+
+  const handleBadgeClick = (badgeType, config) => {
+    setSelectedBadge({ type: badgeType, config, earned: earnedBadgeTypes.includes(badgeType) });
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -360,6 +365,7 @@ export default function Achievements() {
                   badgeType={type}
                   earned={earnedBadgeTypes.includes(type)}
                   size="medium"
+                  onClick={handleBadgeClick}
                 />
               ))}
             </div>
@@ -469,6 +475,53 @@ export default function Achievements() {
           </CardContent>
         </Card>
       </motion.div>
+      {/* Badge Info Modal */}
+      <AnimatePresence>
+        {selectedBadge && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedBadge(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="clay-card p-6 max-w-sm w-full text-center"
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedBadge(null)}
+                className="absolute top-4 left-4 text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${selectedBadge.config.color} p-1 shadow-lg mx-auto mb-4 ${!selectedBadge.earned ? 'opacity-50 grayscale' : ''}`}>
+                <div className="w-full h-full rounded-full bg-gray-900/80 flex items-center justify-center">
+                  <selectedBadge.config.icon className="w-12 h-12 text-white" />
+                </div>
+              </div>
+              
+              <h3 className="text-2xl font-bold text-white mb-2">{selectedBadge.config.name}</h3>
+              <p className="text-gray-400 mb-4">{selectedBadge.config.description}</p>
+              
+              <div className={`clay-card p-4 ${selectedBadge.earned ? 'bg-green-900/30' : 'bg-yellow-900/30'}`}>
+                {selectedBadge.earned ? (
+                  <p className="text-green-300 font-medium">✅ این نشان را کسب کرده‌اید!</p>
+                ) : (
+                  <>
+                    <p className="text-yellow-300 font-medium mb-1">🎯 چگونه کسب کنم؟</p>
+                    <p className="text-yellow-200 text-sm">{selectedBadge.config.howToGet}</p>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
