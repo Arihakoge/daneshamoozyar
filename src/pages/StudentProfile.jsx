@@ -160,11 +160,11 @@ export default function StudentProfile() {
                 className="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold"
                 style={{ backgroundColor: user?.avatar_color || "#8B5CF6" }}
               >
-                {(user?.display_name || user?.full_name || "د").charAt(0)}
+                {(user?.full_name || "کاربر").charAt(0)}
               </div>
             )}
             <h2 className="text-2xl font-bold text-white mb-2">
-              {user?.display_name || user?.full_name || "دانش‌آموز"}
+              {user?.full_name || "دانش‌آموز"}
             </h2>
             <Badge className="bg-purple-100 text-purple-800 mb-4">
               دانش‌آموز
