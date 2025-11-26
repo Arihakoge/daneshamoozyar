@@ -135,7 +135,7 @@ export default function LeaderboardTabs({ students, currentUserId }) {
 
                     <div className="flex-1 min-w-0">
                       <p className={`font-bold truncate ${isCurrentUser ? "text-purple-300" : "text-white"}`}>
-                        {student.display_name || student.full_name}
+                        {student.full_name || student.display_name || "کاربر"}
                         {isCurrentUser && " (شما)"}
                       </p>
                       <p className="text-xs text-gray-400">

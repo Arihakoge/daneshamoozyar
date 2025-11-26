@@ -10,113 +10,131 @@ const badgeConfigs = {
     name: "دانش‌آموز برتر",
     icon: Crown,
     color: "from-yellow-400 to-yellow-600",
-    description: "رتبه اول در تابلوی امتیازات"
+    description: "رتبه اول در تابلوی امتیازات",
+    howToGet: "در تابلوی امتیازات رتبه اول شو!"
   },
   perfect_score: {
     name: "نمره کامل",
     icon: Star,
     color: "from-purple-400 to-purple-600",
-    description: "کسب نمره ۲۰ در یک تکلیف"
+    description: "کسب نمره ۲۰ در یک تکلیف",
+    howToGet: "در یک تکلیف نمره ۲۰ کامل بگیر!"
   },
   first_submission: {
     name: "اولین قدم",
     icon: Zap,
     color: "from-blue-400 to-blue-600",
-    description: "ارسال اولین تکلیف"
+    description: "ارسال اولین تکلیف",
+    howToGet: "اولین تکلیف خود را ارسال کن!"
   },
   streak_3: {
     name: "شروع خوب",
     icon: Flame,
     color: "from-yellow-400 to-orange-400",
-    description: "۳ روز فعالیت متوالی"
+    description: "۳ روز فعالیت متوالی",
+    howToGet: "۳ روز پشت سر هم تکلیف ارسال کن!"
   },
   streak_7: {
     name: "هفته فعال",
     icon: Flame,
     color: "from-orange-400 to-red-500",
-    description: "۷ روز فعالیت متوالی"
+    description: "۷ روز فعالیت متوالی",
+    howToGet: "یک هفته کامل هر روز فعالیت داشته باش!"
   },
   streak_30: {
     name: "ماه درخشان",
     icon: Flame,
     color: "from-red-500 to-pink-600",
-    description: "۳۰ روز فعالیت متوالی"
+    description: "۳۰ روز فعالیت متوالی",
+    howToGet: "یک ماه کامل هر روز فعالیت داشته باش!"
   },
   helper: {
     name: "یاریگر",
     icon: Heart,
     color: "from-pink-400 to-rose-500",
-    description: "کمک به همکلاسی‌ها"
+    description: "کمک به همکلاسی‌ها",
+    howToGet: "به ۵ همکلاسی در حل تکالیف کمک کن!"
   },
   fast_learner: {
     name: "یادگیری سریع",
     icon: Zap,
     color: "from-cyan-400 to-blue-500",
-    description: "ارسال زودهنگام تکالیف"
+    description: "ارسال زودهنگام تکالیف",
+    howToGet: "تکالیف را قبل از مهلت ارسال کن!"
   },
   early_bird: {
     name: "سحرخیز",
     icon: Zap,
     color: "from-amber-400 to-orange-500",
-    description: "۵ تکلیف زودتر از مهلت"
+    description: "۵ تکلیف زودتر از مهلت",
+    howToGet: "۵ تکلیف را قبل از مهلت ارسال کن!"
   },
   consistent: {
     name: "پایدار",
     icon: Target,
     color: "from-green-400 to-emerald-600",
-    description: "میانگین بالای ۱۵ در تمام دروس"
+    description: "میانگین بالای ۱۵ در تمام دروس",
+    howToGet: "میانگین نمراتت را بالای ۱۵ نگه دار!"
   },
   rising_star: {
     name: "ستاره در حال طلوع",
     icon: TrendingUp,
     color: "from-indigo-400 to-purple-500",
-    description: "بهبود چشمگیر در نمرات"
+    description: "بهبود چشمگیر در نمرات",
+    howToGet: "نمراتت را نسبت به هفته قبل بهتر کن!"
   },
   champion: {
     name: "قهرمان",
     icon: Trophy,
     color: "from-amber-400 to-yellow-500",
-    description: "کسب ۱۰۰۰ سکه"
+    description: "کسب ۱۰۰۰ سکه",
+    howToGet: "۱۰۰۰ سکه جمع کن!"
   },
   math_master: {
     name: "استاد ریاضی",
     icon: Medal,
     color: "from-blue-500 to-indigo-600",
-    description: "میانگین بالای ۱۸ در ریاضی"
+    description: "میانگین بالای ۱۸ در ریاضی",
+    howToGet: "در درس ریاضی میانگین بالای ۱۸ بگیر!"
   },
   science_master: {
     name: "استاد علوم",
     icon: Medal,
     color: "from-green-500 to-emerald-600",
-    description: "میانگین بالای ۱۸ در علوم"
+    description: "میانگین بالای ۱۸ در علوم",
+    howToGet: "در درس علوم میانگین بالای ۱۸ بگیر!"
   },
   literature_master: {
     name: "استاد فارسی",
     icon: Medal,
     color: "from-rose-500 to-pink-600",
-    description: "میانگین بالای ۱۸ در فارسی"
+    description: "میانگین بالای ۱۸ در فارسی",
+    howToGet: "در درس فارسی میانگین بالای ۱۸ بگیر!"
   },
   weekly_champion: {
     name: "قهرمان هفته",
     icon: Trophy,
     color: "from-cyan-400 to-blue-500",
-    description: "رتبه اول هفته"
+    description: "رتبه اول هفته",
+    howToGet: "در تابلوی هفتگی رتبه اول شو!"
   },
   monthly_champion: {
     name: "قهرمان ماه",
     icon: Crown,
     color: "from-purple-500 to-violet-600",
-    description: "رتبه اول ماه"
+    description: "رتبه اول ماه",
+    howToGet: "در تابلوی ماهانه رتبه اول شو!"
   },
   all_subjects: {
     name: "همه‌فن‌حریف",
     icon: Star,
     color: "from-violet-400 to-fuchsia-500",
-    description: "نمره بالای ۱۵ در همه دروس"
+    description: "نمره بالای ۱۵ در همه دروس",
+    howToGet: "در همه دروس میانگین بالای ۱۵ بگیر!"
   }
 };
 
-export default function BadgeCard({ badgeType, earned = false, earnedAt, size = "medium" }) {
+export default function BadgeCard({ badgeType, earned = false, earnedAt, size = "medium", onClick }) {
   const config = badgeConfigs[badgeType];
   if (!config) return null;
 
@@ -138,7 +156,8 @@ export default function BadgeCard({ badgeType, earned = false, earnedAt, size = 
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.05 }}
-      className={`relative ${earned ? '' : 'opacity-40 grayscale'}`}
+      onClick={() => onClick && onClick(badgeType, config)}
+      className={`relative cursor-pointer ${earned ? '' : 'opacity-40 grayscale'}`}
     >
       <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${config.color} p-1 shadow-lg`}>
         <div className="w-full h-full rounded-full bg-gray-900/80 flex items-center justify-center">
