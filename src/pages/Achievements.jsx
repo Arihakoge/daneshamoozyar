@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Star, Target, TrendingUp, Award, Flame, Zap, X } from "lucide-react";
+import { Trophy, Star, Target, TrendingUp, Award, Flame, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import BadgeCard, { badgeConfigs } from "@/components/gamification/BadgeCard";
-import LevelProgress from "@/components/gamification/LevelProgress";
+import LevelSystem, { calculateLevel, getLevelTier } from "@/components/gamification/LevelSystem";
+import BadgeDetailModal, { calculateBadgeProgress } from "@/components/gamification/BadgeDetailModal";
 import ProgressRing from "@/components/gamification/ProgressRing";
 import StreakDisplay from "@/components/gamification/StreakDisplay";
 import LeaderboardTabs from "@/components/gamification/LeaderboardTabs";
@@ -278,6 +279,43 @@ export default function Achievements() {
   const progressData = useMemo(() => getProgressData(), [submissions]);
   const subjectStats = useMemo(() => getSubjectStats(), [submissions, assignments]);
 
+  // آمار کاربر برای محاسبه پیشرفت نشان‌ها
+  const userStats = useMemo(() => {
+    const gradedSubs = submissions.filter(s => s.score !== null);
+    const perfectScores = submissions.filter(s => s.score === 20).length;
+    const earlySubmissions = submissions.filter(s => {
+      const assignment = assignments.find(a => a.id === s.assignment_id);
+      if (!assignment?.due_date) return false;
+      return new Date(s.created_date) < new Date(assignment.due_date);
+    }).length;
+
+    // محاسبه میانگین هر درس
+    const subjectStats = {};
+    submissions.forEach(sub => {
+      const assignment = assignments.find(a => a.id === sub.assignment_id);
+      if (assignment && sub.score !== null) {
+        if (!subjectStats[assignment.subject]) {
+          subjectStats[assignment.subject] = { total: 0, count: 0 };
+        }
+        subjectStats[assignment.subject].total += sub.score;
+        subjectStats[assignment.subject].count += 1;
+      }
+    });
+    Object.keys(subjectStats).forEach(key => {
+      subjectStats[key].average = subjectStats[key].total / subjectStats[key].count;
+    });
+
+    return {
+      totalSubmissions: submissions.length,
+      perfectScores,
+      currentStreak: streakData.current,
+      coins: user?.coins || 0,
+      averageScore: gradedSubs.length > 0 ? gradedSubs.reduce((sum, s) => sum + s.score, 0) / gradedSubs.length : 0,
+      earlySubmissions,
+      subjectStats
+    };
+  }, [submissions, assignments, streakData, user]);
+
   const handleBadgeClick = (badgeType, config) => {
     setSelectedBadge({ type: badgeType, config, earned: earnedBadgeTypes.includes(badgeType) });
   };
@@ -303,7 +341,7 @@ export default function Achievements() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <LevelProgress level={user?.level || 1} coins={user?.coins || 0} />
+          <LevelSystem coins={user?.coins || 0} showDetails={true} />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -475,53 +513,14 @@ export default function Achievements() {
           </CardContent>
         </Card>
       </motion.div>
-      {/* Badge Info Modal */}
-      <AnimatePresence>
-        {selectedBadge && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
-            onClick={() => setSelectedBadge(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="clay-card p-6 max-w-sm w-full text-center"
-              onClick={e => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setSelectedBadge(null)}
-                className="absolute top-4 left-4 text-gray-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              
-              <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${selectedBadge.config.color} p-1 shadow-lg mx-auto mb-4 ${!selectedBadge.earned ? 'opacity-50 grayscale' : ''}`}>
-                <div className="w-full h-full rounded-full bg-gray-900/80 flex items-center justify-center">
-                  <selectedBadge.config.icon className="w-12 h-12 text-white" />
-                </div>
-              </div>
-              
-              <h3 className="text-2xl font-bold text-white mb-2">{selectedBadge.config.name}</h3>
-              <p className="text-gray-400 mb-4">{selectedBadge.config.description}</p>
-              
-              <div className={`clay-card p-4 ${selectedBadge.earned ? 'bg-green-900/30' : 'bg-yellow-900/30'}`}>
-                {selectedBadge.earned ? (
-                  <p className="text-green-300 font-medium">✅ این نشان را کسب کرده‌اید!</p>
-                ) : (
-                  <>
-                    <p className="text-yellow-300 font-medium mb-1">🎯 چگونه کسب کنم؟</p>
-                    <p className="text-yellow-200 text-sm">{selectedBadge.config.howToGet}</p>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Badge Detail Modal */}
+      {selectedBadge && (
+        <BadgeDetailModal 
+          badge={selectedBadge} 
+          userStats={userStats} 
+          onClose={() => setSelectedBadge(null)} 
+        />
+      )}
     </div>
   );
 }
