@@ -230,12 +230,13 @@ export default function Achievements() {
   };
 
   const getCompletionRate = () => {
-    if (assignments.length === 0) return 0;
-    return Math.round((submissions.length / assignments.length) * 100);
+    if (!assignments || assignments.length === 0) return 0;
+    return Math.round(((submissions || []).length / assignments.length) * 100);
   };
 
   const getAverageScore = () => {
-    const graded = submissions.filter(s => s.score !== null);
+    if (!submissions || submissions.length === 0) return 0;
+    const graded = submissions.filter(s => s.score !== null && s.score !== undefined);
     if (graded.length === 0) return 0;
     return Math.round(graded.reduce((sum, s) => sum + s.score, 0) / graded.length);
   };
