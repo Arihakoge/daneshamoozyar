@@ -33,32 +33,41 @@ export default function Achievements() {
       setUser(currentUser);
 
       const userBadges = await base44.entities.Badge.filter({ user_id: currentUser.id });
-      setBadges(userBadges);
+      setBadges(userBadges || []);
 
       const userSubmissions = await base44.entities.Submission.filter({ student_id: currentUser.id });
-      setSubmissions(userSubmissions);
+      setSubmissions(userSubmissions || []);
 
       let gradeAssignments = [];
       if (currentUser.grade) {
         gradeAssignments = await base44.entities.Assignment.filter({ grade: currentUser.grade });
-        setAssignments(gradeAssignments);
+        setAssignments(gradeAssignments || []);
 
         // Load all students for leaderboard
-        const profiles = await base44.entities.PublicProfile.filter({ grade: currentUser.grade, student_role: "student" });
-        const allSubs = await base44.entities.Submission.list();
-        const studentsWithSubs = profiles.map(p => ({
-          ...p,
-          submissions: allSubs.filter(s => s.student_id === p.user_id)
-        }));
-        setAllStudents(studentsWithSubs);
+        try {
+          const profiles = await base44.entities.PublicProfile.filter({ grade: currentUser.grade, student_role: "student" });
+          const allSubs = await base44.entities.Submission.list();
+          const studentsWithSubs = (profiles || []).map(p => ({
+            ...p,
+            submissions: (allSubs || []).filter(s => s.student_id === p.user_id)
+          }));
+          setAllStudents(studentsWithSubs);
+        } catch (e) {
+          console.error("Error loading leaderboard:", e);
+          setAllStudents([]);
+        }
       }
 
       // Calculate streak
-      const streak = calculateStreak(userSubmissions);
+      const streak = calculateStreak(userSubmissions || []);
       setStreakData(streak);
 
       // Check and award badges
-      await checkAndAwardBadges(currentUser, userSubmissions, userBadges, gradeAssignments);
+      try {
+        await checkAndAwardBadges(currentUser, userSubmissions || [], userBadges || [], gradeAssignments || []);
+      } catch (e) {
+        console.error("Error checking badges:", e);
+      }
     } catch (error) {
       console.error("Error loading achievements:", error);
     }
