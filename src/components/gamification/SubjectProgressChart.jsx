@@ -83,11 +83,7 @@ export default function SubjectProgressChart({ subjectStats, viewType = "bar" })
             <XAxis type="number" domain={[0, 20]} stroke="#9CA3AF" />
             <YAxis dataKey="subject" type="category" stroke="#9CA3AF" width={60} />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="average" radius={[0, 8, 8, 0]}>
-              {chartData.map((entry, index) => (
-                <rect key={index} fill={entry.fill} />
-              ))}
-            </Bar>
+            <Bar dataKey="average" radius={[0, 8, 8, 0]} fill="#8B5CF6" />
           </BarChart>
         </ResponsiveContainer>
       )}
