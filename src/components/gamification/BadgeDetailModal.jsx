@@ -148,13 +148,13 @@ export const calculateBadgeProgress = (badgeType, userStats) => {
   return { progress, current, target };
 };
 
-export default function BadgeDetailModal({ badge, userStats, onClose }) {
-  if (!badge) return null;
+export default function BadgeDetailModal({ badge, userStats = {}, onClose }) {
+  if (!badge || !badge.config) return null;
 
   const { type, config, earned } = badge;
-  const requirements = badgeRequirements[type] || { steps: [], tips: [] };
-  const progressInfo = calculateBadgeProgress(type, userStats);
-  const Icon = config.icon;
+  const requirements = badgeRequirements[type] || { steps: ["این نشان را کسب کن!"], tips: [] };
+  const progressInfo = calculateBadgeProgress(type, userStats || {});
+  const Icon = config?.icon;
 
   return (
     <AnimatePresence>
@@ -182,17 +182,17 @@ export default function BadgeDetailModal({ badge, userStats, onClose }) {
           {/* آیکون نشان */}
           <div className="text-center mb-6">
             <motion.div 
-              className={`w-28 h-28 rounded-full bg-gradient-to-br ${config.color} p-1 shadow-2xl mx-auto mb-4 ${!earned ? 'opacity-50 grayscale' : ''}`}
+              className={`w-28 h-28 rounded-full bg-gradient-to-br ${config?.color || 'from-gray-400 to-gray-600'} p-1 shadow-2xl mx-auto mb-4 ${!earned ? 'opacity-50 grayscale' : ''}`}
               animate={earned ? { scale: [1, 1.05, 1] } : {}}
               transition={{ duration: 2, repeat: Infinity }}
             >
               <div className="w-full h-full rounded-full bg-gray-900/80 flex items-center justify-center">
-                <Icon className="w-14 h-14 text-white" />
+                {Icon && <Icon className="w-14 h-14 text-white" />}
               </div>
             </motion.div>
             
-            <h2 className="text-2xl font-bold text-white mb-1">{config.name}</h2>
-            <p className="text-gray-400">{config.description}</p>
+            <h2 className="text-2xl font-bold text-white mb-1">{config?.name || "نشان"}</h2>
+            <p className="text-gray-400">{config?.description || ""}</p>
           </div>
 
           {/* نوار پیشرفت */}
@@ -208,7 +208,7 @@ export default function BadgeDetailModal({ badge, userStats, onClose }) {
                 initial={{ width: 0 }}
                 animate={{ width: `${earned ? 100 : progressInfo.progress}%` }}
                 transition={{ duration: 1, ease: "easeOut" }}
-                className={`h-full rounded-full ${earned ? 'bg-gradient-to-r from-green-400 to-green-600' : `bg-gradient-to-r ${config.color}`}`}
+                className={`h-full rounded-full ${earned ? 'bg-gradient-to-r from-green-400 to-green-600' : `bg-gradient-to-r ${config?.color || 'from-purple-400 to-purple-600'}`}`}
               />
             </div>
             {!earned && (
