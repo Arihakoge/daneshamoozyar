@@ -220,39 +220,6 @@ export default function Achievements() {
     }
   };
 
-  const getProgressData = () => {
-    const sortedSubs = [...submissions]
-      .filter(s => s.score !== null)
-      .sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
-      .slice(-10);
-
-    return sortedSubs.map((s, i) => ({
-      name: `تکلیف ${i + 1}`,
-      score: s.score,
-      date: toPersianDate(s.created_date)
-    }));
-  };
-
-  const getSubjectStats = () => {
-    const stats = {};
-    submissions.forEach(sub => {
-      const assignment = assignments.find(a => a.id === sub.assignment_id);
-      if (assignment && sub.score !== null) {
-        if (!stats[assignment.subject]) {
-          stats[assignment.subject] = { total: 0, count: 0 };
-        }
-        stats[assignment.subject].total += sub.score;
-        stats[assignment.subject].count += 1;
-      }
-    });
-
-    return Object.entries(stats).map(([subject, data]) => ({
-      subject,
-      average: Math.round(data.total / data.count),
-      count: data.count
-    }));
-  };
-
   const getCompletionRate = () => {
     if (assignments.length === 0) return 0;
     return Math.round((submissions.length / assignments.length) * 100);
@@ -277,8 +244,39 @@ export default function Achievements() {
 
   const allBadgeTypes = useMemo(() => Object.keys(badgeConfigs), []);
   const earnedBadgeTypes = useMemo(() => badges.map(b => b.badge_type), [badges]);
-  const progressData = useMemo(() => getProgressData(), [submissions]);
-  const subjectStats = useMemo(() => getSubjectStats(), [submissions, assignments]);
+  
+  const progressData = useMemo(() => {
+    const sortedSubs = [...submissions]
+      .filter(s => s.score !== null)
+      .sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
+      .slice(-10);
+
+    return sortedSubs.map((s, i) => ({
+      name: `تکلیف ${i + 1}`,
+      score: s.score,
+      date: toPersianDate(s.created_date)
+    }));
+  }, [submissions]);
+  
+  const subjectStatsData = useMemo(() => {
+    const stats = {};
+    submissions.forEach(sub => {
+      const assignment = assignments.find(a => a.id === sub.assignment_id);
+      if (assignment && sub.score !== null) {
+        if (!stats[assignment.subject]) {
+          stats[assignment.subject] = { total: 0, count: 0 };
+        }
+        stats[assignment.subject].total += sub.score;
+        stats[assignment.subject].count += 1;
+      }
+    });
+
+    return Object.entries(stats).map(([subject, data]) => ({
+      subject,
+      average: Math.round(data.total / data.count),
+      count: data.count
+    }));
+  }, [submissions, assignments]);
 
   // آمار کاربر برای محاسبه پیشرفت نشان‌ها
   const userStats = useMemo(() => {
@@ -433,7 +431,7 @@ export default function Achievements() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <SubjectProgressChart subjectStats={subjectStats} viewType="bar" />
+          <SubjectProgressChart subjectStats={subjectStatsData} viewType="bar" />
         </motion.div>
       </div>
 
