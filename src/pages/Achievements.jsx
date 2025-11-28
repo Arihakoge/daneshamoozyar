@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Trophy, Star, Target, TrendingUp, Award, Flame, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import BadgeCard, { badgeConfigs } from "@/components/gamification/BadgeCard";
-import LevelSystem, { calculateLevel, getLevelTier } from "@/components/gamification/LevelSystem";
-import BadgeDetailModal, { calculateBadgeProgress } from "@/components/gamification/BadgeDetailModal";
+import LevelSystem from "@/components/gamification/LevelSystem";
+import BadgeDetailModal from "@/components/gamification/BadgeDetailModal";
 import ProgressRing from "@/components/gamification/ProgressRing";
 import StreakDisplay from "@/components/gamification/StreakDisplay";
 import LeaderboardTabs from "@/components/gamification/LeaderboardTabs";
