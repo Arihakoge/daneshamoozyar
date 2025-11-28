@@ -38,8 +38,9 @@ export default function Achievements() {
       const userSubmissions = await base44.entities.Submission.filter({ student_id: currentUser.id });
       setSubmissions(userSubmissions);
 
+      let gradeAssignments = [];
       if (currentUser.grade) {
-        const gradeAssignments = await base44.entities.Assignment.filter({ grade: currentUser.grade });
+        gradeAssignments = await base44.entities.Assignment.filter({ grade: currentUser.grade });
         setAssignments(gradeAssignments);
 
         // Load all students for leaderboard
@@ -57,7 +58,7 @@ export default function Achievements() {
       setStreakData(streak);
 
       // Check and award badges
-      await checkAndAwardBadges(currentUser, userSubmissions, userBadges, gradeAssignments || []);
+      await checkAndAwardBadges(currentUser, userSubmissions, userBadges, gradeAssignments);
     } catch (error) {
       console.error("Error loading achievements:", error);
     }
