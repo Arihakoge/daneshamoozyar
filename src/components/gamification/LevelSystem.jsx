@@ -37,20 +37,24 @@ export const getTotalXPForLevel = (level) => {
 
 // محاسبه لول بر اساس سکه‌ها
 export const calculateLevel = (coins) => {
+  const safeCoins = coins || 0;
   let level = 1;
   let totalXP = 0;
   
-  while (level < 100 && totalXP + getXPForLevel(level) <= coins) {
+  while (level < 100 && totalXP + getXPForLevel(level) <= safeCoins) {
     totalXP += getXPForLevel(level);
     level++;
   }
   
+  const xpForNext = getXPForLevel(level);
+  const currentXP = safeCoins - totalXP;
+  
   return {
     level,
-    currentXP: coins - totalXP,
-    xpForNextLevel: getXPForLevel(level),
-    totalXP: coins,
-    progress: Math.min(((coins - totalXP) / getXPForLevel(level)) * 100, 100)
+    currentXP: currentXP,
+    xpForNextLevel: xpForNext,
+    totalXP: safeCoins,
+    progress: xpForNext > 0 ? Math.min((currentXP / xpForNext) * 100, 100) : 0
   };
 };
 
