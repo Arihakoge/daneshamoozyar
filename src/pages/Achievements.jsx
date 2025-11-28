@@ -332,7 +332,9 @@ export default function Achievements() {
   }, [submissions, assignments, streakData, user]);
 
   const handleBadgeClick = (badgeType, config) => {
-    setSelectedBadge({ type: badgeType, config, earned: earnedBadgeTypes.includes(badgeType) });
+    if (badgeType && config) {
+      setSelectedBadge({ type: badgeType, config, earned: earnedBadgeTypes.includes(badgeType) });
+    }
   };
 
   return (
