@@ -2,12 +2,14 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Star, Zap } from "lucide-react";
 import { toPersianNumber } from "@/components/utils";
+import { calculateLevel, getLevelTier } from "./LevelSystem";
 
-export default function LevelProgress({ level, coins, xpForNextLevel = 100 }) {
-  const currentLevelXP = (level - 1) * xpForNextLevel;
-  const xpInCurrentLevel = coins - currentLevelXP;
-  const progress = Math.min((xpInCurrentLevel / xpForNextLevel) * 100, 100);
-  const xpNeeded = Math.max(xpForNextLevel - xpInCurrentLevel, 0);
+export default function LevelProgress({ level: propLevel, coins }) {
+  const levelInfo = calculateLevel(coins || 0);
+  const level = levelInfo.level;
+  const tier = getLevelTier(level);
+  const progress = levelInfo.progress;
+  const xpNeeded = levelInfo.xpForNextLevel - levelInfo.currentXP;
 
   return (
     <div className="clay-card p-6">
@@ -53,12 +55,12 @@ export default function LevelProgress({ level, coins, xpForNextLevel = 100 }) {
           <p className="text-xs text-gray-400">سطح فعلی</p>
         </div>
         <div className="clay-card p-3 text-center bg-yellow-900/30">
-          <p className="text-2xl font-bold text-yellow-300">{toPersianNumber(coins)}</p>
+          <p className="text-2xl font-bold text-yellow-300">{toPersianNumber(coins || 0)}</p>
           <p className="text-xs text-gray-400">کل سکه‌ها</p>
         </div>
-        <div className="clay-card p-3 text-center bg-green-900/30">
-          <p className="text-2xl font-bold text-green-300">{toPersianNumber(Math.round(progress))}%</p>
-          <p className="text-xs text-gray-400">پیشرفت</p>
+        <div className={`clay-card p-3 text-center bg-gradient-to-br ${tier.color} bg-opacity-30`}>
+          <p className="text-lg font-bold text-white">{tier.name}</p>
+          <p className="text-xs text-gray-200">رده فعلی</p>
         </div>
       </div>
     </div>
