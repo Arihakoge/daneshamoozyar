@@ -251,12 +251,13 @@ export default function Achievements() {
     );
   }
 
-  const allBadgeTypes = useMemo(() => Object.keys(badgeConfigs), []);
-  const earnedBadgeTypes = useMemo(() => badges.map(b => b.badge_type), [badges]);
+  const allBadgeTypes = Object.keys(badgeConfigs || {});
+  const earnedBadgeTypes = (badges || []).map(b => b.badge_type);
   
   const progressData = useMemo(() => {
+    if (!submissions || submissions.length === 0) return [];
     const sortedSubs = [...submissions]
-      .filter(s => s.score !== null)
+      .filter(s => s.score !== null && s.score !== undefined)
       .sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
       .slice(-10);
 
@@ -268,10 +269,11 @@ export default function Achievements() {
   }, [submissions]);
   
   const subjectStatsData = useMemo(() => {
+    if (!submissions || !assignments) return [];
     const stats = {};
     submissions.forEach(sub => {
       const assignment = assignments.find(a => a.id === sub.assignment_id);
-      if (assignment && sub.score !== null) {
+      if (assignment && sub.score !== null && sub.score !== undefined) {
         if (!stats[assignment.subject]) {
           stats[assignment.subject] = { total: 0, count: 0 };
         }
@@ -282,7 +284,7 @@ export default function Achievements() {
 
     return Object.entries(stats).map(([subject, data]) => ({
       subject,
-      average: Math.round(data.total / data.count),
+      average: data.count > 0 ? Math.round(data.total / data.count) : 0,
       count: data.count
     }));
   }, [submissions, assignments]);
