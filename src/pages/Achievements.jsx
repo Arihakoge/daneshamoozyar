@@ -291,19 +291,22 @@ export default function Achievements() {
 
   // آمار کاربر برای محاسبه پیشرفت نشان‌ها
   const userStats = useMemo(() => {
-    const gradedSubs = submissions.filter(s => s.score !== null);
-    const perfectScores = submissions.filter(s => s.score === 20).length;
-    const earlySubmissions = submissions.filter(s => {
-      const assignment = assignments.find(a => a.id === s.assignment_id);
+    const subs = submissions || [];
+    const assigns = assignments || [];
+    
+    const gradedSubs = subs.filter(s => s.score !== null && s.score !== undefined);
+    const perfectScores = subs.filter(s => s.score === 20).length;
+    const earlySubmissions = subs.filter(s => {
+      const assignment = assigns.find(a => a.id === s.assignment_id);
       if (!assignment?.due_date) return false;
       return new Date(s.created_date) < new Date(assignment.due_date);
     }).length;
 
     // محاسبه میانگین هر درس
     const subjectStats = {};
-    submissions.forEach(sub => {
-      const assignment = assignments.find(a => a.id === sub.assignment_id);
-      if (assignment && sub.score !== null) {
+    subs.forEach(sub => {
+      const assignment = assigns.find(a => a.id === sub.assignment_id);
+      if (assignment && sub.score !== null && sub.score !== undefined) {
         if (!subjectStats[assignment.subject]) {
           subjectStats[assignment.subject] = { total: 0, count: 0 };
         }
@@ -312,13 +315,15 @@ export default function Achievements() {
       }
     });
     Object.keys(subjectStats).forEach(key => {
-      subjectStats[key].average = subjectStats[key].total / subjectStats[key].count;
+      subjectStats[key].average = subjectStats[key].count > 0 
+        ? subjectStats[key].total / subjectStats[key].count 
+        : 0;
     });
 
     return {
-      totalSubmissions: submissions.length,
+      totalSubmissions: subs.length,
       perfectScores,
-      currentStreak: streakData.current,
+      currentStreak: streakData?.current || 0,
       coins: user?.coins || 0,
       averageScore: gradedSubs.length > 0 ? gradedSubs.reduce((sum, s) => sum + s.score, 0) / gradedSubs.length : 0,
       earlySubmissions,
