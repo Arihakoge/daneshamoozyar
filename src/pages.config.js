@@ -17,6 +17,11 @@ import EditProfile from './pages/EditProfile';
 import AdminEditUser from './pages/AdminEditUser';
 import TeacherReports from './pages/TeacherReports';
 import Achievements from './pages/Achievements';
+import LearningPaths from './pages/LearningPaths';
+import PathDetail from './pages/PathDetail';
+import TakeQuiz from './pages/TakeQuiz';
+import ViewLesson from './pages/ViewLesson';
+import ManageLearningPaths from './pages/ManageLearningPaths';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +45,11 @@ export const PAGES = {
     "AdminEditUser": AdminEditUser,
     "TeacherReports": TeacherReports,
     "Achievements": Achievements,
+    "LearningPaths": LearningPaths,
+    "PathDetail": PathDetail,
+    "TakeQuiz": TakeQuiz,
+    "ViewLesson": ViewLesson,
+    "ManageLearningPaths": ManageLearningPaths,
 }
 
 export const pagesConfig = {
