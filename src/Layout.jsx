@@ -185,6 +185,7 @@ export default function Layout({ children, currentPageName }) {
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "تابلوی امتیازات", url: createPageUrl("Scoreboard"), icon: Trophy },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
+        { title: "راهنما", url: createPageUrl("Help"), icon: HelpCircle },
       ];
     } else if (role === "teacher") {
       return [
