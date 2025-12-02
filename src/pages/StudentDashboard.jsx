@@ -182,6 +182,7 @@ export default function StudentDashboard() {
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <motion.div
+            id="upcoming-assignments"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
