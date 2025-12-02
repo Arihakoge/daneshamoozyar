@@ -116,7 +116,7 @@ export default function TeacherDashboard() {
           سلام استاد {user?.full_name || "محترم"}! 👨‍🏫
         </h1>
         <p className="text-gray-300 text-lg">
-          معلم {user?.subjects ? user.subjects.join("، ") : (user?.subject || "")}
+          معلم {(user?.teaching_assignments && user.teaching_assignments.length > 0) ? [...new Set(user.teaching_assignments.map(a => a.subject))].join("، ") : (user?.subjects ? user.subjects.join("، ") : (user?.subject || ""))}
         </p>
       </motion.div>
 

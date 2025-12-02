@@ -126,18 +126,23 @@ export default function TeacherAssignments() {
     setLoading(true);
     try {
       const currentUser = await base44.auth.me();
-      setUser(currentUser);
+      
+      // Fetch full profile to ensure we have the latest teaching assignments
+      const profiles = await base44.entities.PublicProfile.filter({ user_id: currentUser.id });
+      const userProfile = profiles.length > 0 ? profiles[0] : currentUser;
+      
+      setUser(userProfile); // Use the profile with full data
       const allClasses = await base44.entities.Class.list();
       setClasses(allClasses);
 
       // Initialize dropdown options
-      if (currentUser.teaching_assignments && currentUser.teaching_assignments.length > 0) {
+      if (userProfile.teaching_assignments && userProfile.teaching_assignments.length > 0) {
         // Modern structure
-        const subjs = [...new Set(currentUser.teaching_assignments.map(a => a.subject))];
+        const subjs = [...new Set(userProfile.teaching_assignments.map(a => a.subject))];
         setAvailableSubjects(subjs);
       } else {
         // Legacy structure
-        setAvailableSubjects(currentUser.subjects || (currentUser.subject ? [currentUser.subject] : []));
+        setAvailableSubjects(userProfile.subjects || (userProfile.subject ? [userProfile.subject] : []));
       }
 
       const teacherAssignments = await base44.entities.Assignment.filter({
