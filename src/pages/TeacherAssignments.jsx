@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,6 +99,7 @@ export default function TeacherAssignments() {
   const [assignments, setAssignments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -109,39 +110,48 @@ export default function TeacherAssignments() {
     description: "",
     due_date: "",
     max_score: 20,
-    coins_reward: 10
+    coins_reward: 10,
+    grade: "",
+    subject: "",
+    class_id: ""
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
+      const allClasses = await base44.entities.Class.list();
+      setClasses(allClasses);
 
+      // Load assignments created by this teacher
       const teacherAssignments = await base44.entities.Assignment.filter({
-        teacher_id: currentUser.id,
-        grade: currentUser.grade,
-        subject: currentUser.subject
+        teacher_id: currentUser.id
       }, "-created_date");
       setAssignments(teacherAssignments);
       
       const assignmentIds = teacherAssignments.map(a => a.id);
-      const allSubmissions = await base44.entities.Submission.list();
-      const filteredSubmissions = allSubmissions.filter(s => assignmentIds.includes(s.assignment_id));
-      setSubmissions(filteredSubmissions);
+      if (assignmentIds.length > 0) {
+        const allSubmissions = await base44.entities.Submission.list();
+        const filteredSubmissions = allSubmissions.filter(s => assignmentIds.includes(s.assignment_id));
+        setSubmissions(filteredSubmissions);
+      } else {
+        setSubmissions([]);
+      }
 
+      // Load all students (can be optimized to filter later)
       const allUsers = await base44.entities.User.list();
-      setStudents(allUsers.filter(u => u.grade === currentUser.grade && u.student_role === 'student'));
+      setStudents(allUsers.filter(u => u.student_role === 'student'));
       
     } catch (error) {
       console.error("خطا در بارگیری داده‌ها:", error);
     }
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
   
   const handleCreateAssignment = async (e) => {
     e.preventDefault();
@@ -151,12 +161,10 @@ export default function TeacherAssignments() {
       await base44.entities.Assignment.create({ 
         ...newAssignment, 
         teacher_id: user.id,
-        grade: user.grade,
-        subject: user.subject,
         is_active: true 
       });
       setCreateModalOpen(false);
-      setNewAssignment({ title: "", description: "", due_date: "", max_score: 20, coins_reward: 10 });
+      setNewAssignment({ title: "", description: "", due_date: "", max_score: 20, coins_reward: 10, grade: "", subject: "", class_id: "" });
       loadData();
     } catch(error) {
       console.error("خطا در ایجاد تکلیف:", error);
@@ -183,15 +191,18 @@ export default function TeacherAssignments() {
     );
   }
 
+  const availableSubjects = user?.subjects || (user?.subject ? [user.subject] : []);
+  const availableGrades = ["هفتم", "هشتم", "نهم"];
+
   return (
     <div className="max-w-7xl mx-auto">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
             <FileText className="w-10 h-10 text-purple-500" />
-            تکالیف {user?.subject} - پایه {user?.grade}
+            مدیریت تکالیف
           </h1>
-          <p className="text-gray-300 text-lg">مدیریت تکالیف درس خود</p>
+          <p className="text-gray-300 text-lg">تکالیف خود را ایجاد و مدیریت کنید</p>
         </div>
         <Button 
           onClick={() => setCreateModalOpen(true)} 
@@ -212,13 +223,18 @@ export default function TeacherAssignments() {
             <Card className="clay-card h-full flex flex-col">
               <CardHeader>
                 <CardTitle className="text-xl text-white">{assignment.title}</CardTitle>
-                <div className="flex gap-2 mt-2">
+                <div className="flex gap-2 mt-2 flex-wrap">
                   <Badge className="bg-purple-500/20 text-purple-300">
                     {assignment.subject}
                   </Badge>
                   <Badge className="bg-blue-500/20 text-blue-300">
                     {assignment.grade}
                   </Badge>
+                  {assignment.class_id && (
+                    <Badge className="bg-green-500/20 text-green-300">
+                      {classes.find(c => c.id === assignment.class_id)?.name || "کلاس"}
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -284,63 +300,124 @@ export default function TeacherAssignments() {
                   <X className="w-5 h-5" />
                 </Button>
               </div>
-              <p className="text-gray-400 mb-4">برای: {user?.subject} - پایه {user?.grade}</p>
-              <form onSubmit={handleCreateAssignment} className="space-y-4">
-                <Input 
-                  placeholder="عنوان تکلیف" 
-                  value={newAssignment.title} 
-                  onChange={e => setNewAssignment({...newAssignment, title: e.target.value})} 
-                  required 
-                  className="clay-card text-white"
-                />
-                <Textarea 
-                  placeholder="توضیحات" 
-                  value={newAssignment.description} 
-                  onChange={e => setNewAssignment({...newAssignment, description: e.target.value})} 
-                  required 
-                  className="clay-card text-white"
-                />
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">مهلت تحویل</label>
-                  <PersianDatePicker
-                    value={newAssignment.due_date}
-                    onChange={(date) => setNewAssignment({...newAssignment, due_date: date})}
-                    placeholder="انتخاب تاریخ مهلت"
+              
+              {availableSubjects.length === 0 ? (
+                <div className="text-center text-red-400 mb-4">
+                  شما هنوز درسی برای تدریس ندارید. لطفاً با مدیر تماس بگیرید.
+                </div>
+              ) : (
+                <form onSubmit={handleCreateAssignment} className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">عنوان تکلیف</label>
+                    <Input 
+                      placeholder="مثال: حل تمرینات صفحه ۲۰" 
+                      value={newAssignment.title} 
+                      onChange={e => setNewAssignment({...newAssignment, title: e.target.value})} 
+                      required 
+                      className="clay-card text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">درس</label>
+                    <select
+                      value={newAssignment.subject}
+                      onChange={e => setNewAssignment({...newAssignment, subject: e.target.value})}
+                      required
+                      className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
+                    >
+                      <option value="">انتخاب کنید</option>
+                      {availableSubjects.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-1">پایه</label>
+                      <select
+                        value={newAssignment.grade}
+                        onChange={e => setNewAssignment({...newAssignment, grade: e.target.value, class_id: ""})}
+                        required
+                        className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
+                      >
+                        <option value="">انتخاب کنید</option>
+                        {availableGrades.map(g => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-1">کلاس (اختیاری)</label>
+                      <select
+                        value={newAssignment.class_id}
+                        onChange={e => setNewAssignment({...newAssignment, class_id: e.target.value})}
+                        className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
+                        disabled={!newAssignment.grade}
+                      >
+                        <option value="">همه کلاس‌های پایه</option>
+                        {classes.filter(c => c.grade === newAssignment.grade).map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <Textarea 
+                    placeholder="توضیحات" 
+                    value={newAssignment.description} 
+                    onChange={e => setNewAssignment({...newAssignment, description: e.target.value})} 
+                    required 
+                    className="clay-card text-white"
                   />
-                </div>
-                <Input 
-                  type="number" 
-                  placeholder="حداکثر نمره" 
-                  value={newAssignment.max_score} 
-                  onChange={e => setNewAssignment({...newAssignment, max_score: parseInt(e.target.value, 10) || 0})} 
-                  required 
-                  className="clay-card text-white"
-                />
-                <Input 
-                  type="number" 
-                  placeholder="پاداش سکه" 
-                  value={newAssignment.coins_reward} 
-                  onChange={e => setNewAssignment({...newAssignment, coins_reward: parseInt(e.target.value, 10) || 0})} 
-                  required 
-                  className="clay-card text-white"
-                />
-                <div className="flex gap-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setCreateModalOpen(false)} 
-                    className="flex-1 clay-button text-white"
-                  >
-                    انصراف
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="flex-1 clay-button bg-purple-500 text-white hover:bg-purple-600"
-                  >
-                    ایجاد
-                  </Button>
-                </div>
-              </form>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">مهلت تحویل</label>
+                    <PersianDatePicker
+                      value={newAssignment.due_date}
+                      onChange={(date) => setNewAssignment({...newAssignment, due_date: date})}
+                      placeholder="انتخاب تاریخ مهلت"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input 
+                      type="number" 
+                      placeholder="حداکثر نمره" 
+                      value={newAssignment.max_score} 
+                      onChange={e => setNewAssignment({...newAssignment, max_score: parseInt(e.target.value, 10) || 0})} 
+                      required 
+                      className="clay-card text-white"
+                    />
+                    <Input 
+                      type="number" 
+                      placeholder="پاداش سکه" 
+                      value={newAssignment.coins_reward} 
+                      onChange={e => setNewAssignment({...newAssignment, coins_reward: parseInt(e.target.value, 10) || 0})} 
+                      required 
+                      className="clay-card text-white"
+                    />
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setCreateModalOpen(false)} 
+                      className="flex-1 clay-button text-white"
+                    >
+                      انصراف
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="flex-1 clay-button bg-purple-500 text-white hover:bg-purple-600"
+                    >
+                      ایجاد
+                    </Button>
+                  </div>
+                </form>
+              )}
             </motion.div>
           </motion.div>
         )}
