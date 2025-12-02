@@ -22,22 +22,24 @@ export default function TeacherScoreboard() {
       const user = await base44.auth.me();
       setCurrentUser(user);
 
+      // Fetch all assignments created by this teacher
       const teacherAssignments = await base44.entities.Assignment.filter({
-        teacher_id: user.id,
-        grade: user.grade,
-        subject: user.subject
+        teacher_id: user.id
       });
       const teacherAssignmentIds = teacherAssignments.map(a => a.id);
+      const taughtGrades = [...new Set(teacherAssignments.map(a => a.grade))];
 
       const allPublicProfiles = await base44.entities.PublicProfile.list();
-      const gradeStudents = allPublicProfiles.filter(p => 
-        p.grade === user.grade && p.student_role === "student"
+      // Filter students who are in the grades taught by this teacher
+      const relevantStudents = allPublicProfiles.filter(p => 
+        taughtGrades.includes(p.grade) && p.student_role === "student"
       );
       
       const studentsWithStats = await Promise.all(
-        gradeStudents.map(async (student) => {
+        relevantStudents.map(async (student) => {
           const allSubmissions = await base44.entities.Submission.filter({ student_id: student.user_id });
           
+          // Only consider submissions for assignments created by this teacher
           const relevantSubmissions = allSubmissions.filter(s => teacherAssignmentIds.includes(s.assignment_id));
           
           let filteredSubmissions = relevantSubmissions;
@@ -70,6 +72,8 @@ export default function TeacherScoreboard() {
         })
       );
 
+      // Filter out students with 0 activity if list is too long, or keep all?
+      // Let's keep all but sort them.
       studentsWithStats.sort((a, b) => {
         if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
         return b.gradedSubmissions - a.gradedSubmissions;
@@ -132,7 +136,7 @@ export default function TeacherScoreboard() {
           <Trophy className="w-12 h-12 text-yellow-500" />
         </div>
         <p className="text-gray-300 text-lg text-center">
-          رتبه‌بندی دانش‌آموزان {currentUser?.subject} پایه {currentUser?.grade}
+          رتبه‌بندی عملکرد دانش‌آموزان در دروس شما
         </p>
       </motion.div>
 
@@ -284,6 +288,7 @@ export default function TeacherScoreboard() {
                           <span>📚 {student.totalSubmissions} ارسالی</span>
                           <span>✅ {toPersianNumber(student.gradedSubmissions)} نمره‌دهی شده</span>
                           <span>🏆 سطح {toPersianNumber(student.level)}</span>
+                          <span>🎓 {student.grade}</span>
                         </div>
                       </div>
 
