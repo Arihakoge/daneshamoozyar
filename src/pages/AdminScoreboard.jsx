@@ -18,8 +18,13 @@ export default function AdminScoreboard() {
 
   const loadScoreboardData = async () => {
     try {
+      const allUsers = await base44.entities.User.list();
+      const validUserIds = allUsers.map(u => u.id);
+
       const allPublicProfiles = await base44.entities.PublicProfile.list();
-      let studentProfiles = allPublicProfiles.filter(p => p.student_role === "student");
+      let studentProfiles = allPublicProfiles.filter(p => 
+        p.student_role === "student" && validUserIds.includes(p.user_id)
+      );
       
       if (selectedGrade !== "all") {
         studentProfiles = studentProfiles.filter(s => s.grade === selectedGrade);

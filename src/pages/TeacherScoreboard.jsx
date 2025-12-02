@@ -29,10 +29,15 @@ export default function TeacherScoreboard() {
       const teacherAssignmentIds = teacherAssignments.map(a => a.id);
       const taughtGrades = [...new Set(teacherAssignments.map(a => a.grade))];
 
+      const allUsers = await base44.entities.User.list();
+      const validUserIds = allUsers.map(u => u.id);
+
       const allPublicProfiles = await base44.entities.PublicProfile.list();
-      // Filter students who are in the grades taught by this teacher
+      // Filter students who are in the grades taught by this teacher AND exist in Users
       const relevantStudents = allPublicProfiles.filter(p => 
-        taughtGrades.includes(p.grade) && p.student_role === "student"
+        taughtGrades.includes(p.grade) && 
+        p.student_role === "student" &&
+        validUserIds.includes(p.user_id)
       );
       
       const studentsWithStats = await Promise.all(

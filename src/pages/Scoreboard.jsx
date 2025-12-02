@@ -21,8 +21,13 @@ export default function Scoreboard() {
       const user = await base44.auth.me();
       setCurrentUser(user);
 
+      const allUsers = await base44.entities.User.list();
+      const validUserIds = allUsers.map(u => u.id);
+      
       const allPublicProfiles = await base44.entities.PublicProfile.list();
-      const studentProfiles = allPublicProfiles.filter(profile => profile.student_role === "student");
+      const studentProfiles = allPublicProfiles.filter(profile => 
+        profile.student_role === "student" && validUserIds.includes(profile.user_id)
+      );
 
       const allSubmissions = await base44.entities.Submission.list();
       
