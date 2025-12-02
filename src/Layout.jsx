@@ -169,8 +169,12 @@ export default function Layout({ children, currentPageName }) {
       } else {
         await base44.entities.PublicProfile.create(profileData);
       }
+      
+      // Reload to ensure all child components get fresh data and tours can start
+      window.location.reload();
     } catch (error) {
       console.error("خطا در بروزرسانی پروفایل عمومی پس از تکمیل تنظیمات:", error);
+      window.location.reload();
     }
   };
 
