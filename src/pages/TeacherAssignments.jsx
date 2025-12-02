@@ -120,6 +120,7 @@ export default function TeacherAssignments() {
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [availableGrades, setAvailableGrades] = useState([]);
   const [availableClasses, setAvailableClasses] = useState([]);
+  const [canAssignToAllClasses, setCanAssignToAllClasses] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
