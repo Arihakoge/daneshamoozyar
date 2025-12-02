@@ -88,11 +88,9 @@ export default function Layout({ children, currentPageName }) {
         user = await base44.auth.me();
       }
 
-      // Check if profile is complete
-      // For students: Name, Grade, and Class are required
-      // For others: Name is required (Teachers' subjects are set by admin, so we don't block them here)
       const needsProfileCompletion = !user.full_name || user.full_name.trim() === "" ||
-                                     (user.student_role === "student" && (!user.grade || !user.class_id));
+                                     (user.student_role === "student" && !user.grade) ||
+                                     (user.student_role === "teacher" && (!user.grade || !user.subject));
 
       if (needsProfileCompletion) {
         setShowProfileSetup(true);
@@ -171,12 +169,8 @@ export default function Layout({ children, currentPageName }) {
       } else {
         await base44.entities.PublicProfile.create(profileData);
       }
-      
-      // Reload to ensure all child components get fresh data and tours can start
-      window.location.reload();
     } catch (error) {
       console.error("خطا در بروزرسانی پروفایل عمومی پس از تکمیل تنظیمات:", error);
-      window.location.reload();
     }
   };
 
