@@ -132,7 +132,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <TourGuide tourId="student_dashboard_tour_v1" steps={tourSteps} />
+      {user?.grade && <TourGuide tourId="student_dashboard_tour_v1" steps={tourSteps} />}
       <motion.div
         id="dashboard-header"
         initial={{ opacity: 0, y: -20 }}
