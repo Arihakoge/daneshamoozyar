@@ -131,7 +131,9 @@ export default function TeacherDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <TourGuide tourId="teacher_dashboard_tour_v1" steps={tourSteps} />
+      {(user?.subject || (user?.teaching_assignments && user.teaching_assignments.length > 0)) && 
+        <TourGuide tourId="teacher_dashboard_tour_v1" steps={tourSteps} />
+      }
       <motion.div 
         id="teacher-header"
         initial={{ opacity: 0, y: -20 }}
