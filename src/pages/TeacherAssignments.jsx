@@ -116,6 +116,11 @@ export default function TeacherAssignments() {
     class_id: ""
   });
 
+  // Derived options for dropdowns
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [availableGrades, setAvailableGrades] = useState([]);
+  const [availableClasses, setAvailableClasses] = useState([]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -124,7 +129,16 @@ export default function TeacherAssignments() {
       const allClasses = await base44.entities.Class.list();
       setClasses(allClasses);
 
-      // Load assignments created by this teacher
+      // Initialize dropdown options
+      if (currentUser.teaching_assignments && currentUser.teaching_assignments.length > 0) {
+        // Modern structure
+        const subjs = [...new Set(currentUser.teaching_assignments.map(a => a.subject))];
+        setAvailableSubjects(subjs);
+      } else {
+        // Legacy structure
+        setAvailableSubjects(currentUser.subjects || (currentUser.subject ? [currentUser.subject] : []));
+      }
+
       const teacherAssignments = await base44.entities.Assignment.filter({
         teacher_id: currentUser.id
       }, "-created_date");
@@ -139,7 +153,6 @@ export default function TeacherAssignments() {
         setSubmissions([]);
       }
 
-      // Load all students (can be optimized to filter later)
       const allUsers = await base44.entities.User.list();
       setStudents(allUsers.filter(u => u.student_role === 'student'));
       
@@ -152,6 +165,54 @@ export default function TeacherAssignments() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Update available grades when subject changes
+  useEffect(() => {
+    if (!user) return;
+    if (user.teaching_assignments && user.teaching_assignments.length > 0) {
+      // Filter assignments by selected subject
+      if (newAssignment.subject) {
+        const relevant = user.teaching_assignments.filter(a => a.subject === newAssignment.subject);
+        const grades = [...new Set(relevant.map(a => a.grade))];
+        setAvailableGrades(grades);
+      } else {
+        setAvailableGrades([]);
+      }
+    } else {
+      // Legacy: show all grades if fallback
+      setAvailableGrades(["هفتم", "هشتم", "نهم"]);
+    }
+  }, [newAssignment.subject, user]);
+
+  // Update available classes when grade changes (and subject is set)
+  useEffect(() => {
+    if (!user) return;
+    if (!newAssignment.grade || !newAssignment.subject) {
+      setAvailableClasses([]);
+      return;
+    }
+
+    if (user.teaching_assignments && user.teaching_assignments.length > 0) {
+      const relevant = user.teaching_assignments.filter(a => 
+        a.subject === newAssignment.subject && a.grade === newAssignment.grade
+      );
+      
+      // Check if any assignment allows "All classes" (class_id is empty/null)
+      const allowsAll = relevant.some(a => !a.class_id);
+      
+      if (allowsAll) {
+        // If allowed all, show all classes for that grade from the classes list
+        setAvailableClasses(classes.filter(c => c.grade === newAssignment.grade));
+      } else {
+        // Only specific classes allowed
+        const allowedClassIds = relevant.map(a => a.class_id).filter(Boolean);
+        setAvailableClasses(classes.filter(c => allowedClassIds.includes(c.id)));
+      }
+    } else {
+      // Legacy: all classes of that grade
+      setAvailableClasses(classes.filter(c => c.grade === newAssignment.grade));
+    }
+  }, [newAssignment.grade, newAssignment.subject, user, classes]);
   
   const handleCreateAssignment = async (e) => {
     e.preventDefault();
@@ -190,9 +251,6 @@ export default function TeacherAssignments() {
       </div>
     );
   }
-
-  const availableSubjects = user?.subjects || (user?.subject ? [user.subject] : []);
-  const availableGrades = ["هفتم", "هشتم", "نهم"];
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -322,7 +380,7 @@ export default function TeacherAssignments() {
                     <label className="block text-sm text-gray-300 mb-1">درس</label>
                     <select
                       value={newAssignment.subject}
-                      onChange={e => setNewAssignment({...newAssignment, subject: e.target.value})}
+                      onChange={e => setNewAssignment({...newAssignment, subject: e.target.value, grade: "", class_id: ""})}
                       required
                       className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
                     >
@@ -341,6 +399,7 @@ export default function TeacherAssignments() {
                         onChange={e => setNewAssignment({...newAssignment, grade: e.target.value, class_id: ""})}
                         required
                         className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
+                        disabled={!newAssignment.subject}
                       >
                         <option value="">انتخاب کنید</option>
                         {availableGrades.map(g => (
@@ -357,7 +416,7 @@ export default function TeacherAssignments() {
                         disabled={!newAssignment.grade}
                       >
                         <option value="">همه کلاس‌های پایه</option>
-                        {classes.filter(c => c.grade === newAssignment.grade).map(c => (
+                        {availableClasses.map(c => (
                           <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                       </select>
