@@ -204,12 +204,12 @@ export default function AdminScoreboard() {
                       {student.profile_image_url ? (
                         <img src={student.profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                       ) : (
-                        (student.display_name || student.full_name || "?").charAt(0)
+                        (student.full_name || "?").charAt(0)
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-white truncate">{student.display_name || student.full_name}</h3>
+                      <h3 className="font-bold text-white truncate">{student.full_name}</h3>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 mt-1">
                         <span className="flex items-center gap-1">
                           <GraduationCap className="w-3 h-3 text-slate-500" /> 

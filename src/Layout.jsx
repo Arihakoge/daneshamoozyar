@@ -371,12 +371,12 @@ export default function Layout({ children, currentPageName }) {
                         className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
                         style={{ backgroundColor: currentUser.avatar_color }}
                       >
-                        {(currentUser.display_name || currentUser.full_name || "ک").charAt(0)}
+                        {(currentUser.full_name || "ک").charAt(0)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-gray-200 truncate">
-                        {currentUser.display_name || currentUser.full_name || "کاربر"}
+                        {currentUser.full_name || "کاربر"}
                       </p>
                       <p className="text-sm text-gray-400 truncate">
                         {currentUser.student_role === "teacher" && `معلم ${(currentUser.teaching_assignments && currentUser.teaching_assignments.length > 0) ? [...new Set(currentUser.teaching_assignments.map(a => a.subject))].join("، ") : (currentUser.subjects ? currentUser.subjects.join("، ") : (currentUser.subject || ""))}`}
