@@ -200,7 +200,7 @@ export default function AdminUsers() {
                         >
                           {(user.full_name || "?").charAt(0)}
                         </div>
-                        {user.full_name}
+                        {user.display_name || user.full_name}
                       </div>
                     </TableCell>
                     <TableCell>
