@@ -36,22 +36,28 @@ export default function Layout({ children, currentPageName }) {
   const initializeClasses = useCallback(async () => {
     const existingClasses = await base44.entities.Class.list();
 
-    if (existingClasses.length === 0) {
+    if (existingClasses.length < 9) {
       console.log("ایجاد کلاس‌های پایه سیستم...");
 
-      const baseClasses = [
-        { name: "کلاس هفتم", grade: "هفتم", description: "کلاس پایه هفتم متوسطه اول" },
-        { name: "کلاس هشتم", grade: "هشتم", description: "کلاس پایه هشتم متوسطه اول" },
-        { name: "کلاس نهم", grade: "نهم", description: "کلاس پایه نهم متوسطه اول" }
-      ];
-
-      for (const classData of baseClasses) {
-        await base44.entities.Class.create({
-          ...classData,
-          color: getRandomColor()
-        });
+      const grades = ["هفتم", "هشتم", "نهم"];
+      const sections = ["الف", "ب", "ج"];
+      
+      for (const grade of grades) {
+        for (const section of sections) {
+          const className = `کلاس ${grade} - ${section}`;
+          const exists = existingClasses.find(c => c.name === className && c.grade === grade);
+          
+          if (!exists) {
+            await base44.entities.Class.create({
+              name: className,
+              grade: grade,
+              section: section,
+              description: `کلاس ${section} پایه ${grade}`,
+              color: getRandomColor()
+            });
+          }
+        }
       }
-
       console.log("کلاس‌های پایه ایجاد شدند");
     }
   }, [getRandomColor]);
