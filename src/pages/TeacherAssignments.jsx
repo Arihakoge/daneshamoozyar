@@ -412,14 +412,19 @@ export default function TeacherAssignments() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-300 mb-1">کلاس (اختیاری)</label>
+                      <label className="block text-sm text-gray-300 mb-1">کلاس {canAssignToAllClasses ? "(اختیاری)" : "(اجباری)"}</label>
                       <select
                         value={newAssignment.class_id}
                         onChange={e => setNewAssignment({...newAssignment, class_id: e.target.value})}
                         className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
                         disabled={!newAssignment.grade}
+                        required={!canAssignToAllClasses}
                       >
-                        <option value="">همه کلاس‌های پایه</option>
+                        {canAssignToAllClasses ? (
+                          <option value="">همه کلاس‌های پایه</option>
+                        ) : (
+                          <option value="" disabled>یک کلاس انتخاب کنید</option>
+                        )}
                         {availableClasses.map(c => (
                           <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
