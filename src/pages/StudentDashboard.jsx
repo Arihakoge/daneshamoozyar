@@ -60,7 +60,11 @@ export default function StudentDashboard() {
           { grade: currentUser.grade }, 
           "-created_date"
         );
-        setAssignments(gradeAssignments);
+        
+        const filteredAssignments = gradeAssignments.filter(a => 
+          !a.class_id || (currentUser.class_id && a.class_id === currentUser.class_id)
+        );
+        setAssignments(filteredAssignments);
 
         const userSubmissions = await base44.entities.Submission.filter(
           { student_id: currentUser.id }, 
