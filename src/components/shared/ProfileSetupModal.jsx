@@ -9,34 +9,45 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
   const [formData, setFormData] = useState({
     full_name: "",
     grade: "",
-    subject: ""
+    class_id: ""
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [gradeOpen, setGradeOpen] = useState(false);
-  const [subjectOpen, setSubjectOpen] = useState(false);
+  const [classOpen, setClassOpen] = useState(false);
+  const [availableClasses, setAvailableClasses] = useState([]);
 
   useEffect(() => {
     if (currentUser) {
       setFormData({
         full_name: currentUser.full_name || "",
         grade: currentUser.grade || "",
-        subject: currentUser.subject || ""
+        class_id: currentUser.class_id || ""
       });
     }
+    loadClasses();
   }, [currentUser]);
+
+  const loadClasses = async () => {
+    try {
+      const classes = await base44.entities.Class.list();
+      setAvailableClasses(classes);
+    } catch (e) {
+      console.error("Error loading classes", e);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = () => {
       setGradeOpen(false);
-      setSubjectOpen(false);
+      setClassOpen(false);
     };
     
-    if (gradeOpen || subjectOpen) {
+    if (gradeOpen || classOpen) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [gradeOpen, subjectOpen]);
+  }, [gradeOpen, classOpen]);
 
   if (!isOpen || !currentUser) return null;
 
@@ -49,37 +60,51 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
       return;
     }
 
-    if (!formData.grade) {
-      setError("لطفاً پایه تحصیلی را انتخاب کنید");
-      return;
-    }
-
-    if (currentUser.student_role === "teacher" && !formData.subject) {
-      setError("لطفاً درس تخصصی خود را انتخاب کنید");
-      return;
+    if (currentUser.student_role === "student") {
+      if (!formData.grade) {
+        setError("لطفاً پایه تحصیلی را انتخاب کنید");
+        return;
+      }
+      if (!formData.class_id) {
+        setError("لطفاً کلاس خود را انتخاب کنید");
+        return;
+      }
     }
 
     setLoading(true);
     try {
-      await base44.auth.updateMe({
+      const updateData = {
         full_name: formData.full_name.trim(),
         display_name: formData.full_name.trim(),
-        grade: formData.grade,
-        ...(currentUser.student_role === "teacher" && { subject: formData.subject })
-      });
+      };
+
+      if (currentUser.student_role === "student") {
+        updateData.grade = formData.grade;
+        updateData.class_id = formData.class_id;
+      }
+
+      await base44.auth.updateMe(updateData);
       
       try {
-        await base44.entities.PublicProfile.create({
+        const profiles = await base44.entities.PublicProfile.filter({ user_id: currentUser.id });
+        const profileData = {
           user_id: currentUser.id,
           full_name: formData.full_name.trim(),
           display_name: formData.full_name.trim(),
-          grade: formData.grade,
           student_role: currentUser.student_role,
           avatar_color: currentUser.avatar_color || "#8B5CF6",
           profile_image_url: currentUser.profile_image_url || "",
           coins: currentUser.coins || 0,
-          level: currentUser.level || 1
-        });
+          level: currentUser.level || 1,
+          grade: updateData.grade || "",
+          class_id: updateData.class_id || ""
+        };
+
+        if (profiles.length > 0) {
+          await base44.entities.PublicProfile.update(profiles[0].id, profileData);
+        } else {
+          await base44.entities.PublicProfile.create(profileData);
+        }
       } catch (publicProfileError) {
         console.error("خطا در ایجاد پروفایل عمومی:", publicProfileError);
       }
@@ -101,17 +126,8 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
     return titles[role] || "کاربر محترم";
   };
 
-  const getRoleDescription = (role) => {
-    const descriptions = {
-      teacher: "لطفاً اطلاعات خود را برای شروع تدریس تکمیل کنید",
-      student: "لطفاً اطلاعات خود را برای شروع یادگیری تکمیل کنید",
-      admin: "لطفاً اطلاعات خود را تکمیل کنید"
-    };
-    return descriptions[role] || "لطفاً اطلاعات خود را تکمیل کنید";
-  };
-
   const grades = ["هفتم", "هشتم", "نهم"];
-  const subjects = ["ریاضی", "علوم", "فارسی", "زبان", "عربی"];
+  const filteredClasses = availableClasses.filter(c => c.grade === formData.grade);
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
@@ -129,9 +145,6 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
           </h2>
           <p className="text-gray-300">
             {getRoleTitle(currentUser.student_role)}
-          </p>
-          <p className="text-gray-400 text-sm mt-2">
-            {getRoleDescription(currentUser.student_role)}
           </p>
         </div>
 
@@ -151,86 +164,100 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
             />
           </div>
 
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {currentUser.student_role === "teacher" ? "پایه تدریس *" : "پایه تحصیلی *"}
-            </label>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setGradeOpen(!gradeOpen);
-                setSubjectOpen(false);
-              }}
-              className="clay-card w-full p-3 text-white text-right flex items-center justify-between hover:bg-gray-700/30 transition-colors"
-            >
-              <span className={formData.grade ? "text-white" : "text-gray-400"}>
-                {formData.grade || "پایه خود را انتخاب کنید"}
-              </span>
-              <ChevronDown className={`w-5 h-5 transition-transform ${gradeOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {gradeOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 clay-card p-2 z-[10000] shadow-xl">
-                {grades.map((grade) => (
-                  <button
-                    key={grade}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFormData({ ...formData, grade });
-                      setGradeOpen(false);
-                    }}
-                    className={`w-full text-right p-3 rounded-lg hover:bg-purple-500/20 transition-colors ${
-                      formData.grade === grade ? 'bg-purple-500/30 text-purple-300 font-medium' : 'text-white'
-                    }`}
-                  >
-                    📚 {grade}
-                  </button>
-                ))}
+          {currentUser.student_role === "student" && (
+            <>
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  پایه تحصیلی *
+                </label>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGradeOpen(!gradeOpen);
+                    setClassOpen(false);
+                  }}
+                  className="clay-card w-full p-3 text-white text-right flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                >
+                  <span className={formData.grade ? "text-white" : "text-gray-400"}>
+                    {formData.grade || "پایه خود را انتخاب کنید"}
+                  </span>
+                  <ChevronDown className={`w-5 h-5 transition-transform ${gradeOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {gradeOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 clay-card p-2 z-[10000] shadow-xl max-h-40 overflow-y-auto">
+                    {grades.map((grade) => (
+                      <button
+                        key={grade}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFormData({ ...formData, grade, class_id: "" });
+                          setGradeOpen(false);
+                        }}
+                        className={`w-full text-right p-3 rounded-lg hover:bg-purple-500/20 transition-colors ${
+                          formData.grade === grade ? 'bg-purple-500/30 text-purple-300 font-medium' : 'text-white'
+                        }`}
+                      >
+                        📚 {grade}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              {formData.grade && (
+                 <div className="relative">
+                 <label className="block text-sm font-medium text-gray-300 mb-2">
+                   کلاس *
+                 </label>
+                 <button
+                   type="button"
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     setClassOpen(!classOpen);
+                     setGradeOpen(false);
+                   }}
+                   className="clay-card w-full p-3 text-white text-right flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                 >
+                   <span className={formData.class_id ? "text-white" : "text-gray-400"}>
+                     {availableClasses.find(c => c.id === formData.class_id)?.name || "کلاس خود را انتخاب کنید"}
+                   </span>
+                   <ChevronDown className={`w-5 h-5 transition-transform ${classOpen ? 'rotate-180' : ''}`} />
+                 </button>
+                 {classOpen && (
+                   <div className="absolute top-full left-0 right-0 mt-2 clay-card p-2 z-[10000] shadow-xl max-h-40 overflow-y-auto">
+                     {filteredClasses.length > 0 ? filteredClasses.map((cls) => (
+                       <button
+                         key={cls.id}
+                         type="button"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setFormData({ ...formData, class_id: cls.id });
+                           setClassOpen(false);
+                         }}
+                         className={`w-full text-right p-3 rounded-lg hover:bg-purple-500/20 transition-colors ${
+                           formData.class_id === cls.id ? 'bg-purple-500/30 text-purple-300 font-medium' : 'text-white'
+                         }`}
+                       >
+                         🏛 {cls.name}
+                       </button>
+                     )) : (
+                       <p className="p-3 text-gray-400 text-center">هیچ کلاسی یافت نشد</p>
+                     )}
+                   </div>
+                 )}
+               </div>
+              )}
+            </>
+          )}
 
           {currentUser.student_role === "teacher" && (
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                درس تخصصی *
-              </label>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSubjectOpen(!subjectOpen);
-                  setGradeOpen(false);
-                }}
-                className="clay-card w-full p-3 text-white text-right flex items-center justify-between hover:bg-gray-700/30 transition-colors"
-              >
-                <span className={formData.subject ? "text-white" : "text-gray-400"}>
-                  {formData.subject || "درس تخصصی خود را انتخاب کنید"}
-                </span>
-                <ChevronDown className={`w-5 h-5 transition-transform ${subjectOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {subjectOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 clay-card p-2 z-[10000] shadow-xl">
-                  {subjects.map((subject) => (
-                    <button
-                      key={subject}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFormData({ ...formData, subject });
-                        setSubjectOpen(false);
-                      }}
-                      className={`w-full text-right p-3 rounded-lg hover:bg-purple-500/20 transition-colors ${
-                        formData.subject === subject ? 'bg-purple-500/30 text-purple-300 font-medium' : 'text-white'
-                      }`}
-                    >
-                      📖 {subject}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+             <div className="clay-card p-3 bg-blue-900/30 border border-blue-500">
+              <p className="text-sm text-blue-200">
+                دروس شما توسط مدیر سیستم تعیین خواهد شد.
+              </p>
+             </div>
           )}
 
           {error && (
@@ -241,30 +268,6 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
               </div>
             </div>
           )}
-
-          <div className="clay-card p-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30">
-            <div className="flex items-center gap-3 mb-3">
-              <Star className="w-5 h-5 text-yellow-400" />
-              <h3 className="font-bold text-white">
-                {currentUser.student_role === "teacher" ? "نکته برای معلمان:" : "نکته برای دانش‌آموزان:"}
-              </h3>
-            </div>
-            <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
-              {currentUser.student_role === "teacher" ? (
-                <>
-                  <li>شما فقط تکالیف درس و پایه خودتان را مدیریت می‌کنید</li>
-                  <li>دانش‌آموزان پایه شما تکالیف شما را خواهند دید</li>
-                  <li>می‌توانید تکالیف را تصحیح و نمره‌دهی کنید</li>
-                </>
-              ) : (
-                <>
-                  <li>تکالیف تمام دروس پایه خود را خواهید دید</li>
-                  <li>با انجام تکالیف، سکه و امتیاز کسب می‌کنید</li>
-                  <li>می‌توانید با یارا (دستیار هوشمند) کمک بگیرید</li>
-                </>
-              )}
-            </ul>
-          </div>
 
           <Button
             type="submit"
@@ -281,10 +284,6 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
             )}
           </Button>
         </form>
-
-        <p className="text-center text-xs text-gray-500 mt-4">
-          تکمیل این فرم برای استفاده از سیستم الزامی است
-        </p>
       </motion.div>
     </div>
   );
