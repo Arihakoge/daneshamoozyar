@@ -2,11 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Edit, Trash2, X, Save, CheckSquare, Square } from "lucide-react";
+import { Users, Edit, Trash2, X, Save, Plus, Trash, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { toPersianDate } from "@/components/utils";
 import { Input } from "@/components/ui/input";
 
 const ALL_SUBJECTS = [
@@ -22,6 +21,9 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
+  
+  // State for new assignment addition
+  const [newAssignment, setNewAssignment] = useState({ grade: "", class_id: "", subject: "" });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -62,29 +64,66 @@ export default function AdminUsers() {
     setEditingUser(user);
     setEditForm({
       ...user,
-      subjects: user.subjects || (user.subject ? [user.subject] : [])
+      // Ensure teaching_assignments is an array
+      teaching_assignments: user.teaching_assignments || []
     });
+    setNewAssignment({ grade: "", class_id: "", subject: "" });
+  };
+
+  const handleAddAssignment = () => {
+    if (!newAssignment.grade || !newAssignment.subject) {
+      alert("لطفا پایه و درس را انتخاب کنید.");
+      return;
+    }
+    
+    const assignmentToAdd = {
+      grade: newAssignment.grade,
+      class_id: newAssignment.class_id || null, // null implies all classes of that grade if we wanted, but let's be specific or generic
+      subject: newAssignment.subject,
+      id: Date.now() // temporary ID for list key
+    };
+
+    setEditForm({
+      ...editForm,
+      teaching_assignments: [...editForm.teaching_assignments, assignmentToAdd]
+    });
+    setNewAssignment({ grade: "", class_id: "", subject: "" });
+  };
+
+  const handleRemoveAssignment = (index) => {
+    const updatedAssignments = [...editForm.teaching_assignments];
+    updatedAssignments.splice(index, 1);
+    setEditForm({ ...editForm, teaching_assignments: updatedAssignments });
   };
 
   const handleSaveUser = async () => {
     if (!editingUser) return;
     try {
+      // Sanitize assignments to remove temporary IDs and ensure correct format
+      const sanitizedAssignments = (editForm.teaching_assignments || []).map(a => ({
+        grade: a.grade,
+        class_id: a.class_id || "", // Ensure string
+        subject: a.subject
+      }));
+
+      // Collect subjects for backward compatibility (unique list)
+      const uniqueSubjects = [...new Set(sanitizedAssignments.map(a => a.subject))];
+
       const updateData = {
         full_name: editForm.full_name,
         student_role: editForm.student_role,
-        grade: editForm.grade,
-        class_id: editForm.class_id,
-        subjects: editForm.subjects
+        grade: editForm.grade, // For students
+        class_id: editForm.class_id, // For students
+        teaching_assignments: sanitizedAssignments,
+        subjects: uniqueSubjects // Sync for backward compatibility
       };
 
       // Update PublicProfile
       await base44.entities.PublicProfile.update(editingUser.id, updateData);
       
-      // Update User entity (if possible/allowed) - mostly for role/name sync
+      // Update User entity auth data
       try {
-        await base44.auth.updateMe(updateData); // This only updates 'me', not other users.
-        // Admin cannot update other users' auth data directly via client SDK usually, 
-        // but PublicProfile is what matters for the app logic.
+        await base44.auth.updateMe(updateData);
       } catch (e) {
         // Ignore auth update error
       }
@@ -97,15 +136,6 @@ export default function AdminUsers() {
     }
   };
 
-  const toggleSubject = (subject) => {
-    const currentSubjects = editForm.subjects || [];
-    if (currentSubjects.includes(subject)) {
-      setEditForm({ ...editForm, subjects: currentSubjects.filter(s => s !== subject) });
-    } else {
-      setEditForm({ ...editForm, subjects: [...currentSubjects, subject] });
-    }
-  };
-
   const getRoleTranslation = (role) => ({
     teacher: "معلم",
     student: "دانش‌آموز",
@@ -113,202 +143,297 @@ export default function AdminUsers() {
   }[role] || role);
 
   const getRoleBadgeClass = (role) => ({
-    teacher: "bg-blue-100 text-blue-800",
-    student: "bg-green-100 text-green-800",
-    admin: "bg-purple-100 text-purple-800",
-  }[role] || "bg-gray-100 text-gray-800");
+    teacher: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    student: "bg-green-500/10 text-green-400 border-green-500/20",
+    admin: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  }[role] || "bg-gray-500/10 text-gray-400");
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-white">در حال بارگیری کاربران...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
       </div>
     );
   }
   
   return (
-    <div className="max-w-7xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-          <Users className="w-10 h-10 text-purple-500" />
-          مدیریت کاربران
-        </h1>
-        <p className="text-gray-300 text-lg">تعریف دروس معلمان و مدیریت کلاس دانش‌آموزان</p>
-      </motion.div>
+    <div className="min-h-screen bg-slate-950 text-slate-50 p-8 font-sans">
+      <div className="max-w-7xl mx-auto">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+            <Users className="w-8 h-8 text-cyan-500" />
+            مدیریت پیشرفته کاربران
+          </h1>
+          <p className="text-slate-400 text-lg">تعریف نقش‌ها، کلاس‌بندی دانش‌آموزان و تخصیص دقیق دروس معلمین</p>
+        </motion.div>
 
-      <Card className="clay-card">
-        <CardHeader>
-          <CardTitle className="text-white">لیست تمام کاربران</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-white">نام کامل</TableHead>
-                <TableHead className="text-white">نقش</TableHead>
-                <TableHead className="text-white">اطلاعات تحصیلی</TableHead>
-                <TableHead className="text-left text-white">عملیات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map(user => (
-                <TableRow key={user.user_id}>
-                  <TableCell className="font-medium text-white">{user.display_name || user.full_name}</TableCell>
-                  <TableCell>
-                    <Badge className={getRoleBadgeClass(user.student_role)}>
-                      {getRoleTranslation(user.student_role)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-gray-300 text-sm">
-                    {user.student_role === "student" && (
-                      <div className="flex flex-col gap-1">
-                        <span>{user.grade}</span>
-                        <span className="text-xs opacity-70">
-                          {classes.find(c => c.id === user.class_id)?.name || "بدون کلاس"}
-                        </span>
-                      </div>
-                    )}
-                    {user.student_role === "teacher" && (
-                      <div className="flex flex-wrap gap-1">
-                        {(user.subjects && user.subjects.length > 0) ? (
-                          user.subjects.map(s => (
-                            <Badge key={s} variant="outline" className="text-xs border-blue-400 text-blue-300">
-                              {s}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-xs text-red-300">درسی ثبت نشده</span>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-left">
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="ghost" size="icon" onClick={() => openEditModal(user)}>
-                        <Edit className="h-4 w-4 text-blue-400" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user.user_id)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  </TableCell>
+        <Card className="bg-slate-900 border-slate-800 shadow-xl">
+          <CardHeader className="border-b border-slate-800">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-white flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                لیست کاربران سیستم
+              </CardTitle>
+              <Badge variant="outline" className="bg-slate-800 text-slate-400 border-slate-700">
+                {users.length} کاربر
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader className="bg-slate-800/50">
+                <TableRow className="hover:bg-slate-800/50 border-slate-700">
+                  <TableHead className="text-slate-300">نام کامل</TableHead>
+                  <TableHead className="text-slate-300">نقش</TableHead>
+                  <TableHead className="text-slate-300 w-[40%]">جزئیات تحصیلی / تدریس</TableHead>
+                  <TableHead className="text-left text-slate-300">عملیات</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Edit User Modal */}
-      <AnimatePresence>
-        {editingUser && (
-          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setEditingUser(null)}>
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="clay-card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">ویرایش کاربر</h2>
-                <Button variant="ghost" size="icon" onClick={() => setEditingUser(null)}>
-                  <X className="w-5 h-5 text-gray-400" />
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">نام کامل</label>
-                  <Input 
-                    value={editForm.full_name} 
-                    onChange={e => setEditForm({...editForm, full_name: e.target.value})}
-                    className="clay-card text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">نقش</label>
-                  <select 
-                    value={editForm.student_role} 
-                    onChange={e => setEditForm({...editForm, student_role: e.target.value})}
-                    className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
-                  >
-                    <option value="student">دانش‌آموز</option>
-                    <option value="teacher">معلم</option>
-                    <option value="admin">مدیر</option>
-                  </select>
-                </div>
-
-                {editForm.student_role === "student" && (
-                  <>
-                    <div>
-                      <label className="block text-sm text-gray-300 mb-1">پایه تحصیلی</label>
-                      <select 
-                        value={editForm.grade} 
-                        onChange={e => setEditForm({...editForm, grade: e.target.value})}
-                        className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
-                      >
-                        <option value="">انتخاب کنید</option>
-                        {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-300 mb-1">کلاس</label>
-                      <select 
-                        value={editForm.class_id} 
-                        onChange={e => setEditForm({...editForm, class_id: e.target.value})}
-                        className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
-                      >
-                        <option value="">انتخاب کنید</option>
-                        {classes.filter(c => !editForm.grade || c.grade === editForm.grade).map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {editForm.student_role === "teacher" && (
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">دروس قابل تدریس</label>
-                    <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 bg-slate-800/50 rounded-lg">
-                      {ALL_SUBJECTS.map(subject => (
+              </TableHeader>
+              <TableBody>
+                {users.map(user => (
+                  <TableRow key={user.user_id} className="border-slate-800 hover:bg-slate-800/30 transition-colors">
+                    <TableCell className="font-medium text-white">
+                      <div className="flex items-center gap-3">
                         <div 
-                          key={subject} 
-                          className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                            (editForm.subjects || []).includes(subject) ? "bg-purple-600/30 text-purple-200" : "text-gray-400 hover:bg-slate-700"
-                          }`}
-                          onClick={() => toggleSubject(subject)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                          style={{ backgroundColor: user.avatar_color || '#64748b' }}
                         >
-                          {(editForm.subjects || []).includes(subject) ? (
-                            <CheckSquare className="w-4 h-4" />
-                          ) : (
-                            <Square className="w-4 h-4" />
-                          )}
-                          <span className="text-sm">{subject}</span>
+                          {(user.full_name || "?").charAt(0)}
                         </div>
-                      ))}
+                        {user.display_name || user.full_name}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getRoleBadgeClass(user.student_role)}>
+                        {getRoleTranslation(user.student_role)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-slate-300 text-sm">
+                      {user.student_role === "student" && (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="bg-slate-800 text-slate-300">{user.grade || "تعیین نشده"}</Badge>
+                          <span className="text-slate-500">/</span>
+                          <span className="text-slate-400">
+                            {classes.find(c => c.id === user.class_id)?.name || "بدون کلاس"}
+                          </span>
+                        </div>
+                      )}
+                      {user.student_role === "teacher" && (
+                        <div className="space-y-1">
+                          {(user.teaching_assignments && user.teaching_assignments.length > 0) ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.teaching_assignments.map((assign, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs border-cyan-500/30 bg-cyan-500/5 text-cyan-300">
+                                  {assign.subject} ({assign.grade} - {classes.find(c => c.id === assign.class_id)?.section || "همه"})
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            // Fallback for old data
+                            user.subjects && user.subjects.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {user.subjects.map(s => <Badge key={s} variant="outline" className="text-xs border-slate-600 text-slate-400">{s}</Badge>)}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-red-400">بدون درس</span>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-left">
+                      <div className="flex gap-2 justify-end">
+                        <Button variant="ghost" size="icon" onClick={() => openEditModal(user)} className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-300">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user.user_id)} className="text-red-500 hover:bg-red-500/10 hover:text-red-400">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Edit User Modal */}
+        <AnimatePresence>
+          {editingUser && (
+            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setEditingUser(null)}>
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <Edit className="w-5 h-5 text-cyan-500" />
+                    ویرایش مشخصات کاربر
+                  </h2>
+                  <Button variant="ghost" size="icon" onClick={() => setEditingUser(null)} className="text-slate-400 hover:text-white">
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-slate-400 mb-1">نام کامل</label>
+                      <Input 
+                        value={editForm.full_name} 
+                        onChange={e => setEditForm({...editForm, full_name: e.target.value})}
+                        className="bg-slate-800 border-slate-700 text-white focus:border-cyan-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-slate-400 mb-1">نقش در سیستم</label>
+                      <select 
+                        value={editForm.student_role} 
+                        onChange={e => setEditForm({...editForm, student_role: e.target.value})}
+                        className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700 focus:border-cyan-500 outline-none"
+                      >
+                        <option value="student">دانش‌آموز</option>
+                        <option value="teacher">معلم</option>
+                        <option value="admin">مدیر</option>
+                      </select>
                     </div>
                   </div>
-                )}
 
-                <div className="pt-4 flex gap-3">
-                  <Button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white" onClick={handleSaveUser}>
-                    <Save className="w-4 h-4 mr-2" /> ذخیره تغییرات
-                  </Button>
-                  <Button variant="ghost" className="flex-1" onClick={() => setEditingUser(null)}>
-                    انصراف
-                  </Button>
+                  {editForm.student_role === "student" && (
+                    <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 space-y-4">
+                      <h3 className="text-sm font-bold text-white mb-2 border-b border-slate-700 pb-2">اطلاعات تحصیلی دانش‌آموز</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-slate-400 mb-1">پایه تحصیلی</label>
+                          <select 
+                            value={editForm.grade} 
+                            onChange={e => setEditForm({...editForm, grade: e.target.value, class_id: ""})}
+                            className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700 focus:border-cyan-500 outline-none"
+                          >
+                            <option value="">انتخاب کنید</option>
+                            {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-slate-400 mb-1">کلاس</label>
+                          <select 
+                            value={editForm.class_id} 
+                            onChange={e => setEditForm({...editForm, class_id: e.target.value})}
+                            className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700 focus:border-cyan-500 outline-none"
+                            disabled={!editForm.grade}
+                          >
+                            <option value="">انتخاب کنید</option>
+                            {classes.filter(c => !editForm.grade || c.grade === editForm.grade).map(c => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {editForm.student_role === "teacher" && (
+                    <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 space-y-4">
+                      <h3 className="text-sm font-bold text-white mb-2 border-b border-slate-700 pb-2 flex items-center justify-between">
+                        <span>برنامه تدریس و تخصیص کلاس‌ها</span>
+                        <Badge variant="outline" className="text-cyan-400 border-cyan-500/30 bg-cyan-500/10">
+                          {(editForm.teaching_assignments || []).length} درس-کلاس
+                        </Badge>
+                      </h3>
+                      
+                      {/* Add New Assignment */}
+                      <div className="flex gap-2 items-end bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
+                        <div className="flex-1">
+                           <label className="text-xs text-slate-500 block mb-1">پایه</label>
+                           <select
+                              value={newAssignment.grade}
+                              onChange={e => setNewAssignment({...newAssignment, grade: e.target.value, class_id: ""})}
+                              className="w-full p-2 text-sm rounded bg-slate-800 border-slate-700 text-white"
+                           >
+                              <option value="">پایه</option>
+                              {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                           </select>
+                        </div>
+                        <div className="flex-1">
+                           <label className="text-xs text-slate-500 block mb-1">کلاس</label>
+                           <select
+                              value={newAssignment.class_id}
+                              onChange={e => setNewAssignment({...newAssignment, class_id: e.target.value})}
+                              className="w-full p-2 text-sm rounded bg-slate-800 border-slate-700 text-white"
+                              disabled={!newAssignment.grade}
+                           >
+                              <option value="">همه کلاس‌ها</option>
+                              {classes.filter(c => c.grade === newAssignment.grade).map(c => (
+                                <option key={c.id} value={c.id}>{c.section}</option>
+                              ))}
+                           </select>
+                        </div>
+                        <div className="flex-1">
+                           <label className="text-xs text-slate-500 block mb-1">درس</label>
+                           <select
+                              value={newAssignment.subject}
+                              onChange={e => setNewAssignment({...newAssignment, subject: e.target.value})}
+                              className="w-full p-2 text-sm rounded bg-slate-800 border-slate-700 text-white"
+                           >
+                              <option value="">درس</option>
+                              {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                           </select>
+                        </div>
+                        <Button size="icon" onClick={handleAddAssignment} className="bg-cyan-600 hover:bg-cyan-700 text-white h-9 w-9 shrink-0">
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      {/* List Assignments */}
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {editForm.teaching_assignments && editForm.teaching_assignments.length > 0 ? (
+                          editForm.teaching_assignments.map((assign, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-slate-800 rounded border border-slate-700">
+                              <div className="text-sm text-slate-200">
+                                <span className="font-bold text-cyan-400">{assign.subject}</span>
+                                <span className="mx-2 text-slate-600">|</span>
+                                <span>پایه {assign.grade}</span>
+                                <span className="mx-2 text-slate-600">|</span>
+                                <span className="text-slate-400">
+                                  {assign.class_id ? `کلاس ${classes.find(c => c.id === assign.class_id)?.section || assign.class_id}` : "همه کلاس‌ها"}
+                                </span>
+                              </div>
+                              <button 
+                                onClick={() => handleRemoveAssignment(index)}
+                                className="text-slate-500 hover:text-red-400 transition-colors"
+                              >
+                                <Trash className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-slate-500 text-sm bg-slate-900/30 rounded border border-dashed border-slate-800">
+                            هنوز درسی تخصیص داده نشده است.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-6 flex gap-3 border-t border-slate-800 mt-6">
+                    <Button className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold" onClick={handleSaveUser}>
+                      <Save className="w-4 h-4 mr-2" /> ذخیره و اعمال تغییرات
+                    </Button>
+                    <Button variant="outline" className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => setEditingUser(null)}>
+                      انصراف
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
