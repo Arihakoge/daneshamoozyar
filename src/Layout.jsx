@@ -14,8 +14,7 @@ import {
   LogOut,
   X,
   Users,
-  Edit,
-  Rocket
+  Edit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -178,7 +177,6 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد", url: createPageUrl("StudentDashboard"), icon: LayoutDashboard },
         { title: "تکالیف من", url: createPageUrl("StudentAssignments"), icon: BookOpen },
-        { title: "مسیرهای یادگیری", url: createPageUrl("LearningPaths"), icon: Rocket },
         { title: "دستاوردها", url: createPageUrl("Achievements"), icon: Trophy },
         { title: "پروفایل من", url: createPageUrl("StudentProfile"), icon: UserIcon },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
@@ -189,7 +187,6 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد", url: createPageUrl("TeacherDashboard"), icon: LayoutDashboard },
         { title: "مدیریت تکالیف", url: createPageUrl("TeacherAssignments"), icon: FileText },
-        { title: "مسیرهای یادگیری", url: createPageUrl("ManageLearningPaths"), icon: Rocket },
         { title: "گزارش‌های عملکرد", url: createPageUrl("TeacherReports"), icon: FileText },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "تابلوی امتیازات", url: createPageUrl("TeacherScoreboard"), icon: Trophy },
