@@ -54,9 +54,7 @@ export default function TeacherDashboard() {
 
       const allAssignments = await base44.entities.Assignment.list("-created_date");
       const teacherAssignments = allAssignments.filter(a => 
-        a.teacher_id === currentUser.id && 
-        a.grade === currentUser.grade && 
-        a.subject === currentUser.subject
+        a.teacher_id === currentUser.id
       );
       setAssignments(teacherAssignments);
 
