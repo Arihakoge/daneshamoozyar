@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Users, BookOpen, CheckCircle, Clock, AlertTriangle, TrendingUp, FileText, Calendar } from "lucide-react";
+import TourGuide from "@/components/shared/TourGuide";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -105,9 +106,34 @@ export default function TeacherDashboard() {
     );
   }
 
+  const tourSteps = [
+    {
+      target: "#teacher-header",
+      title: "پنل مدیریت کلاس",
+      content: "استاد گرامی، به پنل خود خوش آمدید. از اینجا می‌توانید کلاس‌ها و تکالیف خود را مدیریت کنید."
+    },
+    {
+      target: "#teacher-stats",
+      title: "نگاه کلی",
+      content: "خلاصه‌ای از تعداد تکالیف، موارد در انتظار بررسی و وضعیت کلی کلاس‌ها."
+    },
+    {
+      target: "#quick-actions",
+      title: "دسترسی سریع",
+      content: "از اینجا می‌توانید به سرعت تکالیف جدید ایجاد کنید یا به بخش نمرات بروید."
+    },
+    {
+      target: "#pending-reviews",
+      title: "نیاز به بررسی",
+      content: "تکالیفی که دانش‌آموزان ارسال کرده‌اند و منتظر نمره شما هستند در اینجا لیست می‌شوند."
+    }
+  ];
+
   return (
     <div className="max-w-7xl mx-auto">
+      <TourGuide tourId="teacher_dashboard_tour_v1" steps={tourSteps} />
       <motion.div 
+        id="teacher-header"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
@@ -120,7 +146,7 @@ export default function TeacherDashboard() {
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div id="teacher-stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatsCard
           title="تکالیف من"
           value={toPersianNumber(assignments.length)}
@@ -210,6 +236,7 @@ export default function TeacherDashboard() {
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <motion.div 
+            id="pending-reviews"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.8 }}
@@ -351,7 +378,7 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          <div className="clay-card p-6">
+          <div id="quick-actions" className="clay-card p-6">
             <h2 className="text-xl font-bold text-white mb-4">دسترسی سریع</h2>
             <div className="space-y-3">
               <Link to={createPageUrl("TeacherAssignments")}>
