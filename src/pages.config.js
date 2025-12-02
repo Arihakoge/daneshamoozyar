@@ -22,7 +22,6 @@ import PathDetail from './pages/PathDetail';
 import TakeQuiz from './pages/TakeQuiz';
 import ViewLesson from './pages/ViewLesson';
 import ManageLearningPaths from './pages/ManageLearningPaths';
-import Help from './pages/Help';
 import __Layout from './Layout.jsx';
 
 
@@ -51,7 +50,6 @@ export const PAGES = {
     "TakeQuiz": TakeQuiz,
     "ViewLesson": ViewLesson,
     "ManageLearningPaths": ManageLearningPaths,
-    "Help": Help,
 }
 
 export const pagesConfig = {
