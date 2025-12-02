@@ -204,14 +204,17 @@ export default function TeacherAssignments() {
       if (allowsAll) {
         // If allowed all, show all classes for that grade from the classes list
         setAvailableClasses(classes.filter(c => c.grade === newAssignment.grade));
+        setCanAssignToAllClasses(true);
       } else {
         // Only specific classes allowed
         const allowedClassIds = relevant.map(a => a.class_id).filter(Boolean);
         setAvailableClasses(classes.filter(c => allowedClassIds.includes(c.id)));
+        setCanAssignToAllClasses(false);
       }
     } else {
       // Legacy: all classes of that grade
       setAvailableClasses(classes.filter(c => c.grade === newAssignment.grade));
+      setCanAssignToAllClasses(true);
     }
   }, [newAssignment.grade, newAssignment.subject, user, classes]);
   
