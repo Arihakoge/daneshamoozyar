@@ -115,7 +115,9 @@ export default function TeacherDashboard() {
         <h1 className="text-4xl font-bold text-white mb-2">
           سلام استاد {user?.full_name || "محترم"}! 👨‍🏫
         </h1>
-        <p className="text-gray-300 text-lg">معلم {user?.subject} پایه {user?.grade}</p>
+        <p className="text-gray-300 text-lg">
+          معلم {user?.subjects ? user.subjects.join("، ") : (user?.subject || "")}
+        </p>
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
