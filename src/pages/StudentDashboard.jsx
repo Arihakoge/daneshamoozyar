@@ -7,6 +7,7 @@ import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
 import BadgeCard from "@/components/gamification/BadgeCard";
 import LevelProgress from "@/components/gamification/LevelProgress";
+import TourGuide from "@/components/shared/TourGuide";
 
 function StatsCard({ title, value, icon: Icon, color = "purple", trend, delay = 0 }) {
   const colorClasses = {
@@ -106,9 +107,34 @@ export default function StudentDashboard() {
     );
   }
 
+  const tourSteps = [
+    {
+      target: "#dashboard-header",
+      title: "خوش آمدید!",
+      content: "به پنل دانش‌آموزی خود خوش آمدید. در اینجا می‌توانید وضعیت کلی تحصیلی خود را مشاهده کنید."
+    },
+    {
+      target: "#stats-grid",
+      title: "آمار سریع",
+      content: "تعداد سکه‌ها، میانگین نمرات، تکالیف انجام شده و سطح فعلی شما در اینجا نمایش داده می‌شود."
+    },
+    {
+      target: "#sidebar-content",
+      title: "مسیر پیشرفت",
+      content: "با انجام تکالیف و فعالیت‌ها، سطح خود را ارتقا دهید و جوایز جدید دریافت کنید."
+    },
+    {
+      target: "#upcoming-assignments",
+      title: "تکالیف پیش‌رو",
+      content: "لیست تکالیفی که مهلت آن‌ها نزدیک است را از دست ندهید!"
+    }
+  ];
+
   return (
     <div className="max-w-7xl mx-auto">
+      <TourGuide tourId="student_dashboard_tour_v1" steps={tourSteps} />
       <motion.div
+        id="dashboard-header"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8">
@@ -218,6 +244,7 @@ export default function StudentDashboard() {
         </div>
 
         <motion.div
+          id="sidebar-content"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.7 }}
