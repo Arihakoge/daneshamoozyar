@@ -3,7 +3,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const { assignment_id } = await req.json();
+        const { assignment_id, app_url } = await req.json();
+        const origin = app_url || 'https://app.base44.com'; // Fallback if not provided
 
         // 1. Validate Auth
         const user = await base44.auth.me();
@@ -51,33 +52,66 @@ Deno.serve(async (req) => {
             throw new Error("RESEND_API_KEY is not set");
         }
 
+        // Professional HTML Template
         const emailBody = `
-            <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="background-color: #8B5CF6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                    <h1 style="margin: 0;">📚 تکلیف جدید</h1>
-                </div>
-                <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-                    <p>دانش‌آموز عزیز،</p>
-                    <p>یک تکلیف جدید در درس <strong>${assignment.subject}</strong> برای شما ثبت شده است.</p>
-                    
-                    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                        <h3 style="margin-top: 0; color: #4B5563;">${assignment.title}</h3>
-                        <p style="margin: 5px 0;"><strong>📅 مهلت تحویل:</strong> ${assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('fa-IR') : 'تعیین نشده'}</p>
-                        <p style="margin: 5px 0;"><strong>🪙 پاداش:</strong> ${assignment.coins_reward} سکه</p>
-                        <p style="margin: 5px 0;"><strong>📝 توضیحات:</strong></p>
-                        <p style="background-color: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">${assignment.description || 'توضیحات ندارد'}</p>
+            <!DOCTYPE html>
+            <html dir="rtl" lang="fa">
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: 'Tahoma', 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f3f4f6; }
+                    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+                    .header { background: linear-gradient(to right, #8B5CF6, #6366f1); color: white; padding: 30px 20px; text-align: center; }
+                    .content { padding: 30px; }
+                    .card { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; }
+                    .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+                    .label { color: #6b7280; font-weight: 500; }
+                    .value { color: #111827; font-weight: 700; }
+                    .btn { display: inline-block; background-color: #8B5CF6; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 20px; transition: background-color 0.2s; }
+                    .footer { background-color: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1 style="margin:0; font-size: 24px;">📚 تکلیف جدید ثبت شد</h1>
                     </div>
+                    <div class="content">
+                        <p style="font-size: 16px;">دانش‌آموز گرامی، سلام 👋</p>
+                        <p>یک تکلیف جدید در درس <strong>${assignment.subject}</strong> برای شما تعریف شده است. لطفاً در اسرع وقت نسبت به انجام آن اقدام نمایید.</p>
+                        
+                        <div class="card">
+                            <h3 style="margin-top: 0; color: #4B5563; border-bottom: 2px solid #8B5CF6; padding-bottom: 10px; display: inline-block;">${assignment.title}</h3>
+                            
+                            <div class="info-row">
+                                <span class="label">📅 مهلت تحویل:</span>
+                                <span class="value">${assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('fa-IR') : 'تعیین نشده'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">🪙 پاداش انجام:</span>
+                                <span class="value">${assignment.coins_reward} سکه</span>
+                            </div>
+                            <div class="info-row" style="border: none;">
+                                <span class="label">📝 توضیحات:</span>
+                            </div>
+                            <p style="background-color: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb; margin-top: 5px; font-size: 14px;">
+                                ${assignment.description || 'توضیحات تکمیلی ندارد.'}
+                            </p>
+                        </div>
 
-                    <div style="text-align: center; margin-top: 30px;">
-                        <a href="https://app.base44.com" style="display: inline-block; background-color: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                            مشاهده و انجام تکلیف
-                        </a>
+                        <div style="text-align: center;">
+                            <a href="${origin}/StudentAssignments" class="btn">
+                                ورود به پنل و انجام تکلیف
+                            </a>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>این ایمیل به صورت خودکار از طرف سامانه آموزشی ارسال شده است.</p>
+                        <p style="direction: ltr;">Sent with ❤️ by Base44</p>
                     </div>
                 </div>
-                <div style="text-align: center; margin-top: 20px; color: #9CA3AF; font-size: 12px;">
-                    <p>این ایمیل به صورت خودکار ارسال شده است.</p>
-                </div>
-            </div>
+            </body>
+            </html>
         `;
 
         const sendEmail = async (to, bcc, subject, html) => {
@@ -88,7 +122,9 @@ Deno.serve(async (req) => {
                     "Authorization": `Bearer ${resendApiKey}`
                 },
                 body: JSON.stringify({
-                    from: "onboarding@resend.dev",
+                    // IMPORTANT: To avoid spam and work for everyone, you MUST verify a domain in Resend
+                    // and change this 'from' address to something like 'notifications@your-domain.com'
+                    from: "onboarding@resend.dev", 
                     to,
                     bcc,
                     subject,
@@ -98,11 +134,13 @@ Deno.serve(async (req) => {
             return { response, data: await response.json() };
         };
 
-        // Attempt 1: Send to intended recipients
+        // Attempt 1: Standard send
+        // Note: "to" is usually for the primary recipient. For bulk notifications where we hide emails, 
+        // we send 'to' the teacher (or a no-reply) and 'bcc' the students.
         let { response, data } = await sendEmail(user.email, targetEmails, `تکلیف جدید: ${assignment.title}`, emailBody);
 
         if (!response.ok) {
-            // Handle Resend Test Mode Limitation
+            // Handle Resend Test Mode Limitation (Retrying with permitted email for testing purposes)
             if (data.message && data.message.includes("only send testing emails to your own email address")) {
                 console.log("Resend test limit detected. Retrying with allowed email.");
                 
@@ -111,32 +149,36 @@ Deno.serve(async (req) => {
 
                 if (allowedEmail) {
                     const testBody = `
-                        <div style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; color: #856404; margin-bottom: 20px; direction: ltr; text-align: left; font-family: sans-serif;">
-                            <strong>⚠️ Resend Test Mode Warning:</strong><br/>
-                            This email was sent to <u>${allowedEmail}</u> because your Resend account is in test mode and domain is not verified.<br/>
-                            <strong>Intended Recipients (BCC):</strong> ${targetEmails.join(', ')}
+                        <div style="background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; color: #856404; margin-bottom: 20px; direction: ltr; text-align: left; font-family: sans-serif; border-radius: 8px;">
+                            <strong>⚠️ هشدار حالت آزمایشی (Resend Test Mode):</strong><br/>
+                            این ایمیل فقط به <u>${allowedEmail}</u> ارسال شد زیرا حساب Resend شما در حالت آزمایشی است و دامنه تأیید نشده است.<br/>
+                            <br/>
+                            <strong>برای ارسال واقعی به همه دانش‌آموزان:</strong><br/>
+                            1. به پنل Resend بروید (Domains).<br/>
+                            2. دامنه خود را اضافه و تأیید کنید (Verify Domain).<br/>
+                            3. آدرس فرستنده (From) را در کد به ایمیل دامنه خود تغییر دهید.<br/>
+                            <hr style="margin: 10px 0; border-color: #ffeeba;">
+                            <strong>گیرندگان اصلی (که ایمیل را دریافت نکردند):</strong><br/> ${targetEmails.join(', ')}
                         </div>
                         ${emailBody}
                     `;
                     
-                    // Retry sending ONLY to the allowed email
                     const retry = await sendEmail(allowedEmail, undefined, `[TEST] تکلیف جدید: ${assignment.title}`, testBody);
                     
                     if (retry.response.ok) {
                         return Response.json({ 
                             success: true, 
-                            message: 'Email sent to allowed test address', 
+                            message: 'Email sent to test address (Domain verification needed for production)', 
                             recipient_count: 1,
                             resend_id: retry.data.id,
                             note: "Redirected to allowed address due to Resend testing limitation"
                         });
                     } else {
-                        data = retry.data; // Return the retry error if that fails too
+                        data = retry.data;
                     }
                 }
             }
             
-            console.error("Resend Error:", data);
             return Response.json({ error: 'Failed to send email', details: data }, { status: 500 });
         }
 

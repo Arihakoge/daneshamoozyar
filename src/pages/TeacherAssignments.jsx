@@ -315,7 +315,10 @@ export default function TeacherAssignments() {
       const createdAssignment = await base44.entities.Assignment.create(baseData);
       
       // Send email notification (fire and forget)
-      sendAssignmentEmail({ assignment_id: createdAssignment.id }).catch(console.error);
+      sendAssignmentEmail({ 
+        assignment_id: createdAssignment.id,
+        app_url: window.location.origin 
+      }).catch(console.error);
 
       // Handle Recurring
       if (isRecurring && recurringWeeks > 1 && baseData.due_date) {
