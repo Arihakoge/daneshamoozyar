@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { toPersianDate, toPersianDateShort, toPersianNumber } from "@/components/utils";
 import PersianDatePicker from "@/components/ui/PersianDatePicker";
+import { sendAssignmentEmail } from "@/functions/sendAssignmentEmail";
 
 // Simple Persian Calendar Component for Teacher View
 const TeacherCalendarView = ({ assignments }) => {
@@ -311,7 +312,10 @@ export default function TeacherAssignments() {
       };
 
       // Create initial assignment
-      await base44.entities.Assignment.create(baseData);
+      const createdAssignment = await base44.entities.Assignment.create(baseData);
+      
+      // Send email notification (fire and forget)
+      sendAssignmentEmail({ assignment_id: createdAssignment.id }).catch(console.error);
 
       // Handle Recurring
       if (isRecurring && recurringWeeks > 1 && baseData.due_date) {
