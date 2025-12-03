@@ -12,7 +12,6 @@ Deno.serve(async (req) => {
         }
 
         // 2. Get Assignment Details
-        // We use filter because .get is not always available or standard in these examples, strictly filter returns array
         const assignments = await base44.entities.Assignment.filter({ id: assignment_id });
         if (assignments.length === 0) {
             return Response.json({ error: 'Assignment not found' }, { status: 404 });
@@ -20,7 +19,6 @@ Deno.serve(async (req) => {
         const assignment = assignments[0];
 
         // 3. Find Target Students
-        // Strategy: Get Profiles matching grade/class -> Get Users for emails
         const profileFilter = { 
             grade: assignment.grade,
             student_role: 'student'
@@ -37,10 +35,7 @@ Deno.serve(async (req) => {
 
         const studentUserIds = profiles.map(p => p.user_id);
         
-        // Fetch users to get emails. 
-        // Note: .list() returns all, we need to filter in memory or loop if no 'in' query supported.
-        // The SDK 'filter' usually supports exact match. We might need to fetch all users or fetch individually.
-        // For efficiency in this constrained env, let's fetch all users and filter.
+        // Fetch users to get emails
         const allUsers = await base44.asServiceRole.entities.User.list();
         const targetEmails = allUsers
             .filter(u => studentUserIds.includes(u.id) && u.email)
@@ -56,13 +51,6 @@ Deno.serve(async (req) => {
             throw new Error("RESEND_API_KEY is not set");
         }
 
-        // Resend allows batch sending or single. For 'to' it accepts array.
-        // WARNING: In 'Testing' mode on Resend, you can only send to yourself.
-        // We will attempt to send to all, but it might fail if not verified.
-        // For safety/testing, let's send Bcc to hide emails or just separate calls?
-        // Resend 'to' array is visible to all if not careful? No, usually it sends individual emails or standard to.
-        // Better to put them in 'bcc' if we treat it as a bulk notification, OR just 'to'.
-        
         const emailResponse = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
@@ -70,26 +58,36 @@ Deno.serve(async (req) => {
                 "Authorization": `Bearer ${resendApiKey}`
             },
             body: JSON.stringify({
-                from: "onboarding@resend.dev", // Default test sender
-                to: targetEmails, // This might hit limits or visibility issues.
+                from: "onboarding@resend.dev",
+                to: user.email, // Send TO the teacher (ensures delivery in Test Mode)
+                bcc: targetEmails, // BCC the students
                 subject: `تکلیف جدید: ${assignment.title}`,
                 html: `
-                    <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; line-height: 1.6;">
-                        <h2>👨‍🏫 تکلیف جدید ارسال شد!</h2>
-                        <p>دانش‌آموز عزیز،</p>
-                        <p>یک تکلیف جدید با عنوان <strong>"${assignment.title}"</strong> توسط استاد برای شما ثبت شده است.</p>
-                        
-                        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <p><strong>درس:</strong> ${assignment.subject}</p>
-                            <p><strong>مهلت تحویل:</strong> ${assignment.due_date || 'تعیین نشده'}</p>
-                            <p><strong>امتیاز:</strong> ${assignment.coins_reward} سکه</p>
+                    <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <div style="background-color: #8B5CF6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0;">📚 تکلیف جدید</h1>
                         </div>
+                        <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+                            <p>دانش‌آموز عزیز،</p>
+                            <p>یک تکلیف جدید در درس <strong>${assignment.subject}</strong> برای شما ثبت شده است.</p>
+                            
+                            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                                <h3 style="margin-top: 0; color: #4B5563;">${assignment.title}</h3>
+                                <p style="margin: 5px 0;"><strong>📅 مهلت تحویل:</strong> ${assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('fa-IR') : 'تعیین نشده'}</p>
+                                <p style="margin: 5px 0;"><strong>🪙 پاداش:</strong> ${assignment.coins_reward} سکه</p>
+                                <p style="margin: 5px 0;"><strong>📝 توضیحات:</strong></p>
+                                <p style="background-color: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">${assignment.description || 'توضیحات ندارد'}</p>
+                            </div>
 
-                        <p>${assignment.description || ''}</p>
-
-                        <a href="https://app.base44.com" style="display: inline-block; background-color: #8B5CF6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 10px;">
-                            مشاهده تکلیف در سامانه
-                        </a>
+                            <div style="text-align: center; margin-top: 30px;">
+                                <a href="https://app.base44.com" style="display: inline-block; background-color: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                                    مشاهده و انجام تکلیف
+                                </a>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px; color: #9CA3AF; font-size: 12px;">
+                            <p>این ایمیل به صورت خودکار ارسال شده است.</p>
+                        </div>
                     </div>
                 `
             })
@@ -98,12 +96,14 @@ Deno.serve(async (req) => {
         const resendData = await emailResponse.json();
 
         if (!emailResponse.ok) {
-            throw new Error(`Resend API Error: ${JSON.stringify(resendData)}`);
+            console.error("Resend Error:", resendData);
+            // Don't throw, just return error to caller
+            return Response.json({ error: 'Failed to send email', details: resendData }, { status: 500 });
         }
 
         return Response.json({ 
             success: true, 
-            message: 'Emails sent', 
+            message: 'Emails sent successfully', 
             recipient_count: targetEmails.length,
             resend_id: resendData.id 
         });
