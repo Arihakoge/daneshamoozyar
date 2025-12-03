@@ -304,10 +304,13 @@ export default function TeacherAssignments() {
     e.preventDefault();
     if (!user) return;
     
+    // Correctly determine the teacher's User ID (handle both Profile object and User object)
+    const teacherId = user.user_id || user.id;
+
     try {
       const baseData = {
         ...newAssignment,
-        teacher_id: user.id,
+        teacher_id: teacherId,
         is_active: true
       };
 
@@ -355,7 +358,7 @@ export default function TeacherAssignments() {
           type: newAssignment.type || "homework",
           max_score: newAssignment.max_score,
           coins_reward: newAssignment.coins_reward,
-          teacher_id: user.id
+          teacher_id: teacherId
         });
         setTemplates(prev => [newTemplate, ...prev]);
       }
