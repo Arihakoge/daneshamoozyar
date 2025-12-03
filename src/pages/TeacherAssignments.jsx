@@ -314,6 +314,9 @@ export default function TeacherAssignments() {
       // Create initial assignment
       const createdAssignment = await base44.entities.Assignment.create(baseData);
       
+      // Optimistically update UI
+      setAssignments(prev => [createdAssignment, ...prev]);
+      
       // Send email notification (fire and forget)
       sendAssignmentEmail({ 
         assignment_id: createdAssignment.id,
@@ -337,16 +340,16 @@ export default function TeacherAssignments() {
         }
         
         if (recurringAssignments.length > 0) {
-           // Create them one by one or bulk if supported (using loop for safety)
            for(const ra of recurringAssignments) {
-             await base44.entities.Assignment.create(ra);
+             const createdRecurring = await base44.entities.Assignment.create(ra);
+             setAssignments(prev => [createdRecurring, ...prev]);
            }
         }
       }
 
       // Handle Template Saving
       if (saveAsTemplate && templateName) {
-        await base44.entities.AssignmentTemplate.create({
+        const newTemplate = await base44.entities.AssignmentTemplate.create({
           title: templateName,
           description: newAssignment.description,
           type: newAssignment.type || "homework",
@@ -354,11 +357,13 @@ export default function TeacherAssignments() {
           coins_reward: newAssignment.coins_reward,
           teacher_id: user.id
         });
+        setTemplates(prev => [newTemplate, ...prev]);
       }
 
       setCreateModalOpen(false);
       resetForm();
-      loadData();
+      // Reload from server after a delay to ensure consistency
+      setTimeout(loadData, 1000);
     } catch(error) {
       console.error("خطا در ایجاد تکلیف:", error);
     }
