@@ -1,102 +1,106 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Crown, Star, Shield, Medal, Search } from "lucide-react";
+import { Trophy, Crown, Star, Shield, Medal, Search, Award, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toPersianNumber } from "@/components/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function Scoreboard() {
   const [students, setStudents] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // 'all', 'grade'
+  const [viewMode, setViewMode] = useState("grade"); // 'all' or 'grade'
+  const [sortBy, setSortBy] = useState("combined"); // 'combined', 'coins', 'average'
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        // 1. Get Current User
-        const user = await base44.auth.me();
-        setCurrentUser(user);
+    loadData();
+  }, []);
 
-        // 2. Fetch ALL necessary data in parallel
-        const [allUsers, allProfiles, allSubmissions] = await Promise.all([
-          base44.entities.User.list(),
-          base44.entities.PublicProfile.list(),
-          base44.entities.Submission.list()
-        ]);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      // 1. Get Current User
+      const user = await base44.auth.me();
+      setCurrentUser(user);
 
-        // 3. Create a Set of valid User IDs for O(1) lookup
-        const validUserIds = new Set(allUsers.map(u => u.id));
+      // 2. Fetch Data
+      const [allUsers, allProfiles, allSubmissions] = await Promise.all([
+        base44.entities.User.list(),
+        base44.entities.PublicProfile.list(),
+        base44.entities.Submission.list()
+      ]);
 
-        // 4. Filter Profiles: Must be student AND exist in Users table
-        const validStudentProfiles = allProfiles.filter(p => 
-          p.student_role === "student" && validUserIds.has(p.user_id)
-        );
+      // 3. Valid User IDs
+      const validUserIds = new Set(allUsers.map(u => u.id));
 
-        // 5. Calculate Stats for each student
-        const studentsWithStats = validStudentProfiles.map(profile => {
+      // 4. Process Data
+      const processedStudents = allProfiles
+        .filter(p => p.student_role === "student" && validUserIds.has(p.user_id))
+        .map(profile => {
           const userSubmissions = allSubmissions.filter(s => s.student_id === profile.user_id);
           const gradedSubmissions = userSubmissions.filter(s => typeof s.score === 'number');
           
           const totalScore = gradedSubmissions.reduce((sum, s) => sum + s.score, 0);
           const averageScore = gradedSubmissions.length > 0 ? totalScore / gradedSubmissions.length : 0;
           
-          // Score Formula: 50% Coins + 50% Grades
-          // Coins normalized (assuming 1000 coins is "max" for scaling, but no cap) -> let's just use raw coins/10 for weight
-          // Actually, let's keep the previous formula but make it clear
-          const normalizedCoins = (profile.coins || 0) / 2; // 1 Coin = 0.5 point
-          const gradePoints = averageScore * 5; // 20 score = 100 points
-          
-          const combinedScore = normalizedCoins + gradePoints;
+          // Simple Score Formula: (Average * 5) + (Coins / 2)
+          const scoreFromGrades = averageScore * 5;
+          const scoreFromCoins = (profile.coins || 0) / 2;
+          const combinedScore = scoreFromGrades + scoreFromCoins;
 
           return {
             ...profile,
             stats: {
-              totalSubmissions: userSubmissions.length,
-              gradedCount: gradedSubmissions.length,
+              submissionsCount: userSubmissions.length,
               averageScore: parseFloat(averageScore.toFixed(2)),
-              combinedScore: parseFloat(combinedScore.toFixed(2))
+              combinedScore: parseFloat(combinedScore.toFixed(1)),
+              rawCoins: profile.coins || 0
             }
           };
         });
 
-        // 6. Sort by Combined Score
-        studentsWithStats.sort((a, b) => b.stats.combinedScore - a.stats.combinedScore);
+      setStudents(processedStudents);
+    } catch (error) {
+      console.error("Error loading scoreboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setStudents(studentsWithStats);
-      } catch (error) {
-        console.error("Error loading scoreboard:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const filteredAndSortedStudents = useMemo(() => {
+    let result = [...students];
 
-    loadData();
-  }, []);
-
-  const getFilteredStudents = () => {
-    let filtered = students;
-
-    // Filter by Grade
-    if (filter === "grade" && currentUser?.grade) {
-      filtered = filtered.filter(s => s.grade === currentUser.grade);
+    // 1. Filter by View Mode (Grade vs All)
+    if (viewMode === "grade" && currentUser?.grade) {
+      result = result.filter(s => s.grade === currentUser.grade);
     }
 
-    // Filter by Search
+    // 2. Filter by Search
     if (searchTerm.trim()) {
-      filtered = filtered.filter(s => 
+      result = result.filter(s => 
         (s.full_name || "").toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    return filtered;
-  };
+    // 3. Sort
+    result.sort((a, b) => {
+      if (sortBy === 'coins') return b.stats.rawCoins - a.stats.rawCoins;
+      if (sortBy === 'average') return b.stats.averageScore - a.stats.averageScore;
+      return b.stats.combinedScore - a.stats.combinedScore; // Default combined
+    });
 
-  const displayedStudents = getFilteredStudents();
-  const topThree = displayedStudents.slice(0, 3);
+    return result;
+  }, [students, viewMode, sortBy, searchTerm, currentUser]);
+
+  const topThree = filteredAndSortedStudents.slice(0, 3);
+  const listStudents = filteredAndSortedStudents.slice(3);
+  
+  // Find current user rank in the filtered list
+  const myRankIndex = filteredAndSortedStudents.findIndex(s => s.user_id === currentUser?.id);
+  const myRank = myRankIndex !== -1 ? myRankIndex + 1 : null;
 
   if (loading) {
     return (
@@ -107,216 +111,324 @@ export default function Scoreboard() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 min-h-screen">
-      {/* Header */}
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center p-4 bg-purple-500/20 rounded-full mb-4 ring-4 ring-purple-500/10">
-          <Trophy className="w-10 h-10 text-purple-400" />
+    <div className="max-w-6xl mx-auto px-4 py-8 pb-24 min-h-screen">
+      {/* Header Section */}
+      <div className="text-center mb-10 relative">
+        <div className="inline-block p-3 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg shadow-orange-500/30 mb-4">
+          <Trophy className="w-8 h-8 text-white" />
         </div>
-        <h1 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight">
-          تابلوی افتخارات
+        <h1 className="text-3xl md:text-5xl font-black text-white mb-2 tracking-tight">
+          تابلوی قهرمانان
         </h1>
-        <p className="text-slate-400 text-lg">
-          برترین‌های {filter === 'grade' ? `پایه ${currentUser?.grade}` : "مدرسه"}
+        <p className="text-slate-300 text-lg">
+          {viewMode === 'grade' ? `رقابت با هم‌کلاسی‌های پایه ${currentUser?.grade || '...'} ` : 'رقابت در سطح کل مدرسه'}
         </p>
+        
+        {/* My Rank Floating Badge */}
+        {myRank && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute top-0 right-0 hidden md:flex flex-col items-center bg-slate-800/80 backdrop-blur border border-purple-500/30 p-4 rounded-2xl"
+          >
+            <span className="text-xs text-slate-400 mb-1">رتبه شما</span>
+            <span className="text-2xl font-bold text-white">#{toPersianNumber(myRank)}</span>
+          </motion.div>
+        )}
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-12 bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
-        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-700">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${
-              filter === "all" 
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-500/25" 
-                : "text-slate-400 hover:text-white hover:bg-slate-800"
-            }`}
-          >
-            کل مدرسه
-          </button>
-          <button
-            onClick={() => setFilter("grade")}
-            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${
-              filter === "grade" 
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-500/25" 
-                : "text-slate-400 hover:text-white hover:bg-slate-800"
-            }`}
-          >
-            هم‌کلاسی‌ها
-          </button>
-        </div>
+      {/* Controls & Filters */}
+      <div className="sticky top-4 z-40 bg-slate-900/80 backdrop-blur-xl p-4 rounded-2xl border border-slate-800 shadow-2xl mb-12">
+        <div className="flex flex-col md:flex-row gap-4 justify-between">
+          
+          {/* View Mode Tabs */}
+          <div className="flex bg-slate-800 p-1 rounded-xl">
+            <button
+              onClick={() => setViewMode("grade")}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                viewMode === "grade" 
+                  ? "bg-purple-600 text-white shadow-lg" 
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              هم‌کلاسی‌ها
+            </button>
+            <button
+              onClick={() => setViewMode("all")}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                viewMode === "all" 
+                  ? "bg-purple-600 text-white shadow-lg" 
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              کل مدرسه
+            </button>
+          </div>
 
-        <div className="relative w-full md:w-72">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <Input 
-            placeholder="جستجوی دانش‌آموز..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-slate-900/50 border-slate-700 pr-9 text-white h-11 focus:ring-purple-500/50"
-          />
+          {/* Sort Options */}
+          <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
+            <Button
+              variant={sortBy === 'combined' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSortBy('combined')}
+              className={`rounded-lg border-slate-700 ${sortBy === 'combined' ? 'bg-blue-600 hover:bg-blue-700 border-transparent' : 'text-slate-300 hover:bg-slate-800'}`}
+            >
+              <Medal className="w-4 h-4 mr-2" /> امتیاز کل
+            </Button>
+            <Button
+              variant={sortBy === 'average' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSortBy('average')}
+              className={`rounded-lg border-slate-700 ${sortBy === 'average' ? 'bg-green-600 hover:bg-green-700 border-transparent' : 'text-slate-300 hover:bg-slate-800'}`}
+            >
+              <Star className="w-4 h-4 mr-2" /> میانگین نمره
+            </Button>
+            <Button
+              variant={sortBy === 'coins' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSortBy('coins')}
+              className={`rounded-lg border-slate-700 ${sortBy === 'coins' ? 'bg-yellow-600 hover:bg-yellow-700 border-transparent' : 'text-slate-300 hover:bg-slate-800'}`}
+            >
+              <div className="mr-2">🪙</div> سکه
+            </Button>
+          </div>
+
+          {/* Search */}
+          <div className="relative w-full md:w-64">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Input 
+              placeholder="جستجو..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-slate-800 border-slate-700 pr-9 h-10 text-white focus:ring-purple-500/50"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Top 3 Podium */}
-      {displayedStudents.length >= 3 && !searchTerm && (
-        <div className="flex flex-col md:flex-row justify-center items-end gap-4 mb-16 px-4">
+      {/* Podium Section (Top 3) */}
+      {!searchTerm && filteredAndSortedStudents.length > 0 && (
+        <div className="flex flex-col md:flex-row justify-center items-end gap-4 mb-16 px-2 mt-10">
+          
           {/* Rank 2 */}
-          <div className="order-2 md:order-1 w-full md:w-1/3 flex flex-col items-center">
-            <div className="relative w-full bg-slate-800/80 backdrop-blur-md border border-slate-700 rounded-2xl p-6 flex flex-col items-center transform translate-y-4">
-              <div className="absolute -top-10">
-                <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-b from-slate-300 to-slate-500 shadow-lg">
-                  <img 
-                    src={topThree[1].profile_image_url || `https://ui-avatars.com/api/?name=${topThree[1].full_name}&background=random`} 
-                    className="w-full h-full rounded-full object-cover bg-slate-800"
-                    alt=""
-                  />
-                  <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-800 border-4 border-slate-800">2</div>
+          {topThree[1] && (
+            <div className="order-2 md:order-1 w-full md:w-1/3 flex flex-col items-center">
+              <div className="relative w-full clay-card p-6 flex flex-col items-center pt-12 mt-8">
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                  <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-b from-slate-300 to-slate-500 shadow-lg">
+                    <img 
+                      src={topThree[1].profile_image_url || `https://ui-avatars.com/api/?name=${topThree[1].full_name}&background=random`} 
+                      className="w-full h-full rounded-full object-cover bg-slate-800"
+                      alt={topThree[1].full_name}
+                    />
+                    <div className="absolute -bottom-3 inset-x-0 flex justify-center">
+                      <div className="bg-slate-200 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center font-bold border-4 border-slate-800 text-lg">2</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-10 text-center w-full">
-                <h3 className="font-bold text-white text-lg truncate w-full">{topThree[1].full_name}</h3>
+                
+                <h3 className="font-bold text-white text-lg mt-2 text-center line-clamp-1">{topThree[1].full_name}</h3>
                 <p className="text-slate-400 text-sm mb-4">{toPersianNumber(topThree[1].stats.combinedScore)} امتیاز</p>
-                <div className="flex justify-between items-center w-full bg-slate-900/50 rounded-lg p-2 px-4">
-                  <span className="text-xs text-slate-400">میانگین</span>
-                  <span className="text-yellow-400 font-bold flex items-center gap-1">
-                    {toPersianNumber(topThree[1].stats.averageScore)} <Star className="w-3 h-3" fill="currentColor" />
-                  </span>
+                
+                <div className="w-full bg-slate-900/50 rounded-xl p-3 flex justify-between items-center">
+                  <div className="text-center">
+                    <div className="text-xs text-slate-500">میانگین</div>
+                    <div className="font-bold text-green-400">{toPersianNumber(topThree[1].stats.averageScore)}</div>
+                  </div>
+                  <div className="w-px h-8 bg-slate-700"></div>
+                  <div className="text-center">
+                    <div className="text-xs text-slate-500">سکه</div>
+                    <div className="font-bold text-yellow-400">{toPersianNumber(topThree[1].stats.rawCoins)}</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Rank 1 */}
-          <div className="order-1 md:order-2 w-full md:w-1/3 flex flex-col items-center z-10">
-            <div className="relative w-full bg-gradient-to-b from-purple-900/90 to-slate-900/90 backdrop-blur-md border border-purple-500/50 rounded-2xl p-8 flex flex-col items-center shadow-2xl shadow-purple-500/20 transform -translate-y-4">
-              <div className="absolute -top-12">
-                <Crown className="w-12 h-12 text-yellow-400 absolute -top-8 left-1/2 -translate-x-1/2 animate-bounce" fill="currentColor" />
-                <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-b from-yellow-300 to-yellow-600 shadow-xl shadow-yellow-500/40">
-                  <img 
-                    src={topThree[0].profile_image_url || `https://ui-avatars.com/api/?name=${topThree[0].full_name}&background=random`} 
-                    className="w-full h-full rounded-full object-cover bg-slate-800"
-                    alt=""
-                  />
-                  <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-yellow-900 border-4 border-slate-900 text-xl">1</div>
-                </div>
-              </div>
-              <div className="mt-12 text-center w-full">
-                <h3 className="font-black text-white text-xl truncate w-full mb-1">{topThree[0].full_name}</h3>
-                <Badge className="bg-yellow-500/20 text-yellow-300 mb-4 hover:bg-yellow-500/30 border-yellow-500/20">👑 قهرمان {filter === 'grade' ? 'کلاس' : 'مدرسه'}</Badge>
+          {topThree[0] && (
+            <div className="order-1 md:order-2 w-full md:w-1/3 flex flex-col items-center z-10">
+              <div className="relative w-full bg-gradient-to-b from-purple-900 via-slate-900 to-slate-900 rounded-3xl border border-purple-500/50 p-6 flex flex-col items-center pt-14 shadow-2xl shadow-purple-500/20">
                 
-                <div className="grid grid-cols-2 gap-2 w-full">
-                  <div className="bg-slate-900/50 rounded-lg p-2">
-                    <p className="text-xs text-slate-400 mb-1">امتیاز کل</p>
-                    <p className="font-bold text-white">{toPersianNumber(topThree[0].stats.combinedScore)}</p>
+                {/* Crown & Avatar */}
+                <div className="absolute -top-14 left-1/2 -translate-x-1/2">
+                  <Crown className="w-12 h-12 text-yellow-400 absolute -top-10 left-1/2 -translate-x-1/2 animate-bounce drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]" fill="currentColor" />
+                  <div className="w-28 h-28 rounded-full p-1.5 bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-700 shadow-xl shadow-yellow-500/30">
+                    <img 
+                      src={topThree[0].profile_image_url || `https://ui-avatars.com/api/?name=${topThree[0].full_name}&background=random`} 
+                      className="w-full h-full rounded-full object-cover bg-slate-900"
+                      alt={topThree[0].full_name}
+                    />
+                     <div className="absolute -bottom-4 inset-x-0 flex justify-center">
+                      <div className="bg-yellow-400 text-yellow-900 w-10 h-10 rounded-full flex items-center justify-center font-bold border-4 border-slate-900 text-xl shadow-lg">1</div>
+                    </div>
                   </div>
-                  <div className="bg-slate-900/50 rounded-lg p-2">
-                    <p className="text-xs text-slate-400 mb-1">میانگین</p>
-                    <p className="font-bold text-yellow-400">{toPersianNumber(topThree[0].stats.averageScore)}</p>
+                </div>
+
+                <h3 className="font-black text-white text-xl mt-4 text-center line-clamp-1">{topThree[0].full_name}</h3>
+                <Badge className="mt-2 bg-yellow-500/20 text-yellow-300 border-yellow-500/30 hover:bg-yellow-500/30">
+                  👑 {viewMode === 'grade' ? 'شاگرد اول کلاس' : 'قهرمان مدرسه'}
+                </Badge>
+                
+                <div className="mt-6 grid grid-cols-3 gap-2 w-full bg-slate-900/80 rounded-2xl p-4 border border-slate-700/50">
+                  <div className="text-center">
+                     <p className="text-[10px] text-slate-400 uppercase">امتیاز</p>
+                     <p className="text-lg font-black text-white">{toPersianNumber(topThree[0].stats.combinedScore)}</p>
+                  </div>
+                  <div className="text-center border-x border-slate-700">
+                     <p className="text-[10px] text-slate-400 uppercase">میانگین</p>
+                     <p className="text-lg font-bold text-green-400">{toPersianNumber(topThree[0].stats.averageScore)}</p>
+                  </div>
+                  <div className="text-center">
+                     <p className="text-[10px] text-slate-400 uppercase">سکه</p>
+                     <p className="text-lg font-bold text-yellow-400">{toPersianNumber(topThree[0].stats.rawCoins)}</p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Rank 3 */}
-          <div className="order-3 w-full md:w-1/3 flex flex-col items-center">
-            <div className="relative w-full bg-slate-800/80 backdrop-blur-md border border-slate-700 rounded-2xl p-6 flex flex-col items-center transform translate-y-4">
-              <div className="absolute -top-10">
-                <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-b from-orange-300 to-orange-600 shadow-lg">
-                  <img 
-                    src={topThree[2].profile_image_url || `https://ui-avatars.com/api/?name=${topThree[2].full_name}&background=random`} 
-                    className="w-full h-full rounded-full object-cover bg-slate-800"
-                    alt=""
-                  />
-                  <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-orange-300 rounded-full flex items-center justify-center font-bold text-orange-900 border-4 border-slate-800">3</div>
+          {topThree[2] && (
+            <div className="order-3 w-full md:w-1/3 flex flex-col items-center">
+              <div className="relative w-full clay-card p-6 flex flex-col items-center pt-12 mt-8">
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                  <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-b from-orange-300 to-orange-600 shadow-lg">
+                    <img 
+                      src={topThree[2].profile_image_url || `https://ui-avatars.com/api/?name=${topThree[2].full_name}&background=random`} 
+                      className="w-full h-full rounded-full object-cover bg-slate-800"
+                      alt={topThree[2].full_name}
+                    />
+                    <div className="absolute -bottom-3 inset-x-0 flex justify-center">
+                      <div className="bg-orange-300 text-orange-900 w-8 h-8 rounded-full flex items-center justify-center font-bold border-4 border-slate-800 text-lg">3</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-10 text-center w-full">
-                <h3 className="font-bold text-white text-lg truncate w-full">{topThree[2].full_name}</h3>
+                
+                <h3 className="font-bold text-white text-lg mt-2 text-center line-clamp-1">{topThree[2].full_name}</h3>
                 <p className="text-slate-400 text-sm mb-4">{toPersianNumber(topThree[2].stats.combinedScore)} امتیاز</p>
-                <div className="flex justify-between items-center w-full bg-slate-900/50 rounded-lg p-2 px-4">
-                  <span className="text-xs text-slate-400">میانگین</span>
-                  <span className="text-yellow-400 font-bold flex items-center gap-1">
-                    {toPersianNumber(topThree[2].stats.averageScore)} <Star className="w-3 h-3" fill="currentColor" />
-                  </span>
+                
+                <div className="w-full bg-slate-900/50 rounded-xl p-3 flex justify-between items-center">
+                  <div className="text-center">
+                    <div className="text-xs text-slate-500">میانگین</div>
+                    <div className="font-bold text-green-400">{toPersianNumber(topThree[2].stats.averageScore)}</div>
+                  </div>
+                  <div className="w-px h-8 bg-slate-700"></div>
+                  <div className="text-center">
+                    <div className="text-xs text-slate-500">سکه</div>
+                    <div className="font-bold text-yellow-400">{toPersianNumber(topThree[2].stats.rawCoins)}</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Full List */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 px-2 mb-4 text-slate-300">
+      {/* List View */}
+      <div className="space-y-3 mt-8">
+        <div className="flex items-center gap-2 px-2 mb-4 text-slate-300 border-b border-slate-800 pb-2">
           <Shield className="w-5 h-5" />
-          <h2 className="font-bold text-lg">رتبه‌بندی کامل</h2>
+          <h2 className="font-bold text-lg">
+            {searchTerm || filteredAndSortedStudents.length < 4 ? 'نتایج جستجو' : 'سایر رتبه‌ها'}
+          </h2>
         </div>
 
         <AnimatePresence>
-          {displayedStudents.map((student, index) => (
-            <motion.div
-              key={student.user_id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`
-                relative group flex items-center gap-4 p-4 rounded-xl border transition-all duration-300
-                ${currentUser?.id === student.user_id 
-                  ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.15)]' 
-                  : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800 hover:border-slate-600'
-                }
-              `}
-            >
-              <div className={`
-                w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xl shrink-0
-                ${index < 3 ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-yellow-400 border border-slate-600' : 'bg-slate-900/50 text-slate-500'}
-              `}>
-                {toPersianNumber(index + 1)}
-              </div>
+          {/* If search is active, show all matches, otherwise just show listStudents (rank 4+) */}
+          {(searchTerm ? filteredAndSortedStudents : listStudents).map((student, index) => {
+             // Calculate actual rank based on the full sorted list
+             const realRank = filteredAndSortedStudents.findIndex(s => s.user_id === student.user_id) + 1;
+             const isMe = currentUser?.id === student.user_id;
 
-              <div className="shrink-0 relative">
-                <img 
-                  src={student.profile_image_url || `https://ui-avatars.com/api/?name=${student.full_name}&background=random`} 
-                  className="w-12 h-12 rounded-full object-cover bg-slate-800 border border-slate-700"
-                  alt=""
-                />
-                {index === 0 && <Crown className="w-4 h-4 text-yellow-400 absolute -top-2 -right-1" fill="currentColor" />}
-              </div>
+             return (
+              <motion.div
+                key={student.user_id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`
+                  relative group flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300
+                  ${isMe 
+                    ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.15)] z-10' 
+                    : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600'
+                  }
+                `}
+              >
+                {/* Rank Number */}
+                <div className={`
+                  w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xl shrink-0
+                  ${realRank <= 3 
+                    ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-yellow-400 border border-slate-600' 
+                    : 'bg-slate-900/50 text-slate-500'
+                  }
+                `}>
+                  {toPersianNumber(realRank)}
+                </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className={`font-bold truncate text-lg ${currentUser?.id === student.user_id ? 'text-purple-300' : 'text-white'}`}>
-                    {student.full_name}
-                  </h3>
-                  {currentUser?.id === student.user_id && (
-                    <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 text-[10px] h-5">شما</Badge>
-                  )}
+                {/* Avatar */}
+                <div className="shrink-0">
+                  <img 
+                    src={student.profile_image_url || `https://ui-avatars.com/api/?name=${student.full_name}&background=random`} 
+                    className={`w-12 h-12 rounded-full object-cover bg-slate-800 border-2 ${isMe ? 'border-purple-500' : 'border-slate-700'}`}
+                    alt={student.full_name}
+                  />
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
-                  <span>{student.grade || "بدون پایه"}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-600"></span>
-                  <span>{toPersianNumber(student.stats.totalSubmissions)} ارسال</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-600"></span>
-                  <span>{toPersianNumber(student.coins)} سکه</span>
-                </div>
-              </div>
 
-              <div className="text-right shrink-0">
-                <div className="flex flex-col items-end">
-                  <span className="text-white font-bold text-lg flex items-center gap-1">
-                    {toPersianNumber(student.stats.averageScore)} <Star className="w-3 h-3 text-yellow-500" fill="currentColor" />
-                  </span>
-                  <span className="text-slate-500 text-xs">میانگین</span>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className={`font-bold truncate text-base md:text-lg ${isMe ? 'text-purple-300' : 'text-white'}`}>
+                      {student.full_name}
+                    </h3>
+                    {isMe && (
+                      <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 text-[10px] px-2 h-5">شما</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
+                    <span>{student.grade || "بدون پایه"}</span>
+                    <span className="hidden md:inline">•</span>
+                    <span className="hidden md:inline">{toPersianNumber(student.stats.submissionsCount)} ارسال</span>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+
+                {/* Stats Columns */}
+                <div className="flex items-center gap-4 md:gap-8 text-right shrink-0">
+                   <div className="hidden md:block text-center min-w-[60px]">
+                      <div className="text-[10px] text-slate-500 uppercase mb-1">سکه</div>
+                      <div className="text-yellow-400 font-bold">{toPersianNumber(student.stats.rawCoins)}</div>
+                   </div>
+                   <div className="hidden md:block text-center min-w-[60px]">
+                      <div className="text-[10px] text-slate-500 uppercase mb-1">نمره</div>
+                      <div className="text-green-400 font-bold">{toPersianNumber(student.stats.averageScore)}</div>
+                   </div>
+                   
+                   {/* Main Score */}
+                   <div className="text-right pl-2">
+                      <div className="text-white font-black text-lg md:text-xl">
+                        {toPersianNumber(
+                            sortBy === 'coins' ? student.stats.rawCoins :
+                            sortBy === 'average' ? student.stats.averageScore :
+                            student.stats.combinedScore
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        {sortBy === 'coins' ? 'سکه' : sortBy === 'average' ? 'نمره' : 'امتیاز'}
+                      </div>
+                   </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
 
-        {displayedStudents.length === 0 && (
-          <div className="text-center py-20 text-slate-500">
-            <p>دانش‌آموزی یافت نشد.</p>
+        {filteredAndSortedStudents.length === 0 && (
+          <div className="text-center py-20">
+            <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-10 h-10 text-slate-600" />
+            </div>
+            <h3 className="text-white font-bold text-lg mb-2">هیچ دانش‌آموزی یافت نشد</h3>
+            <p className="text-slate-500">با فیلترهای دیگر تلاش کنید.</p>
           </div>
         )}
       </div>
