@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Crown, Star, Shield, Medal, Search, Filter, Users, School } from "lucide-react";
+import { Trophy, Crown, Star, Shield, Medal, Search, Users, School } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toPersianNumber } from "@/components/utils";
 import { Badge } from "@/components/ui/badge";
@@ -30,18 +30,17 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
       setCurrentUser(user);
 
       // Fetch Data
-      const [allUsers, allProfiles, allSubmissions] = await Promise.all([
-        base44.entities.User.list(),
-        base44.entities.PublicProfile.list(),
-        base44.entities.Submission.list()
+      // Note: We do NOT fetch User.list() here because students don't have permission to list users.
+      // We rely on PublicProfile being the source of truth. Deleted users should have their profiles deleted.
+      // Fetching up to 1000 profiles to ensure we get everyone.
+      const [allProfiles, allSubmissions] = await Promise.all([
+        base44.entities.PublicProfile.list(undefined, 1000),
+        base44.entities.Submission.list(undefined, 1000)
       ]);
-
-      // Valid User IDs (Active users only)
-      const validUserIds = new Set(allUsers.map(u => u.id));
 
       // Process Data
       const processedStudents = allProfiles
-        .filter(p => p.student_role === "student" && validUserIds.has(p.user_id))
+        .filter(p => p.student_role === "student")
         .map(profile => {
           const userSubmissions = allSubmissions.filter(s => s.student_id === profile.user_id);
           const gradedSubmissions = userSubmissions.filter(s => typeof s.score === 'number');
@@ -72,7 +71,7 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
         setViewMode('grade');
       } else if (user.student_role === 'teacher') {
         setViewMode('my_students');
-      } else {
+      } else if (user.student_role === 'admin') {
         setViewMode('all');
       }
 
@@ -90,10 +89,6 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
     if (viewMode === "grade" && currentUser?.grade) {
       result = result.filter(s => s.grade === currentUser.grade);
     } else if (viewMode === "my_students" && currentUser) {
-        // For teachers: filter students matching teacher's grades/subjects
-        // This logic depends on how teacher-student relation is defined. 
-        // Assuming matching 'grade' is the primary link for now, or if we had class_id.
-        // If teacher has 'teaching_assignments', we use those grades.
         const teacherGrades = [];
         if (currentUser.teaching_assignments) {
             currentUser.teaching_assignments.forEach(ta => teacherGrades.push(ta.grade));
@@ -131,9 +126,6 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
   const topThree = filteredAndSortedStudents.slice(0, 3);
   const listStudents = filteredAndSortedStudents.slice(3);
   
-  const myRankIndex = filteredAndSortedStudents.findIndex(s => s.user_id === currentUser?.id);
-  const myRank = myRankIndex !== -1 ? myRankIndex + 1 : null;
-
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
