@@ -3,7 +3,6 @@ import TeacherDashboard from './pages/TeacherDashboard';
 import YaraChat from './pages/YaraChat';
 import StudentAssignments from './pages/StudentAssignments';
 import StudentProfile from './pages/StudentProfile';
-import Leaderboard from './pages/Leaderboard';
 import TeacherAssignments from './pages/TeacherAssignments';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherClasses from './pages/TeacherClasses';
@@ -26,7 +25,6 @@ export const PAGES = {
     "YaraChat": YaraChat,
     "StudentAssignments": StudentAssignments,
     "StudentProfile": StudentProfile,
-    "Leaderboard": Leaderboard,
     "TeacherAssignments": TeacherAssignments,
     "AdminDashboard": AdminDashboard,
     "TeacherClasses": TeacherClasses,
