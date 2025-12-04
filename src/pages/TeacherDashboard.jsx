@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Users, BookOpen, CheckCircle, Clock, AlertTriangle, TrendingUp, FileText, Calendar } from "lucide-react";
-import TourGuide from "@/components/shared/TourGuide";
+
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -106,34 +106,11 @@ export default function TeacherDashboard() {
     );
   }
 
-  const tourSteps = [
-    {
-      target: "#teacher-header",
-      title: "پنل مدیریت کلاس",
-      content: "استاد گرامی، به پنل خود خوش آمدید. از اینجا می‌توانید کلاس‌ها و تکالیف خود را مدیریت کنید."
-    },
-    {
-      target: "#teacher-stats",
-      title: "نگاه کلی",
-      content: "خلاصه‌ای از تعداد تکالیف، موارد در انتظار بررسی و وضعیت کلی کلاس‌ها."
-    },
-    {
-      target: "#quick-actions",
-      title: "دسترسی سریع",
-      content: "از اینجا می‌توانید به سرعت تکالیف جدید ایجاد کنید یا به بخش نمرات بروید."
-    },
-    {
-      target: "#pending-reviews",
-      title: "نیاز به بررسی",
-      content: "تکالیفی که دانش‌آموزان ارسال کرده‌اند و منتظر نمره شما هستند در اینجا لیست می‌شوند."
-    }
-  ];
+
 
   return (
     <div className="max-w-7xl mx-auto">
-      {(user?.subject || (user?.teaching_assignments && user.teaching_assignments.length > 0)) && 
-        <TourGuide tourId="teacher_dashboard_tour_v1" steps={tourSteps} />
-      }
+
       <motion.div 
         id="teacher-header"
         initial={{ opacity: 0, y: -20 }}
