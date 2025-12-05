@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber } from "@/components/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { checkAndAwardBadges } from "@/components/gamification/BadgeSystem";
+import { toast } from "sonner";
 
 export default function StudentAssignments() {
   const [user, setUser] = useState(null);

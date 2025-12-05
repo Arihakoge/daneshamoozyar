@@ -104,3 +104,49 @@ export function isOverdue(dueDate) {
     return false;
   }
 }
+
+export function calculateStreak(submissions) {
+  if (!submissions || submissions.length === 0) {
+    return { current: 0, longest: 0, weeklyActivity: [false, false, false, false, false, false, false] };
+  }
+
+  const dates = [...new Set(submissions.map(s => new Date(s.created_date).toDateString()))]
+    .sort((a, b) => new Date(b) - new Date(a));
+
+  const today = new Date();
+  const todayStr = today.toDateString();
+  const yesterdayStr = new Date(today.getTime() - 86400000).toDateString();
+
+  let currentStreak = 0;
+  if (dates.includes(todayStr) || dates.includes(yesterdayStr)) {
+    currentStreak = 1;
+    for (let i = 1; i < dates.length; i++) {
+      const diff = (new Date(dates[i - 1]) - new Date(dates[i])) / 86400000;
+      if (Math.round(diff) === 1) currentStreak++;
+      else break;
+    }
+  }
+
+  let longestStreak = currentStreak;
+  let tempStreak = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const diff = (new Date(dates[i - 1]) - new Date(dates[i])) / 86400000;
+    if (Math.round(diff) === 1) {
+      tempStreak++;
+      longestStreak = Math.max(longestStreak, tempStreak);
+    } else {
+      tempStreak = 1;
+    }
+  }
+
+  const weeklyActivity = [];
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay() - 1);
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(startOfWeek);
+    day.setDate(startOfWeek.getDate() + i);
+    weeklyActivity.push(dates.includes(day.toDateString()));
+  }
+
+  return { current: currentStreak, longest: longestStreak, weeklyActivity };
+}
