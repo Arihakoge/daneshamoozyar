@@ -89,8 +89,7 @@ export default function Layout({ children, currentPageName }) {
       }
 
       const needsProfileCompletion = !user.full_name || user.full_name.trim() === "" ||
-                                     (user.student_role === "student" && !user.grade) ||
-                                     (user.student_role === "teacher" && (!user.grade || !user.subject));
+                                     (user.student_role === "student" && !user.grade);
 
       if (needsProfileCompletion) {
         setShowProfileSetup(true);
