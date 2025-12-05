@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toPersianDate, toPersianDateShort, toPersianNumber } from "@/components/utils";
 import PersianDatePicker from "@/components/ui/PersianDatePicker";
 import { sendAssignmentEmail } from "@/functions/sendAssignmentEmail";
+import { checkAndAwardBadges } from "@/components/gamification/BadgeSystem";
 
 // Simple Persian Calendar Component for Teacher View
 const TeacherCalendarView = ({ assignments }) => {
@@ -404,6 +405,22 @@ export default function TeacherAssignments() {
   const handleGradeSubmission = async (submissionId, score, feedback) => {
     try {
       await base44.entities.Submission.update(submissionId, { score: Number(score), feedback, status: 'graded' });
+      
+      // Get the submission to find student_id and assignment details for badge checking
+      // Optimally we'd have this data, but let's fetch or use what we have.
+      // The SubmissionGradingCard has `submission` and `student` and `maxScore`.
+      // But this function is in the parent. We pass submissionId.
+      // We can find the submission in state `submissions`.
+      const sub = submissions.find(s => s.id === submissionId);
+      const assignment = assignments.find(a => a.id === sub?.assignment_id);
+      
+      if (sub) {
+         await checkAndAwardBadges(sub.student_id, 'graded', { 
+             score: Number(score), 
+             maxScore: assignment ? assignment.max_score : 20 
+         });
+      }
+
       loadData();
     } catch (error) {
       console.error("خطا در ثبت نمره:", error);
