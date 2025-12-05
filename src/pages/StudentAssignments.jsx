@@ -137,6 +137,12 @@ export default function StudentAssignments() {
         coins: (user.coins || 0) + selectedAssignment.coins_reward
       });
 
+      // Check for badges
+      const newBadges = await checkAndAwardBadges(user.id, 'submission', { assignment: selectedAssignment });
+      if (newBadges.length > 0) {
+        toast.success(`تبریک! شما ${newBadges.length} نشان جدید کسب کردید!`);
+      }
+
       setSelectedAssignment(null);
       setSubmissionContent("");
       setSubmissionFile(null);
