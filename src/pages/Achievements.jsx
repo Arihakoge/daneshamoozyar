@@ -5,6 +5,8 @@ import { Trophy, Star, TrendingUp, Award, Flame, Zap, Target, Medal, Crown, Shie
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { toPersianNumber, toPersianDate } from "@/components/utils";
+import { checkAllRetroactiveBadges } from "@/components/gamification/BadgeSystem";
+import { toast } from "sonner";
 
 // تنظیمات نشان‌ها
 const badgeConfigs = {
@@ -193,6 +195,12 @@ export default function Achievements() {
     try {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
+
+      // Check for missing retroactive badges
+      const newRetroBadges = await checkAllRetroactiveBadges(currentUser.id);
+      if (newRetroBadges.length > 0) {
+        toast.success(`شما ${newRetroBadges.length} نشان جدید از فعالیت‌های گذشته دریافت کردید!`);
+      }
 
       const [userBadges, userSubmissions] = await Promise.all([
         base44.entities.Badge.filter({ user_id: currentUser.id }),

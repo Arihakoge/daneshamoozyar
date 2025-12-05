@@ -90,3 +90,124 @@ export const checkAndAwardBadges = async (userId, actionType, data = {}) => {
     return [];
   }
 };
+
+export const checkAllRetroactiveBadges = async (userId) => {
+  try {
+    const [submissions, existingBadges, userProfile] = await Promise.all([
+      base44.entities.Submission.filter({ student_id: userId }),
+      base44.entities.Badge.filter({ user_id: userId }),
+      base44.entities.PublicProfile.filter({ user_id: userId })
+    ]);
+
+    // Fetch assignments related to the user's grade to optimize
+    let assignments = [];
+    if (userProfile[0] && userProfile[0].grade) {
+       assignments = await base44.entities.Assignment.filter({ grade: userProfile[0].grade });
+    } else {
+       assignments = await base44.entities.Assignment.list();
+    }
+    
+    const assignmentMap = {};
+    assignments.forEach(a => assignmentMap[a.id] = a);
+
+    const earnedTypes = new Set(existingBadges.map(b => b.badge_type));
+    const newBadges = [];
+    
+    const award = async (type) => {
+       if (!earnedTypes.has(type)) {
+         await base44.entities.Badge.create({
+           user_id: userId,
+           badge_type: type,
+           earned_at: new Date().toISOString()
+         });
+         newBadges.push(type);
+         earnedTypes.add(type);
+       }
+    };
+
+    // --- Logic ---
+    
+    // 1. Submissions Count (First Submission)
+    if (submissions.length > 0) await award('first_submission');
+
+    // 2. Iterative Checks
+    let perfectScores = 0;
+    let earlySubmissions = 0;
+    let totalScore = 0;
+    let gradedCount = 0;
+    let mathScores = [];
+    let scienceScores = [];
+
+    submissions.forEach(sub => {
+        const assignment = assignmentMap[sub.assignment_id];
+        if (assignment) {
+             // Max Score Check
+             const maxScore = assignment.max_score || 20;
+             if (sub.status === 'graded' && sub.score === maxScore && maxScore > 0) {
+                 perfectScores++;
+             }
+             
+             // Average & Subject Mastery
+             if (sub.status === 'graded' && typeof sub.score === 'number') {
+                 const normalizedScore = (sub.score / maxScore) * 20;
+                 totalScore += normalizedScore;
+                 gradedCount++;
+
+                 if (assignment.subject === 'ریاضی') mathScores.push(normalizedScore);
+                 if (assignment.subject === 'علوم') scienceScores.push(normalizedScore);
+             }
+
+             // Early Bird
+             if (assignment.due_date && sub.submitted_at) {
+                 const due = new Date(assignment.due_date);
+                 const submitted = new Date(sub.submitted_at);
+                 // Check if valid dates
+                 if (!isNaN(due) && !isNaN(submitted)) {
+                     if (due.getTime() - submitted.getTime() > 86400000) {
+                         earlySubmissions++;
+                     }
+                 }
+             }
+        }
+    });
+
+    // Perfect Score
+    if (perfectScores >= 1) await award('perfect_score');
+    
+    // Early Bird (5+)
+    if (earlySubmissions >= 5) await award('early_bird');
+
+    // Consistent (Avg > 15, min 3 assignments)
+    if (gradedCount >= 3) {
+        if ((totalScore / gradedCount) >= 15) await award('consistent');
+    }
+
+    // Math Master (Avg > 18, min 3)
+    if (mathScores.length >= 3) {
+        const avg = mathScores.reduce((a,b)=>a+b,0) / mathScores.length;
+        if (avg >= 18) await award('math_master');
+    }
+
+    // Science Master (Avg > 18, min 3)
+    if (scienceScores.length >= 3) {
+        const avg = scienceScores.reduce((a,b)=>a+b,0) / scienceScores.length;
+        if (avg >= 18) await award('science_master');
+    }
+
+    // Streaks
+    const { longest } = calculateStreak(submissions);
+    if (longest >= 3) await award('streak_3');
+    if (longest >= 7) await award('streak_7');
+    if (longest >= 30) await award('streak_30');
+
+    // Champion (Coins)
+    const coins = userProfile[0]?.coins || 0;
+    if (coins >= 1000) await award('champion');
+
+    return newBadges;
+
+  } catch (e) {
+    console.error("Retroactive check error:", e);
+    return [];
+  }
+};
