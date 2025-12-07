@@ -113,15 +113,17 @@ export const checkAllRetroactiveBadges = async (userId) => {
     const earnedTypes = new Set(existingBadges.map(b => b.badge_type));
     const newBadges = [];
     
-    const award = async (type) => {
-       if (!earnedTypes.has(type)) {
+    const award = async (type, tier = 'bronze') => {
+       const key = `${type}_${tier}`;
+       if (!earnedTypes.has(key)) {
          await base44.entities.Badge.create({
            user_id: userId,
            badge_type: type,
+           tier: tier,
            earned_at: new Date().toISOString()
          });
-         newBadges.push(type);
-         earnedTypes.add(type);
+         newBadges.push({ type, tier });
+         earnedTypes.add(key);
        }
     };
 
@@ -171,11 +173,15 @@ export const checkAllRetroactiveBadges = async (userId) => {
         }
     });
 
-    // Perfect Score
-    if (perfectScores >= 1) await award('perfect_score');
+    // Perfect Score (Tiered)
+    if (perfectScores >= 1) await award('perfect_score', 'bronze');
+    if (perfectScores >= 5) await award('perfect_score', 'silver');
+    if (perfectScores >= 10) await award('perfect_score', 'gold');
     
-    // Early Bird (5+)
-    if (earlySubmissions >= 5) await award('early_bird');
+    // Early Bird (Tiered)
+    if (earlySubmissions >= 3) await award('early_bird', 'bronze');
+    if (earlySubmissions >= 7) await award('early_bird', 'silver');
+    if (earlySubmissions >= 15) await award('early_bird', 'gold');
 
     // Consistent (Avg > 15, min 3 assignments)
     if (gradedCount >= 3) {
@@ -194,11 +200,11 @@ export const checkAllRetroactiveBadges = async (userId) => {
         if (avg >= 18) await award('science_master');
     }
 
-    // Streaks
+    // Streaks (Tiered)
     const { longest } = calculateStreak(submissions);
-    if (longest >= 3) await award('streak_3');
-    if (longest >= 7) await award('streak_7');
-    if (longest >= 30) await award('streak_30');
+    if (longest >= 3) await award('streak_3', 'bronze');
+    if (longest >= 7) await award('streak_7', 'silver');
+    if (longest >= 30) await award('streak_30', 'gold');
 
     // Champion (Coins)
     const coins = userProfile[0]?.coins || 0;

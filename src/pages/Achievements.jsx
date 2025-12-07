@@ -7,6 +7,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toPersianNumber, toPersianDate } from "@/components/utils";
 import { checkAllRetroactiveBadges } from "@/components/gamification/BadgeSystem";
 import { toast } from "sonner";
+import { Share2, Download, Clock, Users } from "lucide-react";
+import html2canvas from "html2canvas";
 
 // تنظیمات نشان‌ها
 const badgeConfigs = {
