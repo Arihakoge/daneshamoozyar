@@ -202,6 +202,7 @@ export default function Layout({ children, currentPageName }) {
         { title: "داشبورد مدیریت", url: createPageUrl("AdminDashboard"), icon: LayoutDashboard },
         { title: "مدیریت کاربران", url: createPageUrl("AdminUsers"), icon: Users },
         { title: "مدیریت کلاس‌ها", url: createPageUrl("AdminClasses"), icon: GraduationCap },
+        { title: "تولید محتوای AI", url: createPageUrl("ContentGenerator"), icon: MessageCircle },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "تابلوی امتیازات", url: createPageUrl("AdminScoreboard"), icon: Trophy },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },

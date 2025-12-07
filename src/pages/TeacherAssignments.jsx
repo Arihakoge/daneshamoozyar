@@ -89,13 +89,53 @@ const TeacherCalendarView = ({ assignments }) => {
   );
 };
 
-function SubmissionGradingCard({ submission, student, onGrade, maxScore }) {
+function SubmissionGradingCard({ submission, student, onGrade, maxScore, assignment }) {
   const [score, setScore] = useState(submission.score || "");
   const [feedback, setFeedback] = useState(submission.feedback || "");
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   const handleGrade = () => {
     if (score !== "") {
       onGrade(submission.id, score, feedback);
+    }
+  };
+
+  const generateAIFeedback = async () => {
+    if (!score || score === "") {
+      alert("لطفاً ابتدا نمره را وارد کنید");
+      return;
+    }
+    
+    setAiGenerating(true);
+    try {
+      const scorePercent = ((Number(score) / maxScore) * 100).toFixed(0);
+      const performance = scorePercent >= 90 ? "عالی" : scorePercent >= 70 ? "خوب" : scorePercent >= 50 ? "متوسط" : "ضعیف";
+      
+      const prompt = `شما یک معلم ${assignment.subject} هستید. یک دانش‌آموز تکلیف "${assignment.title}" را انجام داده است.
+      
+توضیحات تکلیف: ${assignment.description}
+نمره دانش‌آموز: ${score} از ${maxScore} (${scorePercent}%)
+عملکرد: ${performance}
+
+لطفاً یک بازخورد شخصی‌سازی شده و سازنده به فارسی برای این دانش‌آموز بنویسید که شامل:
+1. تشویق نقاط قوت
+2. اشاره به نقاط قابل بهبود
+3. پیشنهادات عملی برای پیشرفت
+4. لحن مثبت و انگیزه‌بخش
+
+بازخورد باید کوتاه (2-3 جمله) و مفید باشد.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: prompt,
+        add_context_from_internet: false
+      });
+      
+      setFeedback(result);
+    } catch (error) {
+      console.error("خطا در تولید بازخورد:", error);
+      alert("خطا در تولید بازخورد هوشمند");
+    } finally {
+      setAiGenerating(false);
     }
   };
 
@@ -147,12 +187,27 @@ function SubmissionGradingCard({ submission, student, onGrade, maxScore }) {
               min="0" 
               className="clay-card text-white" 
             />
-            <Textarea 
-              placeholder="بازخورد (اختیاری)" 
-              value={feedback} 
-              onChange={e => setFeedback(e.target.value)} 
-              className="clay-card text-white"
-            />
+            <div className="flex gap-2">
+              <Textarea 
+                placeholder="بازخورد (اختیاری)" 
+                value={feedback} 
+                onChange={e => setFeedback(e.target.value)} 
+                className="clay-card text-white flex-1"
+              />
+              <Button
+                type="button"
+                onClick={generateAIFeedback}
+                disabled={aiGenerating}
+                className="clay-button bg-purple-500 text-white hover:bg-purple-600 self-start"
+                title="پیشنهاد بازخورد هوشمند"
+              >
+                {aiGenerating ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                ) : (
+                  "🤖 AI"
+                )}
+              </Button>
+            </div>
             <Button 
               onClick={handleGrade} 
               className="w-full clay-button bg-green-500 text-white hover:bg-green-600"
@@ -854,7 +909,8 @@ export default function TeacherAssignments() {
                         submission={sub} 
                         student={student} 
                         onGrade={handleGradeSubmission} 
-                        maxScore={selectedAssignment.max_score} 
+                        maxScore={selectedAssignment.max_score}
+                        assignment={selectedAssignment}
                       />
                     );
                   })
