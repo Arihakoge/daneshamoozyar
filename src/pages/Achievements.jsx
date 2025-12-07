@@ -220,6 +220,8 @@ export default function Achievements() {
   const [loading, setLoading] = useState(true);
   const [selectedBadge, setSelectedBadge] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [allStudents, setAllStudents] = useState([]);
+  const [allBadges, setAllBadges] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -235,13 +237,17 @@ export default function Achievements() {
         toast.success(`شما ${newRetroBadges.length} نشان جدید از فعالیت‌های گذشته دریافت کردید!`);
       }
 
-      const [userBadges, userSubmissions] = await Promise.all([
+      const [userBadges, userSubmissions, students, allBadgesData] = await Promise.all([
         base44.entities.Badge.filter({ user_id: currentUser.id }),
-        base44.entities.Submission.filter({ student_id: currentUser.id })
+        base44.entities.Submission.filter({ student_id: currentUser.id }),
+        base44.entities.User.list(),
+        base44.entities.Badge.list()
       ]);
       
       setBadges(userBadges || []);
       setSubmissions(userSubmissions || []);
+      setAllStudents(students.filter(s => s.student_role === 'student') || []);
+      setAllBadges(allBadgesData || []);
 
       if (currentUser.grade) {
         const gradeAssignments = await base44.entities.Assignment.filter({ grade: currentUser.grade });
@@ -279,14 +285,19 @@ export default function Achievements() {
   };
 
   const handleDownload = async (badgeType) => {
-    const element = document.getElementById(`badge-${badgeType}`);
+    const element = document.getElementById(`badge-story-${badgeType}`);
     if (!element) return;
     
     try {
-      const canvas = await html2canvas(element, { backgroundColor: null });
+      const canvas = await html2canvas(element, { 
+        backgroundColor: '#1e293b',
+        scale: 2,
+        width: 1080,
+        height: 1920
+      });
       const link = document.createElement('a');
-      link.download = `badge-${badgeType}.png`;
-      link.href = canvas.toDataURL();
+      link.download = `badge-${badgeType}-story.png`;
+      link.href = canvas.toDataURL('image/png');
       link.click();
       toast.success("تصویر ذخیره شد");
     } catch (err) {
@@ -637,6 +648,182 @@ export default function Achievements() {
           onDownload={handleDownload}
         />
       )}
+
+      {/* Hidden Story Cards for Download */}
+      {badges.map(badge => {
+        const config = badgeConfigs[badge.badge_type];
+        const tierConfig = badge.tier ? tierConfigs[badge.tier] : null;
+        if (!config) return null;
+        
+        const Icon = config.icon;
+        const badgeHolders = allBadges.filter(b => b.badge_type === badge.badge_type && (!badge.tier || b.tier === badge.tier));
+        const percentage = allStudents.length > 0 ? Math.round((badgeHolders.length / allStudents.length) * 100) : 0;
+        
+        return (
+          <div 
+            key={badge.id}
+            id={`badge-story-${badge.badge_type}`}
+            className="fixed"
+            style={{ 
+              left: '-9999px',
+              top: 0,
+              width: '1080px', 
+              height: '1920px',
+              background: 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%)',
+              padding: '80px',
+              direction: 'rtl',
+              fontFamily: 'Arial, sans-serif'
+            }}
+          >
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+              <div style={{ 
+                fontSize: '48px', 
+                color: '#fff', 
+                fontWeight: 'bold',
+                marginBottom: '20px'
+              }}>
+                🎓 سیستم دانش‌آموزیار
+              </div>
+              <div style={{ 
+                fontSize: '32px', 
+                color: '#94a3b8',
+                fontWeight: '500'
+              }}>
+                دستاورد جدید کسب شد!
+              </div>
+            </div>
+
+            {/* Badge Display */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              marginBottom: '60px'
+            }}>
+              <div style={{
+                width: '400px',
+                height: '400px',
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${config.color.includes('from-') ? '#8B5CF6' : '#8B5CF6'}, ${config.color.includes('to-') ? '#EC4899' : '#EC4899'})`,
+                padding: '12px',
+                position: 'relative',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                border: tierConfig ? `8px solid ${tierConfig.border.includes('border-orange') ? '#ea580c' : tierConfig.border.includes('border-gray') ? '#9ca3af' : '#fbbf24'}` : 'none'
+              }}>
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  background: 'rgba(15, 23, 42, 0.9)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '180px'
+                }}>
+                  {config.icon === Star && '⭐'}
+                  {config.icon === Trophy && '🏆'}
+                  {config.icon === Flame && '🔥'}
+                  {config.icon === Zap && '⚡'}
+                  {config.icon === Target && '🎯'}
+                  {config.icon === Medal && '🏅'}
+                  {config.icon === Crown && '👑'}
+                  {config.icon === Heart && '❤️'}
+                  {config.icon === TrendingUp && '📈'}
+                  {config.icon === Users && '👥'}
+                </div>
+                {tierConfig && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '20px',
+                    right: '20px',
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    background: tierConfig.color.includes('from-orange') ? 'linear-gradient(135deg, #c2410c, #d97706)' : tierConfig.color.includes('from-gray') ? 'linear-gradient(135deg, #9ca3af, #cbd5e1)' : 'linear-gradient(135deg, #fbbf24, #fcd34d)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '60px',
+                    border: '6px solid #0f172a',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                  }}>
+                    {tierConfig.icon}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Badge Info */}
+            <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+              <div style={{ 
+                fontSize: '72px', 
+                color: '#fff', 
+                fontWeight: 'bold',
+                marginBottom: '20px'
+              }}>
+                {config.name}
+              </div>
+              {tierConfig && (
+                <div style={{ 
+                  fontSize: '48px', 
+                  color: '#a78bfa',
+                  marginBottom: '20px'
+                }}>
+                  سطح {tierConfig.name}
+                </div>
+              )}
+              <div style={{ 
+                fontSize: '36px', 
+                color: '#94a3b8',
+                lineHeight: '1.6'
+              }}>
+                {config.description}
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div style={{
+              background: 'rgba(100, 116, 139, 0.2)',
+              borderRadius: '30px',
+              padding: '50px',
+              marginBottom: '60px'
+            }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '40px'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '80px', color: '#10b981', fontWeight: 'bold' }}>
+                    {toPersianNumber(percentage)}%
+                  </div>
+                  <div style={{ fontSize: '28px', color: '#94a3b8' }}>
+                    از دانش‌آموزان این نشان را دارند
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '36px', color: '#fbbf24', fontWeight: 'bold', marginBottom: '10px' }}>
+                    📅
+                  </div>
+                  <div style={{ fontSize: '28px', color: '#94a3b8' }}>
+                    {toPersianDate(badge.earned_at)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              textAlign: 'center',
+              fontSize: '32px',
+              color: '#64748b'
+            }}>
+              {user?.display_name || user?.full_name || 'دانش‌آموز'}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
