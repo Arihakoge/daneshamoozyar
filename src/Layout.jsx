@@ -185,7 +185,6 @@ export default function Layout({ children, currentPageName }) {
         { title: "دستاوردها", url: createPageUrl("Achievements"), icon: Trophy },
         { title: "پروفایل من", url: createPageUrl("StudentProfile"), icon: UserIcon },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
-        { title: "تابلوی امتیازات", url: createPageUrl("Scoreboard"), icon: Trophy },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
       ];
     } else if (role === "teacher") {
@@ -194,7 +193,6 @@ export default function Layout({ children, currentPageName }) {
         { title: "مدیریت تکالیف", url: createPageUrl("TeacherAssignments"), icon: FileText },
         { title: "گزارش‌های عملکرد", url: createPageUrl("TeacherReports"), icon: FileText },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
-        { title: "تابلوی امتیازات", url: createPageUrl("TeacherScoreboard"), icon: Trophy },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
       ];
     } else if (role === "admin") {
@@ -204,7 +202,6 @@ export default function Layout({ children, currentPageName }) {
         { title: "مدیریت کلاس‌ها", url: createPageUrl("AdminClasses"), icon: GraduationCap },
         { title: "تولید محتوای AI", url: createPageUrl("ContentGenerator"), icon: MessageCircle },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
-        { title: "تابلوی امتیازات", url: createPageUrl("AdminScoreboard"), icon: Trophy },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
       ];
     }
