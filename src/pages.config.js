@@ -17,6 +17,7 @@ import AdminEditUser from './pages/AdminEditUser';
 import TeacherReports from './pages/TeacherReports';
 import Achievements from './pages/Achievements';
 import ContentGenerator from './pages/ContentGenerator';
+import Messages from './pages/Messages';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +41,7 @@ export const PAGES = {
     "TeacherReports": TeacherReports,
     "Achievements": Achievements,
     "ContentGenerator": ContentGenerator,
+    "Messages": Messages,
 }
 
 export const pagesConfig = {

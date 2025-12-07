@@ -182,6 +182,7 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد", url: createPageUrl("StudentDashboard"), icon: LayoutDashboard },
         { title: "تکالیف من", url: createPageUrl("StudentAssignments"), icon: BookOpen },
+        { title: "پیام‌ها", url: createPageUrl("Messages"), icon: MessageCircle },
         { title: "دستاوردها", url: createPageUrl("Achievements"), icon: Trophy },
         { title: "پروفایل من", url: createPageUrl("StudentProfile"), icon: UserIcon },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
@@ -191,6 +192,7 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد", url: createPageUrl("TeacherDashboard"), icon: LayoutDashboard },
         { title: "مدیریت تکالیف", url: createPageUrl("TeacherAssignments"), icon: FileText },
+        { title: "پیام‌ها", url: createPageUrl("Messages"), icon: MessageCircle },
         { title: "گزارش‌های عملکرد", url: createPageUrl("TeacherReports"), icon: FileText },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
@@ -200,6 +202,7 @@ export default function Layout({ children, currentPageName }) {
         { title: "داشبورد مدیریت", url: createPageUrl("AdminDashboard"), icon: LayoutDashboard },
         { title: "مدیریت کاربران", url: createPageUrl("AdminUsers"), icon: Users },
         { title: "مدیریت کلاس‌ها", url: createPageUrl("AdminClasses"), icon: GraduationCap },
+        { title: "پیام‌ها", url: createPageUrl("Messages"), icon: MessageCircle },
         { title: "تولید محتوای AI", url: createPageUrl("ContentGenerator"), icon: MessageCircle },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
