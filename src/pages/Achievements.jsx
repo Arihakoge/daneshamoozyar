@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
 import { Trophy, Star, TrendingUp, Award, Flame, Zap, Target, Medal, Crown, Shield, Rocket, Gem, Heart, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { toPersianNumber, toPersianDate } from "@/components/utils";
 import { checkAllRetroactiveBadges } from "@/components/gamification/BadgeSystem";
@@ -25,7 +26,14 @@ const badgeConfigs = {
   rising_star: { name: "ستاره در حال طلوع", icon: TrendingUp, color: "from-indigo-400 to-purple-500", description: "پیشرفت چشمگیر" },
   math_master: { name: "استاد ریاضی", icon: Medal, color: "from-blue-500 to-indigo-600", description: "میانگین بالای ۱۸ در ریاضی" },
   science_master: { name: "استاد علوم", icon: Medal, color: "from-green-500 to-emerald-600", description: "میانگین بالای ۱۸ در علوم" },
-  all_subjects: { name: "همه‌فن‌حریف", icon: Star, color: "from-violet-400 to-fuchsia-500", description: "نمره بالای ۱۵ در همه دروس" }
+  team_player: { name: "بازیکن تیمی", icon: Users, color: "from-cyan-400 to-blue-500", description: "همکاری موثر با کلاس" },
+  class_champion: { name: "قهرمان کلاس", icon: Crown, color: "from-rose-400 to-pink-500", description: "بهترین عملکرد کلاسی" }
+};
+
+const tierConfigs = {
+  bronze: { name: "برنز", color: "from-orange-700 to-amber-600", icon: "🥉", border: "border-orange-600" },
+  silver: { name: "نقره", color: "from-gray-400 to-slate-300", icon: "🥈", border: "border-gray-400" },
+  gold: { name: "طلا", color: "from-yellow-400 to-amber-300", icon: "🥇", border: "border-yellow-400" }
 };
 
 // تنظیمات سطح‌ها
@@ -110,8 +118,9 @@ function calculateStreak(submissions) {
 }
 
 // کامپوننت نمایش نشان
-function BadgeCard({ badgeType, earned, onClick }) {
+function BadgeCard({ badgeType, tier, earned, onClick }) {
   const config = badgeConfigs[badgeType];
+  const tierConfig = tier ? tierConfigs[tier] : null;
   if (!config) return null;
   const Icon = config.icon;
 
@@ -119,29 +128,35 @@ function BadgeCard({ badgeType, earned, onClick }) {
     <motion.div
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      onClick={() => onClick(badgeType, config, earned)}
-      className={`cursor-pointer text-center ${earned ? '' : 'opacity-40 grayscale'}`}
+      onClick={() => onClick(badgeType, config, tier, earned)}
+      className={`cursor-pointer text-center relative ${earned ? '' : 'opacity-40 grayscale'}`}
     >
-      <div className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-br ${config.color} p-1 shadow-lg`}>
+      <div className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-br ${config.color} p-1 shadow-lg ${tierConfig ? `ring-2 ${tierConfig.border}` : ''}`}>
         <div className="w-full h-full rounded-full bg-gray-900/80 flex items-center justify-center">
           <Icon className="w-8 h-8 text-white" />
         </div>
       </div>
-      {earned && (
+      {earned && tierConfig && (
+        <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br ${tierConfig.color} flex items-center justify-center text-xs border-2 border-slate-900 shadow-lg`}>
+          {tierConfig.icon}
+        </div>
+      )}
+      {earned && !tierConfig && (
         <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
           <CheckCircle className="w-3 h-3 text-white" />
         </div>
       )}
       <p className="text-sm font-bold text-white mt-2">{config.name}</p>
-      <p className="text-xs text-gray-400">{config.description}</p>
+      <p className="text-xs text-gray-400">{tierConfig ? tierConfig.name : config.description}</p>
     </motion.div>
   );
 }
 
 // کامپوننت مودال جزئیات نشان
-function BadgeModal({ badge, onClose }) {
+function BadgeModal({ badge, onClose, onShare, onDownload }) {
   if (!badge) return null;
-  const { type, config, earned } = badge;
+  const { type, config, tier, earned } = badge;
+  const tierConfig = tier ? tierConfigs[tier] : null;
   const Icon = config.icon;
 
   return (
@@ -153,25 +168,41 @@ function BadgeModal({ badge, onClose }) {
         onClick={e => e.stopPropagation()}
       >
         <div className="text-center">
-          <div className={`w-24 h-24 mx-auto rounded-full bg-gradient-to-br ${config.color} p-1 shadow-xl mb-4 ${!earned ? 'opacity-50 grayscale' : ''}`}>
-            <div className="w-full h-full rounded-full bg-gray-900/80 flex items-center justify-center">
-              <Icon className="w-12 h-12 text-white" />
+          <div id={`badge-${type}`} className={`w-32 h-32 mx-auto rounded-full bg-gradient-to-br ${config.color} p-1.5 shadow-2xl mb-4 ${!earned ? 'opacity-50 grayscale' : ''} ${tierConfig ? `ring-4 ${tierConfig.border}` : ''}`}>
+            <div className="w-full h-full rounded-full bg-gray-900/80 flex items-center justify-center relative">
+              <Icon className="w-16 h-16 text-white" />
+              {earned && tierConfig && (
+                <div className={`absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br ${tierConfig.color} flex items-center justify-center text-lg border-4 border-slate-900 shadow-xl`}>
+                  {tierConfig.icon}
+                </div>
+              )}
             </div>
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">{config.name}</h2>
+          {tierConfig && <p className="text-lg text-purple-300 mb-2">سطح {tierConfig.name}</p>}
           <p className="text-gray-400 mb-4">{config.description}</p>
           
           {earned ? (
-            <div className="clay-card p-3 bg-green-900/30">
-              <p className="text-green-300 font-bold">🎉 این نشان را کسب کردی!</p>
-            </div>
+            <>
+              <div className="clay-card p-3 bg-green-900/30 mb-4">
+                <p className="text-green-300 font-bold">🎉 این نشان را کسب کردی!</p>
+              </div>
+              <div className="flex gap-2 mb-4">
+                <Button onClick={() => onShare(type, config, tierConfig)} className="flex-1 clay-button bg-purple-600">
+                  <Share2 className="w-4 h-4 mr-2" /> اشتراک
+                </Button>
+                <Button onClick={() => onDownload(type)} className="flex-1 clay-button bg-blue-600">
+                  <Download className="w-4 h-4 mr-2" /> دانلود
+                </Button>
+              </div>
+            </>
           ) : (
-            <div className="clay-card p-3 bg-yellow-900/30">
+            <div className="clay-card p-3 bg-yellow-900/30 mb-4">
               <p className="text-yellow-300">💡 برای کسب این نشان تلاش کن!</p>
             </div>
           )}
           
-          <button onClick={onClose} className="mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
+          <button onClick={onClose} className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition w-full">
             بستن
           </button>
         </div>
@@ -188,6 +219,7 @@ export default function Achievements() {
   const [streakData, setStreakData] = useState({ current: 0, longest: 0, weeklyActivity: [] });
   const [loading, setLoading] = useState(true);
   const [selectedBadge, setSelectedBadge] = useState(null);
+  const [showTimeline, setShowTimeline] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -198,7 +230,6 @@ export default function Achievements() {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
 
-      // Check for missing retroactive badges
       const newRetroBadges = await checkAllRetroactiveBadges(currentUser.id);
       if (newRetroBadges.length > 0) {
         toast.success(`شما ${newRetroBadges.length} نشان جدید از فعالیت‌های گذشته دریافت کردید!`);
@@ -224,6 +255,46 @@ export default function Achievements() {
     setLoading(false);
   };
 
+  const handleBadgeClick = (type, config, tier, earned) => {
+    setSelectedBadge({ type, config, tier, earned });
+  };
+
+  const handleShare = async (type, config, tierConfig) => {
+    const shareText = `🎉 من نشان "${config.name}"${tierConfig ? ` سطح ${tierConfig.name}` : ''} را در سیستم دانش‌آموزیار کسب کردم!`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'دستاورد جدید', text: shareText });
+        toast.success("اشتراک‌گذاری شد");
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          navigator.clipboard.writeText(shareText);
+          toast.success("متن در کلیپ‌بورد کپی شد");
+        }
+      }
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast.success("متن در کلیپ‌بورد کپی شد");
+    }
+  };
+
+  const handleDownload = async (badgeType) => {
+    const element = document.getElementById(`badge-${badgeType}`);
+    if (!element) return;
+    
+    try {
+      const canvas = await html2canvas(element, { backgroundColor: null });
+      const link = document.createElement('a');
+      link.download = `badge-${badgeType}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      toast.success("تصویر ذخیره شد");
+    } catch (err) {
+      console.error('Error downloading:', err);
+      toast.error("خطا در ذخیره تصویر");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -236,7 +307,7 @@ export default function Achievements() {
   }
 
   const levelInfo = getLevelInfo(user?.coins || 0);
-  const earnedBadgeTypes = badges.map(b => b.badge_type);
+  const sortedBadges = [...badges].sort((a, b) => new Date(b.earned_at) - new Date(a.earned_at));
   const allBadgeTypes = Object.keys(badgeConfigs);
   
   const completionRate = assignments.length > 0 ? Math.round((submissions.length / assignments.length) * 100) : 0;
@@ -267,15 +338,10 @@ export default function Achievements() {
     average: Math.round(data.total / data.count)
   }));
 
-  const handleBadgeClick = (type, config, earned) => {
-    setSelectedBadge({ type, config, earned });
-  };
-
   const daysOfWeek = ["ش", "ی", "د", "س", "چ", "پ", "ج"];
 
   return (
     <div className="max-w-7xl mx-auto pb-8">
-      {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
           <Trophy className="w-8 h-8 text-yellow-400" />
@@ -286,7 +352,6 @@ export default function Achievements() {
 
       {/* Level & Streak Row */}
       <div className="grid lg:grid-cols-2 gap-6 mb-8">
-        {/* Level Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="clay-card p-6">
           <div className="flex items-center gap-4 mb-4">
             <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${levelInfo.tier.color} p-1`}>
@@ -322,7 +387,6 @@ export default function Achievements() {
           </div>
         </motion.div>
 
-        {/* Streak Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="clay-card p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500">
@@ -374,7 +438,7 @@ export default function Achievements() {
           <p className="text-sm text-gray-400">تکالیف ارسالی</p>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }} className="clay-card p-4 text-center">
-          <p className="text-3xl font-bold text-yellow-400">{toPersianNumber(earnedBadgeTypes.length)}</p>
+          <p className="text-3xl font-bold text-yellow-400">{toPersianNumber(badges.length)}</p>
           <p className="text-sm text-gray-400">نشان کسب شده</p>
         </motion.div>
       </div>
@@ -383,29 +447,94 @@ export default function Achievements() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-8">
         <Card className="clay-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Award className="w-6 h-6 text-purple-400" />
-              نشان‌های من ({toPersianNumber(earnedBadgeTypes.length)} از {toPersianNumber(allBadgeTypes.length)})
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Award className="w-6 h-6 text-purple-400" />
+                نشان‌های من ({toPersianNumber(badges.length)})
+              </CardTitle>
+              <Button onClick={() => setShowTimeline(!showTimeline)} className="clay-button text-white" size="sm">
+                <Clock className="w-4 h-4 mr-2" />
+                {showTimeline ? 'مشاهده همه' : 'تاریخچه'}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4">
-              {allBadgeTypes.map((type) => (
-                <BadgeCard
-                  key={type}
-                  badgeType={type}
-                  earned={earnedBadgeTypes.includes(type)}
-                  onClick={handleBadgeClick}
-                />
-              ))}
-            </div>
+            {showTimeline ? (
+              <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar">
+                {sortedBadges.length > 0 ? (
+                  sortedBadges.map((badge, index) => {
+                    const config = badgeConfigs[badge.badge_type];
+                    const tierConfig = badge.tier ? tierConfigs[badge.tier] : null;
+                    if (!config) return null;
+                    const Icon = config.icon;
+                    return (
+                      <motion.div
+                        key={badge.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="clay-card p-4 flex items-center gap-4"
+                      >
+                        <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${config.color} p-1 relative flex-shrink-0 ${tierConfig ? `ring-2 ${tierConfig.border}` : ''}`}>
+                          <div className="w-full h-full rounded-full bg-gray-900/80 flex items-center justify-center">
+                            <Icon className="w-6 h-6 text-white" />
+                          </div>
+                          {tierConfig && (
+                            <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br ${tierConfig.color} flex items-center justify-center text-xs border-2 border-slate-900`}>
+                              {tierConfig.icon}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-white">{config.name}</h3>
+                          {tierConfig && <p className="text-xs text-purple-300">{tierConfig.name}</p>}
+                          <div className="flex items-center gap-2 mt-1">
+                            <Clock className="w-3 h-3 text-gray-500" />
+                            <span className="text-xs text-gray-500">{toPersianDate(badge.earned_at)}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => handleShare(badge.badge_type, config, tierConfig)} className="clay-button text-white">
+                            <Share2 className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleDownload(badge.badge_type)} className="clay-button text-white">
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                ) : (
+                  <p className="text-center text-gray-400 py-8">هنوز هیچ نشانی کسب نکرده‌اید</p>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4">
+                {allBadgeTypes.map((type) => {
+                  const userBadgesOfType = badges.filter(b => b.badge_type === type);
+                  const highestTier = userBadgesOfType.sort((a, b) => {
+                    const tierOrder = { bronze: 1, silver: 2, gold: 3 };
+                    return (tierOrder[b.tier] || 0) - (tierOrder[a.tier] || 0);
+                  })[0];
+                  
+                  return (
+                    <BadgeCard
+                      key={type}
+                      badgeType={type}
+                      tier={highestTier?.tier}
+                      earned={!!highestTier}
+                      onClick={handleBadgeClick}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
 
       {/* Charts Row */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Progress Chart */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
           <Card className="clay-card">
             <CardHeader>
@@ -441,7 +570,6 @@ export default function Achievements() {
           </Card>
         </motion.div>
 
-        {/* Subject Chart */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
           <Card className="clay-card">
             <CardHeader>
@@ -501,9 +629,13 @@ export default function Achievements() {
         </Card>
       </motion.div>
 
-      {/* Badge Modal */}
       {selectedBadge && (
-        <BadgeModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
+        <BadgeModal 
+          badge={selectedBadge} 
+          onClose={() => setSelectedBadge(null)}
+          onShare={handleShare}
+          onDownload={handleDownload}
+        />
       )}
     </div>
   );
