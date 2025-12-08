@@ -5,7 +5,7 @@ import { Trophy, Star, TrendingUp, Award, Flame, Zap, Target, Medal, Crown, Shie
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { toPersianNumber, toPersianDate } from "@/components/utils";
+import { toPersianNumber, toPersianDate, normalizeScore } from "@/components/utils";
 import { checkAllRetroactiveBadges } from "@/components/gamification/BadgeSystem";
 import { toast } from "sonner";
 import { Share2, Download, Clock, Users } from "lucide-react";
@@ -329,14 +329,23 @@ export default function Achievements() {
   const completionRate = assignments.length > 0 ? Math.round((submissions.length / assignments.length) * 100) : 0;
   const gradedSubmissions = submissions.filter(s => s.score !== null && s.score !== undefined);
   const averageScore = gradedSubmissions.length > 0 
-    ? Math.round(gradedSubmissions.reduce((sum, s) => sum + s.score, 0) / gradedSubmissions.length) 
+    ? Math.round(gradedSubmissions.reduce((sum, s) => {
+        const assignment = assignments.find(a => a.id === s.assignment_id);
+        return sum + normalizeScore(s.score, assignment?.max_score);
+      }, 0) / gradedSubmissions.length) 
     : 0;
 
   const progressChartData = submissions
     .filter(s => s.score !== null)
     .sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
     .slice(-10)
-    .map((s, i) => ({ name: `${i + 1}`, score: s.score }));
+    .map((s, i) => {
+      const assignment = assignments.find(a => a.id === s.assignment_id);
+      return { 
+        name: `${i + 1}`, 
+        score: normalizeScore(s.score, assignment?.max_score) 
+      };
+    });
 
   const subjectStats = {};
   submissions.forEach(sub => {
@@ -345,7 +354,7 @@ export default function Achievements() {
       if (!subjectStats[assignment.subject]) {
         subjectStats[assignment.subject] = { total: 0, count: 0 };
       }
-      subjectStats[assignment.subject].total += sub.score;
+      subjectStats[assignment.subject].total += normalizeScore(sub.score, assignment.max_score);
       subjectStats[assignment.subject].count += 1;
     }
   });
