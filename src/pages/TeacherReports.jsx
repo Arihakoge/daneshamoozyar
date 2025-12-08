@@ -41,10 +41,9 @@ export default function TeacherReports() {
         setTimeRange(settings[0].default_time_range || "all");
       }
 
+      // Get teacher's assignments without filtering by grade/subject
       const teacherAssignments = await base44.entities.Assignment.filter({
-        teacher_id: currentUser.id,
-        grade: currentUser.grade,
-        subject: currentUser.subject
+        teacher_id: currentUser.id
       });
       setAssignments(teacherAssignments);
 
@@ -53,11 +52,10 @@ export default function TeacherReports() {
       const relevantSubmissions = allSubmissions.filter(s => assignmentIds.includes(s.assignment_id));
       setSubmissions(relevantSubmissions);
 
+      // Get all student profiles
       const allPublicProfiles = await base44.entities.PublicProfile.list();
-      const gradeStudents = allPublicProfiles.filter(p => 
-        p.grade === currentUser.grade && p.student_role === "student"
-      );
-      setStudents(gradeStudents);
+      const allStudents = allPublicProfiles.filter(p => p.student_role === "student");
+      setStudents(allStudents);
 
     } catch (error) {
       console.error("خطا در بارگیری داده‌های گزارش:", error);
@@ -156,7 +154,7 @@ export default function TeacherReports() {
     const filteredSubmissions = getFilteredSubmissions();
     return [
       { name: "در انتظار بررسی", value: filteredSubmissions.filter(s => s.status === "pending").length, color: "#F59E0B" },
-      { name: "نمره داده شده", value: filteredSubmissions.filter(s => s.status === "graded").value, color: "#10B981" },
+      { name: "نمره داده شده", value: filteredSubmissions.filter(s => s.status === "graded").length, color: "#10B981" },
       { name: "دیرکرد", value: filteredSubmissions.filter(s => s.status === "late").length, color: "#EF4444" }
     ];
   };
@@ -257,7 +255,7 @@ export default function TeacherReports() {
               گزارش‌های عملکرد کلاس
             </h1>
             <p className="text-gray-300 text-lg">
-              {user?.subject} - پایه {user?.grade}
+              گزارش تمامی تکالیف شما
             </p>
           </div>
           <Button 
