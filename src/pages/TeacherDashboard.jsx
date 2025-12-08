@@ -70,10 +70,11 @@ export default function TeacherDashboard() {
       }
 
       const allPublicProfiles = await base44.entities.PublicProfile.list();
-      const gradeStudents = allPublicProfiles
-        .filter(p => p.grade === currentUser.grade && p.student_role === 'student')
+      // Fetch all students to ensure we can identify them in submissions regardless of teacher's primary grade
+      const allStudents = allPublicProfiles
+        .filter(p => p.student_role === 'student')
         .map(p => ({ ...p, id: p.user_id }));
-      setStudents(gradeStudents);
+      setStudents(allStudents);
 
     } catch (error) {
       console.error("خطا در بارگیری داده‌ها:", error);
@@ -262,7 +263,7 @@ export default function TeacherDashboard() {
                           </h3>
                           <div className="flex items-center gap-3 text-sm">
                            <p className="text-gray-300">
-                             👤 {student?.full_name || "کاربر حذف شده"}
+                             👤 {student?.full_name || student?.display_name || "کاربر ناشناس"}
                            </p>
                             <p className="text-gray-400">
                               📅 {submission.submitted_at ? toPersianDate(new Date(submission.submitted_at)) : "تاریخ نامشخص"}
