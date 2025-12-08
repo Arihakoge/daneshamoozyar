@@ -133,7 +133,25 @@ export default function StudentDashboard() {
         <h1 className="text-4xl font-bold text-white mb-2">
           سلام {user?.display_name || user?.full_name || "دانش‌آموز عزیز"}! 👋
         </h1>
-        <p className="text-gray-300 text-lg">آماده یادگیری جدید هستی؟</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+          <p className="text-gray-300 text-lg">آماده یادگیری جدید هستی؟</p>
+          
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleSyncCalendar}
+              disabled={syncingCalendar}
+              className="clay-button bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg"
+              size="sm"
+            >
+              {syncingCalendar ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              همگام‌سازی همه تکالیف با تقویم
+            </Button>
+          </div>
+        </div>
       </motion.div>
 
       <div id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
