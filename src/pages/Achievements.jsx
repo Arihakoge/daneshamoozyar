@@ -243,8 +243,8 @@ export default function Achievements() {
       }
 
       const [userBadges, userSubmissions, students, allBadgesData] = await Promise.all([
-        base44.entities.Badge.filter({ user_id: currentUser.id }),
-        base44.entities.Submission.filter({ student_id: currentUser.id }),
+        base44.entities.Badge.filter({ user_id: currentUser.id }, "-earned_at", 100),
+        base44.entities.Submission.filter({ student_id: currentUser.id }, "-created_date", 100),
         base44.entities.User.list(),
         base44.entities.Badge.list()
       ]);
