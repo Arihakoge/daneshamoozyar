@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, Users, Search, Plus, Send, Paperclip, X, Clock } from "lucide-react";
 import { toPersianDate, toPersianTimeAgo, toPersianNumber } from "@/components/utils";
 import { toast } from "sonner";
+import { Check, CheckCheck } from "lucide-react";
 
 export default function Messages() {
   const [user, setUser] = useState(null);
@@ -25,6 +26,30 @@ export default function Messages() {
   const [groupName, setGroupName] = useState("");
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState("");
+  
+  // New Features State
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [inChatSearch, setInChatSearch] = useState("");
+  const [mentionQuery, setMentionQuery] = useState(null);
+
+  const handleMessageChange = (e) => {
+    const val = e.target.value;
+    setNewMessage(val);
+    
+    const lastWord = val.split(" ").pop();
+    if (lastWord && lastWord.startsWith("@")) {
+      setMentionQuery(lastWord.slice(1));
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const addMention = (username) => {
+    const words = newMessage.split(" ");
+    words.pop(); // Remove the @part
+    setNewMessage([...words, `@${username} `].join(" "));
+    setMentionQuery(null);
+  };
 
   useEffect(() => {
     loadData();
@@ -116,10 +141,22 @@ export default function Messages() {
       
       if (file) {
         setUploading(true);
+        // Simulated progress for UX
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => Math.min(prev + 10, 95));
+        }, 300);
+
         const uploadResult = await base44.integrations.Core.UploadFile({ file });
+        
+        clearInterval(progressInterval);
+        setUploadProgress(100);
         fileUrl = uploadResult.file_url;
         fileName = file.name;
-        setUploading(false);
+        
+        setTimeout(() => {
+          setUploading(false);
+          setUploadProgress(0);
+        }, 500);
       }
 
       const messageData = {
@@ -332,7 +369,7 @@ export default function Messages() {
           {selectedConversation ? (
             <>
               {/* Chat Header */}
-              <div className="clay-card p-4 border-b border-gray-700">
+              <div className="clay-card p-4 border-b border-gray-700 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
                     {selectedConversation.type === 'private' ? (
@@ -351,13 +388,40 @@ export default function Messages() {
                     </p>
                   </div>
                 </div>
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input 
+                    placeholder="جستجو در گفتگو..." 
+                    className="clay-card h-9 w-48 text-xs pr-9 text-white bg-slate-800/50"
+                    value={inChatSearch}
+                    onChange={(e) => setInChatSearch(e.target.value)}
+                  />
+                </div>
               </div>
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                {messages.map((msg) => {
+                {messages
+                  .filter(m => !inChatSearch || (m.content && m.content.includes(inChatSearch)) || (m.file_name && m.file_name.includes(inChatSearch)))
+                  .map((msg) => {
                   const sender = allUsers.find(u => u.id === msg.sender_id);
                   const isMe = msg.sender_id === user.id;
+                  const isRead = msg.read_by && msg.read_by.some(id => id !== user.id);
+
+                  // Highlight search term
+                  const content = msg.content;
+                  const highlight = inChatSearch && content ? (
+                    <span dangerouslySetInnerHTML={{
+                      __html: content.replace(new RegExp(inChatSearch, 'g'), `<span class="bg-yellow-500/50 text-white px-1 rounded">${inChatSearch}</span>`)
+                    }} />
+                  ) : content;
+
+                  // Format mentions
+                  const formattedContent = typeof highlight === 'string' ? (
+                    highlight.split(' ').map((word, i) => 
+                      word.startsWith('@') ? <span key={i} className="text-blue-300 font-bold">{word} </span> : word + ' '
+                    )
+                  ) : highlight;
 
                   return (
                     <motion.div
@@ -371,7 +435,7 @@ export default function Messages() {
                           <p className="text-xs text-gray-400 mb-1 mr-2">{sender?.full_name || "کاربر حذف شده"}</p>
                         )}
                         <div className={`clay-card p-3 ${isMe ? 'bg-purple-600' : 'bg-slate-700'}`}>
-                          {msg.content && <p className="text-white">{msg.content}</p>}
+                          {msg.content && <p className="text-white">{formattedContent}</p>}
                           {msg.file_url && (
                             <a
                               href={msg.file_url}
@@ -383,9 +447,14 @@ export default function Messages() {
                               <span className="text-sm">{msg.file_name || 'فایل ضمیمه'}</span>
                             </a>
                           )}
-                          <p className="text-xs text-gray-300 mt-2">
-                            {toPersianTimeAgo(msg.created_date)}
-                          </p>
+                          <div className="flex items-center justify-end gap-1 mt-2">
+                            <p className="text-xs text-gray-300">
+                              {toPersianTimeAgo(msg.created_date)}
+                            </p>
+                            {isMe && (
+                              isRead ? <CheckCheck className="w-3 h-3 text-blue-300" /> : <Check className="w-3 h-3 text-gray-400" />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -393,8 +462,54 @@ export default function Messages() {
                 })}
               </div>
 
-              {/* Input */}
-              <div className="clay-card p-4 border-t border-gray-700">
+              {/* Input & Mentions */}
+              <div className="clay-card p-4 border-t border-gray-700 relative">
+                {/* Upload Progress */}
+                {uploading && (
+                  <div className="mb-2">
+                    <div className="flex justify-between text-xs text-gray-400 mb-1">
+                      <span>در حال آپلود...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-1.5">
+                      <div 
+                        className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Mentions Popup */}
+                {mentionQuery !== null && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute bottom-20 left-4 right-4 clay-card bg-slate-800 p-2 max-h-40 overflow-y-auto shadow-xl z-10"
+                  >
+                    {allUsers
+                      .filter(u => 
+                        selectedConversation.participants.includes(u.id) && 
+                        u.id !== user.id &&
+                        u.full_name.includes(mentionQuery)
+                      )
+                      .map(u => (
+                        <button
+                          key={u.id}
+                          onClick={() => addMention(u.full_name.replace(/\s+/g, '_'))}
+                          className="flex items-center gap-2 w-full p-2 hover:bg-slate-700 rounded text-right"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center text-xs text-white">
+                            {u.full_name.charAt(0)}
+                          </div>
+                          <span className="text-white text-sm">{u.full_name}</span>
+                          <span className="text-gray-500 text-xs mr-auto">@{u.full_name.replace(/\s+/g, '_')}</span>
+                        </button>
+                      ))
+                    }
+                  </motion.div>
+                )}
+
                 {file && (
                   <div className="flex items-center gap-2 mb-2 p-2 bg-slate-700 rounded-lg">
                     <Paperclip className="w-4 h-4 text-gray-400" />
@@ -404,6 +519,7 @@ export default function Messages() {
                     </button>
                   </div>
                 )}
+                
                 <div className="flex gap-2">
                   <Input
                     type="file"
@@ -412,24 +528,24 @@ export default function Messages() {
                     id="file-upload"
                   />
                   <label htmlFor="file-upload">
-                    <Button type="button" variant="ghost" className="clay-button" asChild>
+                    <Button type="button" variant="ghost" className="clay-button hover:bg-purple-500/20" asChild>
                       <span>
-                        <Paperclip className="w-5 h-5" />
+                        <Paperclip className="w-5 h-5 text-gray-300" />
                       </span>
                     </Button>
                   </label>
                   <Input
-                    placeholder="پیام خود را بنویسید..."
+                    placeholder="پیام خود را بنویسید... (@ برای منشن)"
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={handleMessageChange}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    className="clay-card text-white flex-1"
+                    className="clay-card text-white flex-1 border-slate-600 focus:border-purple-500"
                     disabled={sending || uploading}
                   />
                   <Button
                     onClick={handleSendMessage}
                     disabled={sending || uploading || (!newMessage.trim() && !file)}
-                    className="clay-button bg-purple-600"
+                    className="clay-button bg-purple-600 hover:bg-purple-700 text-white"
                   >
                     {sending || uploading ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />

@@ -18,6 +18,7 @@ import TeacherReports from './pages/TeacherReports';
 import Achievements from './pages/Achievements';
 import ContentGenerator from './pages/ContentGenerator';
 import Messages from './pages/Messages';
+import ScoringRules from './pages/ScoringRules';
 import __Layout from './Layout.jsx';
 
 
@@ -42,6 +43,7 @@ export const PAGES = {
     "Achievements": Achievements,
     "ContentGenerator": ContentGenerator,
     "Messages": Messages,
+    "ScoringRules": ScoringRules,
 }
 
 export const pagesConfig = {
