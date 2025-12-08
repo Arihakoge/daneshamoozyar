@@ -298,8 +298,14 @@ export default function TeacherAssignments() {
         setSubmissions([]);
       }
 
-      const allUsers = await base44.entities.User.list();
-      setStudents(allUsers.filter(u => u.student_role === 'student'));
+      const allPublicProfiles = await base44.entities.PublicProfile.list();
+      // Map profiles to include id as user_id for compatibility if needed, 
+      // but PublicProfile has user_id which maps to User.id
+      const mappedStudents = allPublicProfiles
+        .filter(p => p.student_role === 'student')
+        .map(p => ({ ...p, id: p.user_id }));
+        
+      setStudents(mappedStudents);
       
     } catch (error) {
       console.error("خطا در بارگیری داده‌ها:", error);

@@ -44,9 +44,14 @@ export default function AdminDashboard() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [user, setUser] = useState(null);
+
   useEffect(() => {
     const loadData = async () => {
       try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+
         const [users, classes, assignments, submissions] = await Promise.all([
           base44.entities.PublicProfile.list(),
           base44.entities.Class.list(),
@@ -90,10 +95,9 @@ export default function AdminDashboard() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-6">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent flex items-center gap-3">
-              <Shield className="w-8 h-8 text-cyan-500" />
-              پنل مدیریت سیستم
+              سلام {user?.display_name || user?.full_name || "مدیر عزیز"}! 👋
             </h1>
-            <p className="text-slate-400 mt-2">نمای کلی وضعیت مدرسه و مدیریت منابع</p>
+            <p className="text-slate-400 mt-2">به پنل مدیریت سیستم خوش آمدید</p>
           </div>
           <div className="flex gap-3">
              <div className="text-right hidden md:block">

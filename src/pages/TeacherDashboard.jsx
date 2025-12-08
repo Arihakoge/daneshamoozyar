@@ -69,8 +69,10 @@ export default function TeacherDashboard() {
         setSubmissions([]);
       }
 
-      const allUsers = await base44.entities.User.list();
-      const gradeStudents = allUsers.filter(u => u.grade === currentUser.grade && u.student_role === 'student');
+      const allPublicProfiles = await base44.entities.PublicProfile.list();
+      const gradeStudents = allPublicProfiles
+        .filter(p => p.grade === currentUser.grade && p.student_role === 'student')
+        .map(p => ({ ...p, id: p.user_id }));
       setStudents(gradeStudents);
 
     } catch (error) {

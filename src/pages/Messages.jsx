@@ -53,12 +53,18 @@ export default function Messages() {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
 
-      const [allConvs, users, allClasses, allMessages] = await Promise.all([
+      const [allConvs, publicProfiles, allClasses, allMessages] = await Promise.all([
         base44.entities.Conversation.list("-last_message_at"),
-        base44.entities.User.list(),
+        base44.entities.PublicProfile.list(),
         base44.entities.Class.list(),
         base44.entities.Message.list()
       ]);
+
+      // Normalize profiles to be used like users
+      const users = publicProfiles.map(p => ({
+        ...p,
+        id: p.user_id // Use user_id as id for compatibility
+      }));
 
       const userConversations = allConvs.filter(c => 
         c.participants && c.participants.includes(currentUser.id)
