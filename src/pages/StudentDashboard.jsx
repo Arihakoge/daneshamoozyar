@@ -122,7 +122,7 @@ export default function StudentDashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8">
         <h1 className="text-4xl font-bold text-white mb-2">
-          سلام {user?.full_name || "دانش‌آموز عزیز"}! 👋
+          سلام {user?.display_name || user?.full_name || "دانش‌آموز عزیز"}! 👋
         </h1>
         <p className="text-gray-300 text-lg">آماده یادگیری جدید هستی؟</p>
       </motion.div>
