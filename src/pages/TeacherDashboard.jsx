@@ -55,13 +55,14 @@ export default function TeacherDashboard() {
 
       const allAssignments = await base44.entities.Assignment.list("-created_date");
       const teacherAssignments = allAssignments.filter(a => 
-        a.teacher_id === currentUser.id
+        a.teacher_id === currentUser.id && a.is_active === true
       );
       setAssignments(teacherAssignments);
 
       if (teacherAssignments.length > 0) {
         const assignmentIds = teacherAssignments.map(a => a.id);
         const allSubmissions = await base44.entities.Submission.list("-created_date");
+        // Only include submissions for active assignments
         const teacherSubmissions = allSubmissions.filter(sub => assignmentIds.includes(sub.assignment_id));
         setSubmissions(teacherSubmissions);
       } else {
@@ -255,12 +256,12 @@ export default function TeacherDashboard() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <h3 className="font-bold text-white mb-1 text-lg">
-                            {assignment?.title || "تکلیف نامشخص"}
+                           {assignment?.title || "تکلیف حذف شده"}
                           </h3>
                           <div className="flex items-center gap-3 text-sm">
-                            <p className="text-gray-300">
-                              👤 {student?.full_name || "دانش‌آموز نامشخص"}
-                            </p>
+                           <p className="text-gray-300">
+                             👤 {student?.full_name || "کاربر حذف شده"}
+                           </p>
                             <p className="text-gray-400">
                               📅 {submission.submitted_at ? toPersianDate(new Date(submission.submitted_at)) : "تاریخ نامشخص"}
                             </p>

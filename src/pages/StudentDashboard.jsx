@@ -58,7 +58,7 @@ export default function StudentDashboard() {
 
       if (currentUser.grade) {
         const gradeAssignments = await base44.entities.Assignment.filter(
-          { grade: currentUser.grade }, 
+          { grade: currentUser.grade, is_active: true }, 
           "-created_date"
         );
         
@@ -67,11 +67,15 @@ export default function StudentDashboard() {
         );
         setAssignments(filteredAssignments);
 
+        const validAssignmentIds = filteredAssignments.map(a => a.id);
+
         const userSubmissions = await base44.entities.Submission.filter(
           { student_id: currentUser.id }, 
           "-created_date"
         );
-        setSubmissions(userSubmissions);
+        // Filter out submissions for deleted assignments
+        const validSubmissions = userSubmissions.filter(s => validAssignmentIds.includes(s.assignment_id));
+        setSubmissions(validSubmissions);
 
         const userBadges = await base44.entities.Badge.filter({ user_id: currentUser.id });
         setBadges(userBadges);
