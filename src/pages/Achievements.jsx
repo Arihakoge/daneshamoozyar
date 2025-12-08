@@ -8,8 +8,11 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toPersianNumber, toPersianDate, normalizeScore } from "@/components/utils";
 import { checkAllRetroactiveBadges } from "@/components/gamification/BadgeSystem";
 import { toast } from "sonner";
-import { Share2, Download, Clock, Users } from "lucide-react";
+import { Share2, Download, Clock, Users, List, Zap } from "lucide-react";
 import html2canvas from "html2canvas";
+import Leaderboard from "@/components/gamification/Leaderboard";
+import ChallengeBoard from "@/components/gamification/ChallengeBoard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // تنظیمات نشان‌ها
 const badgeConfigs = {
@@ -368,7 +371,21 @@ export default function Achievements() {
         <p className="text-gray-300">مسیر موفقیت تو اینجاست!</p>
       </motion.div>
 
-      {/* Level & Streak Row */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="bg-slate-800 border border-slate-700 w-full md:w-auto">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Trophy className="w-4 h-4" /> نمای کلی
+          </TabsTrigger>
+          <TabsTrigger value="leaderboard" className="flex items-center gap-2">
+            <List className="w-4 h-4" /> رتبه‌بندی
+          </TabsTrigger>
+          <TabsTrigger value="challenges" className="flex items-center gap-2">
+            <Zap className="w-4 h-4" /> چالش‌ها
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          {/* Level & Streak Row */}
       <div className="grid lg:grid-cols-2 gap-6 mb-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="clay-card p-6">
           <div className="flex items-center gap-4 mb-4">
@@ -655,6 +672,21 @@ export default function Achievements() {
           onDownload={handleDownload}
         />
       )}
+
+        </TabsContent>
+        
+        <TabsContent value="leaderboard">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Leaderboard currentUser={user} />
+          </motion.div>
+        </TabsContent>
+
+        <TabsContent value="challenges">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+             <ChallengeBoard currentUser={user} />
+          </motion.div>
+        </TabsContent>
+      </Tabs>
 
       {/* Hidden Story Cards for Download */}
       {badges.map(badge => {

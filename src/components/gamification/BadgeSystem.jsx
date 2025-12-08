@@ -58,9 +58,23 @@ export const checkAndAwardBadges = async (userId, actionType, data = {}) => {
         await award('perfect_score');
       }
       
-      // Subject Mastery (e.g. Math Master)
-      // This requires checking averages.
-      // Let's keep it simple for now.
+      // Quiz Master Logic
+      if (data.assignmentType === 'quiz' && data.score === data.maxScore) {
+          // Check past quizzes
+          const pastQuizzes = submissions.filter(s => {
+              // Note: We need assignment details for all submissions to verify type='quiz'
+              // This is a simplified check assuming we passed assignmentType or check elsewhere.
+              // For accuracy in this simplified function, we rely on the counter.
+              // In a real app, we'd join tables or fetch assignments.
+              return s.status === 'graded'; 
+          });
+          // Assuming we want to award if they hit 3 perfect quizzes. 
+          // Since we don't have full history here easily without fetching assignments, 
+          // we will rely on the Retroactive check for the full logic, 
+          // or assume this is the 3rd one if we tracked it.
+          // For now, let's allow the retroactive check to handle the heavy lifting 
+          // or do a lightweight check if possible.
+      }
     }
 
     // --- Streaks (Checked on submission or login) ---
@@ -139,6 +153,7 @@ export const checkAllRetroactiveBadges = async (userId) => {
     let gradedCount = 0;
     let mathScores = [];
     let scienceScores = [];
+    let perfectQuizzes = 0;
 
     submissions.forEach(sub => {
         const assignment = assignmentMap[sub.assignment_id];
@@ -147,6 +162,9 @@ export const checkAllRetroactiveBadges = async (userId) => {
              const maxScore = assignment.max_score || 20;
              if (sub.status === 'graded' && sub.score === maxScore && maxScore > 0) {
                  perfectScores++;
+                 if (assignment.type === 'quiz') {
+                     perfectQuizzes++;
+                 }
              }
              
              // Average & Subject Mastery
@@ -210,6 +228,12 @@ export const checkAllRetroactiveBadges = async (userId) => {
     const coins = userProfile[0]?.coins || 0;
     if (coins >= 1000) await award('champion');
 
+    // Quiz Master
+    if (perfectQuizzes >= 3) await award('quiz_master');
+
+    // Social Butterfly (Simulated by generic activity for now, or use message count if available)
+    // For now we'll skip complex message counting here to avoid performance hit
+    
     return newBadges;
 
   } catch (e) {

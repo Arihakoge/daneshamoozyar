@@ -145,6 +145,20 @@ const badgeConfigs = {
     color: "from-rose-400 to-pink-500",
     description: "بهترین عملکرد کلاسی",
     howToGet: "بیشترین امتیاز را در کلاس کسب کن!"
+  },
+  quiz_master: {
+    name: "استاد آزمون",
+    icon: Zap,
+    color: "from-indigo-500 to-purple-600",
+    description: "عملکرد عالی در آزمون‌ها",
+    howToGet: "در ۳ آزمون نمره کامل بگیر!"
+  },
+  social_butterfly: {
+    name: "فعال اجتماعی",
+    icon: Users,
+    color: "from-pink-400 to-rose-500",
+    description: "فعالیت بالا در گروه‌ها",
+    howToGet: "در بحث‌های کلاسی مشارکت فعال داشته باش!"
   }
 };
 
