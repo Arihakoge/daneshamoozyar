@@ -157,3 +157,28 @@ export function calculateStreak(submissions) {
 
   return { current: currentStreak, longest: longestStreak, weeklyActivity };
 }
+
+export function generateGoogleCalendarUrl(assignment) {
+  if (!assignment || !assignment.due_date) return '#';
+  
+  const dueDate = new Date(assignment.due_date);
+  // Start time: 1 hour before due date? Or just the due date as start time?
+  // Let's set it as a 1 hour event ending at due date.
+  const end = dueDate;
+  const start = new Date(dueDate.getTime() - 60 * 60 * 1000); 
+
+  const formatDate = (date) => {
+    return date.toISOString().replace(/-|:|\.\d+/g, '');
+  };
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `تکلیف: ${assignment.title}`,
+    details: `${assignment.description}\n\nدرس: ${assignment.subject}\nحداکثر نمره: ${assignment.max_score}`,
+    dates: `${formatDate(start)}/${formatDate(end)}`,
+    location: 'مدرسه',
+    trp: 'false'
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}

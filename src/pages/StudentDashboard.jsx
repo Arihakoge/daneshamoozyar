@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star, Award, Target, Calendar as CalendarIcon, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber, normalizeScore } from "@/components/utils";
+import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber, normalizeScore, generateGoogleCalendarUrl } from "@/components/utils";
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
 import BadgeCard from "@/components/gamification/BadgeCard";
@@ -268,12 +268,22 @@ export default function StudentDashboard() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-left">
+                      <div className="text-left flex flex-col items-end gap-2">
                         <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-400 to-yellow-500 shadow-sm">
                           <span className="text-white font-bold">
                             🪙 {assignment.coins_reward}
                           </span>
                         </div>
+                        <a
+                           href={generateGoogleCalendarUrl(assignment)}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="text-xs flex items-center gap-1 text-gray-400 hover:text-white transition-colors bg-slate-800/50 p-1.5 rounded-lg border border-slate-700/50 hover:border-slate-500"
+                           title="افزودن به تقویم گوگل"
+                        >
+                           <CalendarIcon className="w-3 h-3" />
+                           <Plus className="w-2 h-2" />
+                        </a>
                       </div>
                     </div>
                   </motion.div>

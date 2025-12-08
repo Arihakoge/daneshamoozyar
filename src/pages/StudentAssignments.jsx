@@ -16,7 +16,7 @@ import {
   BookmarkCheck,
   Paperclip
 } from "lucide-react";
-import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber } from "@/components/utils";
+import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber, generateGoogleCalendarUrl } from "@/components/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { checkAndAwardBadges } from "@/components/gamification/BadgeSystem";
 import { applySubmissionRules } from "@/components/gamification/ScoringSystem";
@@ -281,12 +281,22 @@ export default function StudentAssignments() {
                         </Badge>
                       </div>
                     </div>
-                    <div className="text-left">
+                    <div className="text-left flex flex-col items-end gap-2">
                       <div className="clay-button px-3 py-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white">
                         🪙 {toPersianNumber(assignment.coins_reward)}
                       </div>
+                      <a
+                         href={generateGoogleCalendarUrl(assignment)}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors p-1"
+                         title="افزودن به تقویم گوگل"
+                      >
+                         <Calendar className="w-3 h-3" />
+                         <span>+ تقویم</span>
+                      </a>
                       {status.score !== undefined && (
-                        <div className="clay-button px-3 py-1 bg-gradient-to-r from-green-400 to-green-500 text-white mt-2">
+                        <div className="clay-button px-3 py-1 bg-gradient-to-r from-green-400 to-green-500 text-white">
                           ⭐ {toPersianNumber(status.score)}/{toPersianNumber(assignment.max_score)}
                         </div>
                       )}
