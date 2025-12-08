@@ -94,8 +94,8 @@ export const checkAndAwardBadges = async (userId, actionType, data = {}) => {
 export const checkAllRetroactiveBadges = async (userId) => {
   try {
     const [submissions, existingBadges, userProfile] = await Promise.all([
-      base44.entities.Submission.filter({ student_id: userId }),
-      base44.entities.Badge.filter({ user_id: userId }),
+      base44.entities.Submission.filter({ student_id: userId }, "-created_date", 1000),
+      base44.entities.Badge.filter({ user_id: userId }, "-earned_at", 1000),
       base44.entities.PublicProfile.filter({ user_id: userId })
     ]);
 

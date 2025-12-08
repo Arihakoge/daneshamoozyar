@@ -225,9 +225,6 @@ export default function Achievements() {
   const [loading, setLoading] = useState(true);
   const [selectedBadge, setSelectedBadge] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
-  const [allStudents, setAllStudents] = useState([]);
-  const [allBadges, setAllBadges] = useState([]);
-
   useEffect(() => {
     loadData();
   }, []);
@@ -242,17 +239,13 @@ export default function Achievements() {
         toast.success(`شما ${newRetroBadges.length} نشان جدید از فعالیت‌های گذشته دریافت کردید!`);
       }
 
-      const [userBadges, userSubmissions, students, allBadgesData] = await Promise.all([
-        base44.entities.Badge.filter({ user_id: currentUser.id }, "-earned_at", 100),
-        base44.entities.Submission.filter({ student_id: currentUser.id }, "-created_date", 100),
-        base44.entities.User.list(),
-        base44.entities.Badge.list()
+      const [userBadges, userSubmissions] = await Promise.all([
+        base44.entities.Badge.filter({ user_id: currentUser.id }, "-earned_at", 1000),
+        base44.entities.Submission.filter({ student_id: currentUser.id }, "-created_date", 1000)
       ]);
       
       setBadges(userBadges || []);
       setSubmissions(userSubmissions || []);
-      setAllStudents(students.filter(s => s.student_role === 'student') || []);
-      setAllBadges(allBadgesData || []);
 
       if (currentUser.grade) {
         const gradeAssignments = await base44.entities.Assignment.filter({ grade: currentUser.grade });
@@ -670,8 +663,8 @@ export default function Achievements() {
         if (!config) return null;
         
         const Icon = config.icon;
-        const badgeHolders = allBadges.filter(b => b.badge_type === badge.badge_type && (!badge.tier || b.tier === badge.tier));
-        const percentage = allStudents.length > 0 ? Math.round((badgeHolders.length / allStudents.length) * 100) : 0;
+        // Percentage calculation removed for performance
+        const percentage = 0;
         
         return (
           <div 
@@ -810,10 +803,10 @@ export default function Achievements() {
               }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '80px', color: '#10b981', fontWeight: 'bold' }}>
-                    {toPersianNumber(percentage)}%
+                    ✨
                   </div>
                   <div style={{ fontSize: '28px', color: '#94a3b8' }}>
-                    از دانش‌آموزان این نشان را دارند
+                     نشان کسب شده
                   </div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
