@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { toPersianDate, toPersianNumber } from "@/components/utils";
+import { toPersianDate, toPersianNumber, normalizeScore } from "@/components/utils";
 import { createPageUrl } from "@/utils";
 
 function StatsCard({ title, value, icon: Icon, color = "purple", delay = 0 }) {
@@ -96,7 +96,13 @@ export default function TeacherDashboard() {
   const getAverageScore = () => {
     const gradedSubmissions = submissions.filter(s => s.score !== null && s.score !== undefined);
     if (gradedSubmissions.length === 0) return 0;
-    return (gradedSubmissions.reduce((sum, s) => sum + s.score, 0) / gradedSubmissions.length).toFixed(1);
+    
+    const totalNormalized = gradedSubmissions.reduce((sum, s) => {
+        const assignment = assignments.find(a => a.id === s.assignment_id);
+        return sum + normalizeScore(s.score, assignment?.max_score);
+    }, 0);
+    
+    return (totalNormalized / gradedSubmissions.length).toFixed(1);
   };
 
   if (loading) {
