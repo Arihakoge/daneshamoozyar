@@ -60,6 +60,13 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
       return;
     }
 
+    // Persian character validation
+    const persianRegex = /^[\u0600-\u06FF\s]+$/;
+    if (!persianRegex.test(formData.full_name.trim())) {
+      setError("نام و نام خانوادگی باید فقط شامل حروف فارسی باشد");
+      return;
+    }
+
     if (currentUser.student_role === "student") {
       if (!formData.grade) {
         setError("لطفاً پایه تحصیلی را انتخاب کنید");

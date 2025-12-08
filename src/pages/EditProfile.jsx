@@ -17,7 +17,7 @@ export default function EditProfile() {
   const [uploading, setUploading] = useState(false);
   
   // Form fields
-  const [displayName, setDisplayName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [phone, setPhone] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -42,7 +42,7 @@ export default function EditProfile() {
       const user = await base44.auth.me();
       setCurrentUser(user);
       
-      setDisplayName(user.display_name || user.full_name || "");
+      setFullName(user.full_name || user.display_name || "");
       setBio(user.bio || "");
       setPhone(user.phone || "");
       setInstagram(user.social_links?.instagram || "");
@@ -87,8 +87,15 @@ export default function EditProfile() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (!displayName.trim()) {
-      setErrorMessage("نام نمایشی الزامی است");
+    if (!fullName.trim()) {
+      setErrorMessage("نام و نام خانوادگی الزامی است");
+      return;
+    }
+
+    // Persian character validation
+    const persianRegex = /^[\u0600-\u06FF\s]+$/;
+    if (!persianRegex.test(fullName.trim())) {
+      setErrorMessage("نام و نام خانوادگی باید فقط شامل حروف فارسی باشد");
       return;
     }
 
@@ -101,7 +108,8 @@ export default function EditProfile() {
 
     try {
       const updateData = {
-        display_name: displayName.trim(),
+        full_name: fullName.trim(),
+        display_name: fullName.trim(), // Unify display_name with full_name
         bio: bio || "",
         phone: phone || "",
         social_links: {
@@ -137,8 +145,8 @@ export default function EditProfile() {
         const publicProfiles = await base44.entities.PublicProfile.filter({ user_id: currentUser.id });
         const profileData = {
           user_id: currentUser.id,
-          full_name: currentUser.full_name,
-          display_name: displayName.trim(),
+          full_name: fullName.trim(),
+          display_name: fullName.trim(),
           grade: currentUser.grade || "",
           student_role: currentUser.student_role || "student",
           avatar_color: currentUser.avatar_color || "#8B5CF6",
@@ -239,7 +247,7 @@ export default function EditProfile() {
                   className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold"
                   style={{ backgroundColor: currentUser?.avatar_color || "#8B5CF6" }}
                 >
-                  {(displayName || "د").charAt(0)}
+                  {(fullName || "د").charAt(0)}
                 </div>
               )}
               <div>
@@ -270,12 +278,12 @@ export default function EditProfile() {
           <CardContent className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-white mb-2">
-                نام نمایشی <span className="text-red-400">*</span>
+                نام و نام خانوادگی (فارسی) <span className="text-red-400">*</span>
               </label>
               <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="نام خود را وارد کنید"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="مثال: علی احمدی"
                 className="clay-card text-white"
                 required
               />
