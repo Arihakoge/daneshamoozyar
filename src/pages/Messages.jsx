@@ -200,6 +200,14 @@ export default function Messages() {
     return otherUser?.full_name || "کاربر حذف شده";
   };
 
+  const hasUnreadMessages = (conv) => {
+    const convMessages = messages.filter(m => m.conversation_id === conv.id);
+    return convMessages.some(m => 
+      m.sender_id !== user.id && 
+      (!m.read_by || !m.read_by.includes(user.id))
+    );
+  };
+
   const getUnreadCount = (convId) => {
     return messages.filter(m => 
       m.conversation_id === convId && 
