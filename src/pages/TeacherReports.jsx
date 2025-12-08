@@ -43,12 +43,15 @@ export default function TeacherReports() {
 
       // Get teacher's assignments without filtering by grade/subject
       const teacherAssignments = await base44.entities.Assignment.filter({
-        teacher_id: currentUser.id
+        teacher_id: currentUser.id,
+        is_active: true
       });
       setAssignments(teacherAssignments);
 
       const assignmentIds = teacherAssignments.map(a => a.id);
       const allSubmissions = await base44.entities.Submission.list();
+      
+      // Only include submissions for active assignments
       const relevantSubmissions = allSubmissions.filter(s => assignmentIds.includes(s.assignment_id));
       setSubmissions(relevantSubmissions);
 
