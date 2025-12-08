@@ -23,8 +23,11 @@ import { toPersianDate, toPersianDateShort, toPersianNumber } from "@/components
 import PersianDatePicker from "@/components/ui/PersianDatePicker";
 import { sendAssignmentEmail } from "@/functions/sendAssignmentEmail";
 import { checkAndAwardBadges } from "@/components/gamification/BadgeSystem";
+import { applyGradingRules } from "@/components/gamification/ScoringSystem";
+import AudioRecorder from "@/components/shared/AudioRecorder";
+import { Upload, Paperclip, File as FileIcon, X as XIcon } from "lucide-react";
 
-// Simple Persian Calendar Component for Teacher View
+  // Simple Persian Calendar Component for Teacher View
 const TeacherCalendarView = ({ assignments }) => {
   // Simplified calendar logic: Show next 30 days with deadlines
   const [days, setDays] = useState([]);
@@ -94,9 +97,45 @@ function SubmissionGradingCard({ submission, student, onGrade, maxScore, assignm
   const [feedback, setFeedback] = useState(submission.feedback || "");
   const [aiGenerating, setAiGenerating] = useState(false);
 
-  const handleGrade = () => {
-    if (score !== "") {
-      onGrade(submission.id, score, feedback);
+  // New state for extended feedback
+  const [feedbackFile, setFeedbackFile] = useState(null);
+  const [feedbackAudioBlob, setFeedbackAudioBlob] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleGrade = async () => {
+    if (score === "") return;
+
+    setIsUploading(true);
+    try {
+      let feedbackFileUrl = submission.feedback_file_url;
+      let feedbackFileName = submission.feedback_file_name;
+      let feedbackAudioUrl = submission.feedback_audio_url;
+
+      // Upload feedback file if new one selected
+      if (feedbackFile) {
+        const res = await base44.integrations.Core.UploadFile({ file: feedbackFile });
+        feedbackFileUrl = res.file_url;
+        feedbackFileName = feedbackFile.name;
+      }
+
+      // Upload audio if recorded
+      if (feedbackAudioBlob) {
+        // Convert blob to file
+        const audioFile = new File([feedbackAudioBlob], "feedback-audio.webm", { type: "audio/webm" });
+        const res = await base44.integrations.Core.UploadFile({ file: audioFile });
+        feedbackAudioUrl = res.file_url;
+      }
+
+      onGrade(submission.id, score, feedback, {
+        feedback_file_url: feedbackFileUrl,
+        feedback_file_name: feedbackFileName,
+        feedback_audio_url: feedbackAudioUrl
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("خطا در آپلود فایل‌های بازخورد");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -166,53 +205,149 @@ function SubmissionGradingCard({ submission, student, onGrade, maxScore, assignm
         )}
         
         {submission.status === 'graded' ? (
-          <div className="clay-card bg-green-500/10 p-4">
+          <div className="clay-card bg-green-500/10 p-4 space-y-3">
             <p className="text-white">
               <span className="font-bold">نمره:</span> {toPersianNumber(submission.score)} از {toPersianNumber(maxScore)}
             </p>
             {submission.feedback && (
-              <p className="text-gray-300 mt-2">
-                <span className="font-bold">بازخورد:</span> {submission.feedback}
+              <p className="text-gray-300">
+                <span className="font-bold">بازخورد متنی:</span> {submission.feedback}
               </p>
             )}
+            {submission.feedback_audio_url && (
+              <div className="mt-2">
+                <span className="text-xs text-gray-400 block mb-1">بازخورد صوتی:</span>
+                <audio src={submission.feedback_audio_url} controls className="w-full h-8" />
+              </div>
+            )}
+            {submission.feedback_file_url && (
+              <div className="mt-2">
+                <a 
+                  href={submission.feedback_file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  <Paperclip className="w-4 h-4" />
+                  {submission.feedback_file_name || "فایل ضمیمه بازخورد"}
+                </a>
+              </div>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => {
+                 // Allow re-grading (reset status to allow editing)
+                 // We need to implement a re-grade mode or just let them edit
+                 // For now, let's just show current status. Re-grading logic requires parent update.
+              }}
+              className="text-xs text-gray-500 hover:text-white mt-2"
+            >
+              (نمره نهایی شده است)
+            </Button>
           </div>
         ) : (
-          <div className="space-y-2">
-            <Input 
-              type="number" 
-              placeholder="نمره" 
-              value={score} 
-              onChange={e => setScore(e.target.value)} 
-              max={maxScore} 
-              min="0" 
-              className="clay-card text-white" 
-            />
-            <div className="flex gap-2">
-              <Textarea 
-                placeholder="بازخورد (اختیاری)" 
-                value={feedback} 
-                onChange={e => setFeedback(e.target.value)} 
-                className="clay-card text-white flex-1"
-              />
-              <Button
-                type="button"
-                onClick={generateAIFeedback}
-                disabled={aiGenerating}
-                className="clay-button bg-purple-500 text-white hover:bg-purple-600 self-start"
-                title="پیشنهاد بازخورد هوشمند"
-              >
-                {aiGenerating ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                ) : (
-                  "🤖 یارا"
-                )}
-              </Button>
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="text-xs text-gray-400 mb-1 block">نمره</label>
+                <Input 
+                  type="number" 
+                  placeholder={`از ${maxScore}`} 
+                  value={score} 
+                  onChange={e => setScore(e.target.value)} 
+                  max={maxScore} 
+                  min="0" 
+                  className="clay-card text-white" 
+                />
+              </div>
             </div>
+
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">بازخورد متنی</label>
+              <div className="flex gap-2">
+                <Textarea 
+                  placeholder="بازخورد خود را بنویسید..." 
+                  value={feedback} 
+                  onChange={e => setFeedback(e.target.value)} 
+                  className="clay-card text-white flex-1 min-h-[80px]"
+                />
+                <Button
+                  type="button"
+                  onClick={generateAIFeedback}
+                  disabled={aiGenerating}
+                  className="clay-button bg-purple-500 text-white hover:bg-purple-600 self-start h-full"
+                  title="پیشنهاد بازخورد هوشمند"
+                >
+                  {aiGenerating ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1">
+                      <span>🤖</span>
+                      <span className="text-xs">یارا</span>
+                    </div>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                 <label className="text-xs text-gray-400 mb-1 block">بازخورد صوتی</label>
+                 <AudioRecorder onRecordingComplete={setFeedbackAudioBlob} />
+              </div>
+              <div>
+                 <label className="text-xs text-gray-400 mb-1 block">فایل ضمیمه (پاسخ‌نامه/روبیک)</label>
+                 <div className="relative">
+                   <input
+                     type="file"
+                     onChange={(e) => setFeedbackFile(e.target.files[0])}
+                     className="hidden"
+                     id={`feedback-file-${submission.id}`}
+                   />
+                   <label 
+                     htmlFor={`feedback-file-${submission.id}`}
+                     className="flex items-center justify-center gap-2 p-2 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-700 text-sm text-gray-300 h-[50px]"
+                   >
+                     {feedbackFile ? (
+                       <>
+                         <FileIcon className="w-4 h-4 text-blue-400" />
+                         <span className="truncate max-w-[150px]">{feedbackFile.name}</span>
+                       </>
+                     ) : (
+                       <>
+                         <Upload className="w-4 h-4" />
+                         انتخاب فایل
+                       </>
+                     )}
+                   </label>
+                   {feedbackFile && (
+                     <button 
+                       onClick={() => setFeedbackFile(null)}
+                       className="absolute top-0 left-0 -mt-2 -ml-2 bg-red-500 rounded-full p-1 shadow-md"
+                     >
+                       <XIcon className="w-3 h-3 text-white" />
+                     </button>
+                   )}
+                 </div>
+              </div>
+            </div>
+
             <Button 
               onClick={handleGrade} 
-              className="w-full clay-button bg-green-500 text-white hover:bg-green-600"
+              disabled={isUploading}
+              className="w-full clay-button bg-green-500 text-white hover:bg-green-600 mt-4"
             >
-              <Check className="mr-2 h-4 w-4" /> ثبت نمره
+              {isUploading ? (
+                 <>
+                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                   در حال آپلود و ثبت...
+                 </>
+              ) : (
+                 <>
+                   <Check className="mr-2 h-4 w-4" /> ثبت نمره و بازخورد
+                 </>
+              )}
             </Button>
           </div>
         )}
@@ -463,9 +598,14 @@ export default function TeacherAssignments() {
     }));
   };
 
-  const handleGradeSubmission = async (submissionId, score, feedback) => {
+  const handleGradeSubmission = async (submissionId, score, feedback, extraData = {}) => {
     try {
-      await base44.entities.Submission.update(submissionId, { score: Number(score), feedback, status: 'graded' });
+      await base44.entities.Submission.update(submissionId, { 
+        score: Number(score), 
+        feedback, 
+        status: 'graded',
+        ...extraData
+      });
       
       // Get the submission to find student_id and assignment details for badge checking
       // Optimally we'd have this data, but let's fetch or use what we have.
@@ -480,6 +620,14 @@ export default function TeacherAssignments() {
              score: Number(score), 
              maxScore: assignment ? assignment.max_score : 20 
          });
+
+         // Apply grading rules (e.g. Perfect Score bonus)
+         if (assignment) {
+            await applyGradingRules({ 
+              ...sub, 
+              score: Number(score) 
+            }, assignment);
+         }
       }
 
       loadData();
@@ -505,8 +653,8 @@ export default function TeacherAssignments() {
         <div>
           <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
             <FileText className="w-10 h-10 text-purple-500" />
-            مدیریت تکالیف
-          </h1>
+                      مدیریت تکالیف
+                    </h1>
           <p className="text-gray-300 text-lg">تکالیف خود را ایجاد، زمان‌بندی و مدیریت کنید</p>
         </div>
         <div className="flex items-center gap-3">
