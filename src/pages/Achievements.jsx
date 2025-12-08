@@ -8,7 +8,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toPersianNumber, toPersianDate, normalizeScore } from "@/components/utils";
 import { checkAllRetroactiveBadges } from "@/components/gamification/BadgeSystem";
 import { toast } from "sonner";
-import { Share2, Download, Clock, Users, List, Zap } from "lucide-react";
+import { Share2, Download, Clock, Users, List } from "lucide-react";
 import html2canvas from "html2canvas";
 import Leaderboard from "@/components/gamification/Leaderboard";
 import ChallengeBoard from "@/components/gamification/ChallengeBoard";
