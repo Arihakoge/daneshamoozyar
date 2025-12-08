@@ -142,7 +142,7 @@ function SubmissionGradingCard({ submission, student, onGrade, maxScore, assignm
   return (
     <Card className="clay-card p-4">
       <CardHeader>
-        <CardTitle className="text-white">{student?.full_name || "دانش‌آموز ناشناس"}</CardTitle>
+        <CardTitle className="text-white">{student?.full_name || "کاربر حذف شده"}</CardTitle>
         <p className="text-sm text-gray-400">
           ارسال شده در: {toPersianDate(submission.submitted_at)}
         </p>

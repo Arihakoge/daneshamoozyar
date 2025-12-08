@@ -118,12 +118,12 @@ export default function TeacherReports() {
         : 0;
 
       return {
-        name: student.display_name || student.full_name,
+        name: student.display_name || student.full_name || "کاربر حذف شده",
         submitted: studentSubs.length,
         graded: gradedSubs.length,
         average: parseFloat(avgScore.toFixed(1))
       };
-    });
+    }).filter(s => s.submitted > 0);
 
     return studentActivity.sort((a, b) => b.average - a.average).slice(0, 10);
   };
@@ -185,8 +185,8 @@ export default function TeacherReports() {
       const student = students.find(s => s.user_id === sub.student_id);
       
       return {
-        "دانش‌آموز": student?.display_name || student?.full_name || "نامشخص",
-        "تکلیف": assignment?.title || "نامشخص",
+        "دانش‌آموز": student?.display_name || student?.full_name || "کاربر حذف شده",
+        "تکلیف": assignment?.title || "تکلیف حذف شده",
         "نمره": sub.score || "-",
         "وضعیت": sub.status === "graded" ? "نمره داده شده" : sub.status === "pending" ? "در انتظار" : "دیرکرد",
         "تاریخ ارسال": toPersianDate(sub.created_date)
@@ -471,29 +471,31 @@ export default function TeacherReports() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {topStudents.map((student, index) => (
+                {topStudents.length > 0 ? topStudents.map((student, index) => (
                   <div key={student.user_id} className="clay-card p-4 flex items-center gap-3">
                     <div className="clay-button px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold">
                       #{toPersianNumber(index + 1)}
                     </div>
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: student.avatar_color }}
+                      style={{ backgroundColor: student.avatar_color || "#8B5CF6" }}
                     >
                       {student.profile_image_url ? (
                         <img src={student.profile_image_url} alt="" className="w-full h-full rounded-full object-cover" />
                       ) : (
-                        student.display_name?.charAt(0) || "د"
+                        (student.display_name || student.full_name || "د").charAt(0)
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-white">{student.display_name || student.full_name}</p>
+                      <p className="font-bold text-white">{student.display_name || student.full_name || "کاربر حذف شده"}</p>
                       <p className="text-sm text-gray-400">
                         میانگین: {toPersianNumber(student.avgScore)}
                       </p>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <p className="text-center text-gray-400 py-8">هنوز داده‌ای وجود ندارد</p>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -197,7 +197,7 @@ export default function Messages() {
     
     const otherParticipant = conv.participants.find(p => p !== user.id);
     const otherUser = allUsers.find(u => u.id === otherParticipant);
-    return otherUser?.full_name || "کاربر";
+    return otherUser?.full_name || "کاربر حذف شده";
   };
 
   const getUnreadCount = (convId) => {
@@ -342,7 +342,7 @@ export default function Messages() {
                     >
                       <div className={`max-w-[70%] ${isMe ? 'order-2' : 'order-1'}`}>
                         {!isMe && selectedConversation.type !== 'private' && (
-                          <p className="text-xs text-gray-400 mb-1 mr-2">{sender?.full_name}</p>
+                          <p className="text-xs text-gray-400 mb-1 mr-2">{sender?.full_name || "کاربر حذف شده"}</p>
                         )}
                         <div className={`clay-card p-3 ${isMe ? 'bg-purple-600' : 'bg-slate-700'}`}>
                           {msg.content && <p className="text-white">{msg.content}</p>}
