@@ -16,7 +16,7 @@ import {
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { createPageUrl } from "@/utils";
-import { toPersianNumber } from "@/components/utils";
+import { toPersianNumber, normalizeScore } from "@/components/utils";
 
 export default function StudentProfile() {
   const [user, setUser] = useState(null);
@@ -51,17 +51,26 @@ export default function StudentProfile() {
   const getAverageScore = () => {
     const gradedSubmissions = submissions.filter(s => s.score !== null && s.score !== undefined);
     if (gradedSubmissions.length === 0) return 0;
-    return (gradedSubmissions.reduce((sum, s) => sum + s.score, 0) / gradedSubmissions.length).toFixed(1);
+    
+    const totalNormalized = gradedSubmissions.reduce((sum, s) => {
+      const assignment = assignments.find(a => a.id === s.assignment_id);
+      return sum + normalizeScore(s.score, assignment?.max_score);
+    }, 0);
+    
+    return (totalNormalized / gradedSubmissions.length).toFixed(1);
   };
 
   const getProgressData = () => {
     return submissions
       .filter(s => s.score !== null)
       .slice(-10)
-      .map((s, index) => ({
-        assignment: `تکلیف ${index + 1}`,
-        score: s.score
-      }));
+      .map((s, index) => {
+        const assignment = assignments.find(a => a.id === s.assignment_id);
+        return {
+          assignment: `تکلیف ${index + 1}`,
+          score: normalizeScore(s.score, assignment?.max_score)
+        };
+      });
   };
 
   const getSubjectStats = () => {
@@ -72,9 +81,10 @@ export default function StudentProfile() {
         if (!stats[assignment.subject]) {
           stats[assignment.subject] = { total: 0, count: 0, scores: [] };
         }
-        stats[assignment.subject].total += submission.score;
+        const normalized = normalizeScore(submission.score, assignment.max_score);
+        stats[assignment.subject].total += normalized;
         stats[assignment.subject].count += 1;
-        stats[assignment.subject].scores.push(submission.score);
+        stats[assignment.subject].scores.push(normalized);
       }
     });
 
