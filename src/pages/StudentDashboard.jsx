@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star, Award, Target } from "lucide-react";
-import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber } from "@/components/utils";
+import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber, normalizeScore } from "@/components/utils";
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
 import BadgeCard from "@/components/gamification/BadgeCard";
@@ -97,7 +97,13 @@ export default function StudentDashboard() {
   const getAverageScore = () => {
     const gradedSubmissions = submissions.filter((sub) => sub.score !== null && sub.score !== undefined);
     if (gradedSubmissions.length === 0) return 0;
-    return (gradedSubmissions.reduce((sum, sub) => sum + sub.score, 0) / gradedSubmissions.length).toFixed(1);
+    
+    const totalNormalized = gradedSubmissions.reduce((sum, sub) => {
+      const assignment = assignments.find(a => a.id === sub.assignment_id);
+      return sum + normalizeScore(sub.score, assignment?.max_score);
+    }, 0);
+
+    return (totalNormalized / gradedSubmissions.length).toFixed(1);
   };
 
   if (loading) {
