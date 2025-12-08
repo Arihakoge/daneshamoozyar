@@ -13,11 +13,13 @@ import {
   X,
   CheckCircle,
   Bookmark,
-  BookmarkCheck
+  BookmarkCheck,
+  Paperclip
 } from "lucide-react";
 import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber } from "@/components/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { checkAndAwardBadges } from "@/components/gamification/BadgeSystem";
+import { applySubmissionRules } from "@/components/gamification/ScoringSystem";
 import { toast } from "sonner";
 
 export default function StudentAssignments() {
@@ -148,6 +150,12 @@ export default function StudentAssignments() {
       if (newBadges.length > 0) {
         toast.success(`تبریک! شما ${newBadges.length} نشان جدید کسب کردید!`);
       }
+
+      // Apply smart scoring rules (e.g. Early Submission)
+      await applySubmissionRules({
+        ...submissionData, 
+        submitted_at: new Date().toISOString() // Ensure consistent format
+      }, selectedAssignment);
 
       setSelectedAssignment(null);
       setSubmissionContent("");
@@ -308,10 +316,36 @@ export default function StudentAssignments() {
                     </div>
                   </div>
 
-                  {submission && submission.feedback && (
-                    <div className="clay-card p-4 bg-blue-900/20">
-                      <h4 className="font-bold text-blue-200 mb-2">بازخورد معلم:</h4>
-                      <p className="text-blue-300">{submission.feedback}</p>
+                  {submission && (submission.feedback || submission.feedback_file_url || submission.feedback_audio_url) && (
+                    <div className="clay-card p-4 bg-blue-900/20 space-y-3">
+                      <h4 className="font-bold text-blue-200 border-b border-blue-800/50 pb-2">بازخورد معلم</h4>
+                      
+                      {submission.feedback && (
+                        <div>
+                          <p className="text-blue-300 text-sm leading-relaxed">{submission.feedback}</p>
+                        </div>
+                      )}
+
+                      {submission.feedback_audio_url && (
+                        <div>
+                          <span className="text-xs text-blue-400 block mb-1">پیام صوتی:</span>
+                          <audio src={submission.feedback_audio_url} controls className="w-full h-8" />
+                        </div>
+                      )}
+
+                      {submission.feedback_file_url && (
+                        <div>
+                          <a 
+                            href={submission.feedback_file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-2 bg-blue-900/40 rounded-lg text-blue-300 hover:text-white transition-colors text-sm"
+                          >
+                            <Paperclip className="w-4 h-4" />
+                            {submission.feedback_file_name || "دانلود فایل ضمیمه"}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
 
