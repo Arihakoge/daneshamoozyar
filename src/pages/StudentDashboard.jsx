@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star, Award, Target } from "lucide-react";
+import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star, Award, Target, Calendar as CalendarIcon, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber, normalizeScore } from "@/components/utils";
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
@@ -46,6 +48,7 @@ export default function StudentDashboard() {
   const [submissions, setSubmissions] = useState([]);
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncingCalendar, setSyncingCalendar] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -106,6 +109,45 @@ export default function StudentDashboard() {
     return (totalNormalized / gradedSubmissions.length).toFixed(1);
   };
 
+  const handleSyncCalendar = async () => {
+    setSyncingCalendar(true);
+    try {
+      const response = await base44.functions.invoke("syncCalendar");
+      // Check response structure based on sdk
+      const data = response.data;
+      
+      if (data && data.error) {
+         if (response.status === 403) {
+            toast.error("تقویم متصل نیست. لطفاً از یارا بخواهید تقویم گوگل شما را متصل کند.", {
+              action: {
+                label: "رفتن به یارا",
+                onClick: () => window.location.href = "/YaraChat"
+              }
+            });
+         } else {
+            toast.error(data.details || "خطا در اتصال به تقویم");
+         }
+      } else {
+         const count = data?.added || 0;
+         toast.success(`${count} تکلیف جدید به تقویم گوگل شما اضافه شد.`);
+      }
+    } catch (error) {
+      console.error("Sync error:", error);
+      if (error.response && error.response.status === 403) {
+         toast.error("تقویم متصل نیست. لطفاً از یارا بخواهید تقویم گوگل شما را متصل کند.", {
+           action: {
+             label: "رفتن به یارا",
+             onClick: () => window.location.href = "/YaraChat"
+           }
+         });
+      } else {
+         toast.error("خطا در همگام‌سازی با تقویم");
+      }
+    } finally {
+      setSyncingCalendar(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -130,7 +172,23 @@ export default function StudentDashboard() {
         <h1 className="text-4xl font-bold text-white mb-2">
           سلام {user?.display_name || user?.full_name || "دانش‌آموز عزیز"}! 👋
         </h1>
-        <p className="text-gray-300 text-lg">آماده یادگیری جدید هستی؟</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+          <p className="text-gray-300 text-lg">آماده یادگیری جدید هستی؟</p>
+          
+          <Button 
+            onClick={handleSyncCalendar}
+            disabled={syncingCalendar}
+            className="clay-button bg-blue-600 text-white hover:bg-blue-700"
+            size="sm"
+          >
+            {syncingCalendar ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+            ) : (
+              <CalendarIcon className="w-4 h-4 mr-2" />
+            )}
+            همگام‌سازی با تقویم گوگل
+          </Button>
+        </div>
       </motion.div>
 
       <div id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
