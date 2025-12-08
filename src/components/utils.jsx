@@ -159,26 +159,41 @@ export function calculateStreak(submissions) {
 }
 
 export function generateGoogleCalendarUrl(assignment) {
-  if (!assignment || !assignment.due_date) return '#';
-  
-  const dueDate = new Date(assignment.due_date);
-  // Start time: 1 hour before due date? Or just the due date as start time?
-  // Let's set it as a 1 hour event ending at due date.
-  const end = dueDate;
-  const start = new Date(dueDate.getTime() - 60 * 60 * 1000); 
+  try {
+    if (!assignment || !assignment.due_date) return '#';
+    
+    const dueDate = new Date(assignment.due_date);
+    if (isNaN(dueDate.getTime())) return '#';
 
-  const formatDate = (date) => {
-    return date.toISOString().replace(/-|:|\.\d+/g, '');
-  };
+    // Start time: 1 hour before due date
+    const end = dueDate;
+    const start = new Date(dueDate.getTime() - 60 * 60 * 1000); 
 
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: `تکلیف: ${assignment.title}`,
-    details: `${assignment.description}\n\nدرس: ${assignment.subject}\nحداکثر نمره: ${assignment.max_score}`,
-    dates: `${formatDate(start)}/${formatDate(end)}`,
-    location: 'مدرسه',
-    trp: 'false'
-  });
+    const formatDate = (date) => {
+      try {
+        return date.toISOString().replace(/-|:|\.\d+/g, '');
+      } catch (e) {
+        return '';
+      }
+    };
 
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+    const startDateStr = formatDate(start);
+    const endDateStr = formatDate(end);
+    
+    if (!startDateStr || !endDateStr) return '#';
+
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: `تکلیف: ${assignment.title || 'بدون عنوان'}`,
+      details: `${assignment.description || ''}\n\nدرس: ${assignment.subject || ''}\nحداکثر نمره: ${assignment.max_score || 0}`,
+      dates: `${startDateStr}/${endDateStr}`,
+      location: 'مدرسه',
+      trp: 'false'
+    });
+
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  } catch (error) {
+    console.error("Error generating calendar URL:", error);
+    return '#';
+  }
 }

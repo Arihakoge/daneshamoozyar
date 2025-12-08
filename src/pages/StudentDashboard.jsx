@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star, Award, Target, Calendar as CalendarIcon, RefreshCw } from "lucide-react";
+import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star, Award, Target, Calendar as CalendarIcon, RefreshCw, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber, normalizeScore, generateGoogleCalendarUrl } from "@/components/utils";
