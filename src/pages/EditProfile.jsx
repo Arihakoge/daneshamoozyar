@@ -42,7 +42,7 @@ export default function EditProfile() {
       const user = await base44.auth.me();
       setCurrentUser(user);
       
-      setFullName(user.full_name || user.display_name || "");
+      setFullName(user.display_name || user.full_name || "");
       setBio(user.bio || "");
       setPhone(user.phone || "");
       setInstagram(user.social_links?.instagram || "");
