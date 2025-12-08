@@ -40,15 +40,24 @@ export default function Messages() {
     }
   }, [selectedConversation]);
 
+  useEffect(() => {
+    // Reload conversations periodically to get new messages
+    const interval = setInterval(() => {
+      loadData();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const loadData = async () => {
     try {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
 
-      const [allConvs, users, allClasses] = await Promise.all([
+      const [allConvs, users, allClasses, allMessages] = await Promise.all([
         base44.entities.Conversation.list("-last_message_at"),
         base44.entities.User.list(),
-        base44.entities.Class.list()
+        base44.entities.Class.list(),
+        base44.entities.Message.list()
       ]);
 
       const userConversations = allConvs.filter(c => 
@@ -58,6 +67,7 @@ export default function Messages() {
       setConversations(userConversations);
       setAllUsers(users);
       setClasses(allClasses);
+      setMessages(allMessages);
     } catch (error) {
       console.error("خطا در بارگیری:", error);
     }
@@ -254,9 +264,11 @@ export default function Messages() {
                 className="clay-card text-white pr-10"
               />
             </div>
-            <Button onClick={() => setShowNewChat(true)} className="clay-button bg-purple-600">
-              <Plus className="w-5 h-5" />
-            </Button>
+            {user?.student_role && (user.student_role === 'teacher' || user.student_role === 'admin') && (
+              <Button onClick={() => setShowNewChat(true)} className="clay-button bg-purple-600">
+                <Plus className="w-5 h-5" />
+              </Button>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
