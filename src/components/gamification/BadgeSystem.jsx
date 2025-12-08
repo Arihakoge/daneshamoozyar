@@ -110,7 +110,7 @@ export const checkAllRetroactiveBadges = async (userId) => {
     const assignmentMap = {};
     assignments.forEach(a => assignmentMap[a.id] = a);
 
-    const earnedTypes = new Set(existingBadges.map(b => b.badge_type));
+    const earnedTypes = new Set(existingBadges.map(b => `${b.badge_type}_${b.tier || 'bronze'}`));
     const newBadges = [];
     
     const award = async (type, tier = 'bronze') => {
