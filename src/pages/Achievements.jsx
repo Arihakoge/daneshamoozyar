@@ -27,6 +27,10 @@ const badgeConfigs = {
   rising_star: { name: "ستاره در حال طلوع", icon: TrendingUp, color: "from-indigo-400 to-purple-500", description: "پیشرفت چشمگیر" },
   math_master: { name: "استاد ریاضی", icon: Medal, color: "from-blue-500 to-indigo-600", description: "میانگین بالای ۱۸ در ریاضی" },
   science_master: { name: "استاد علوم", icon: Medal, color: "from-green-500 to-emerald-600", description: "میانگین بالای ۱۸ در علوم" },
+  literature_master: { name: "استاد فارسی", icon: Medal, color: "from-rose-500 to-pink-600", description: "میانگین بالای ۱۸ در فارسی" },
+  weekly_champion: { name: "قهرمان هفته", icon: Trophy, color: "from-cyan-400 to-blue-500", description: "رتبه اول هفته" },
+  monthly_champion: { name: "قهرمان ماه", icon: Crown, color: "from-purple-500 to-violet-600", description: "رتبه اول ماه" },
+  all_subjects: { name: "همه‌فن‌حریف", icon: Star, color: "from-violet-400 to-fuchsia-500", description: "نمره بالای ۱۵ در همه دروس" },
   team_player: { name: "بازیکن تیمی", icon: Users, color: "from-cyan-400 to-blue-500", description: "همکاری موثر با کلاس" },
   class_champion: { name: "قهرمان کلاس", icon: Crown, color: "from-rose-400 to-pink-500", description: "بهترین عملکرد کلاسی" }
 };

@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { 
   Trophy, Star, Zap, Target, Crown, Medal, 
-  Flame, TrendingUp, Award, Heart 
+  Flame, TrendingUp, Award, Heart, Users 
 } from "lucide-react";
 
 const badgeConfigs = {
@@ -131,6 +131,20 @@ const badgeConfigs = {
     color: "from-violet-400 to-fuchsia-500",
     description: "نمره بالای ۱۵ در همه دروس",
     howToGet: "در همه دروس میانگین بالای ۱۵ بگیر!"
+  },
+  team_player: {
+    name: "بازیکن تیمی",
+    icon: Users, // Users is not imported in BadgeCard.js yet
+    color: "from-cyan-400 to-blue-500",
+    description: "همکاری موثر با کلاس",
+    howToGet: "در فعالیت‌های کلاسی مشارکت کن!"
+  },
+  class_champion: {
+    name: "قهرمان کلاس",
+    icon: Crown,
+    color: "from-rose-400 to-pink-500",
+    description: "بهترین عملکرد کلاسی",
+    howToGet: "بیشترین امتیاز را در کلاس کسب کن!"
   }
 };
 
