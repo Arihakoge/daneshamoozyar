@@ -12,7 +12,7 @@ import {
   CheckCircle, Clock, Award, BookOpen 
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { toPersianNumber, toPersianDate } from "@/components/utils";
+import { toPersianNumber, toPersianDate, normalizeScore } from "@/components/utils";
 
 export default function TeacherReports() {
   const [user, setUser] = useState(null);
@@ -102,9 +102,12 @@ export default function TeacherReports() {
     ];
 
     gradedSubmissions.forEach(sub => {
-      if (sub.score <= 5) scoreRanges[0].count++;
-      else if (sub.score <= 10) scoreRanges[1].count++;
-      else if (sub.score <= 15) scoreRanges[2].count++;
+      const assignment = assignments.find(a => a.id === sub.assignment_id);
+      const normalized = normalizeScore(sub.score, assignment?.max_score);
+      
+      if (normalized <= 5) scoreRanges[0].count++;
+      else if (normalized <= 10) scoreRanges[1].count++;
+      else if (normalized <= 15) scoreRanges[2].count++;
       else scoreRanges[3].count++;
     });
 
@@ -116,8 +119,12 @@ export default function TeacherReports() {
     const studentActivity = students.map(student => {
       const studentSubs = filteredSubmissions.filter(s => s.student_id === student.user_id);
       const gradedSubs = studentSubs.filter(s => s.score !== null);
+      
       const avgScore = gradedSubs.length > 0 
-        ? gradedSubs.reduce((sum, s) => sum + s.score, 0) / gradedSubs.length 
+        ? gradedSubs.reduce((sum, s) => {
+            const assignment = assignments.find(a => a.id === s.assignment_id);
+            return sum + normalizeScore(s.score, assignment?.max_score);
+          }, 0) / gradedSubs.length 
         : 0;
 
       return {
@@ -167,8 +174,12 @@ export default function TeacherReports() {
     const studentStats = students.map(student => {
       const studentSubs = filteredSubmissions.filter(s => s.student_id === student.user_id);
       const gradedSubs = studentSubs.filter(s => s.score !== null);
+      
       const avgScore = gradedSubs.length > 0 
-        ? gradedSubs.reduce((sum, s) => sum + s.score, 0) / gradedSubs.length 
+        ? gradedSubs.reduce((sum, s) => {
+            const assignment = assignments.find(a => a.id === s.assignment_id);
+            return sum + normalizeScore(s.score, assignment?.max_score);
+          }, 0) / gradedSubs.length 
         : 0;
 
       return {
@@ -212,8 +223,12 @@ export default function TeacherReports() {
   const getSummaryStats = () => {
     const filteredSubmissions = getFilteredSubmissions();
     const gradedSubmissions = filteredSubmissions.filter(s => s.score !== null);
+    
     const avgScore = gradedSubmissions.length > 0
-      ? gradedSubmissions.reduce((sum, s) => sum + s.score, 0) / gradedSubmissions.length
+      ? gradedSubmissions.reduce((sum, s) => {
+          const assignment = assignments.find(a => a.id === s.assignment_id);
+          return sum + normalizeScore(s.score, assignment?.max_score);
+        }, 0) / gradedSubmissions.length
       : 0;
 
     return {
