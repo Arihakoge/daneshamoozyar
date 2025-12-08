@@ -48,9 +48,63 @@ export default function StudentDashboard() {
   const [submissions, setSubmissions] = useState([]);
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncingCalendar, setSyncingCalendar] = useState(false);
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  const handleSyncCalendar = async () => {
+    setSyncingCalendar(true);
+    try {
+      const response = await base44.functions.invoke("syncCalendar");
+      const data = response.data;
+      
+      if (data && data.error) {
+         if (data.code === 'AUTH_REQUIRED' || response.status === 403) {
+            try {
+              await base44.appConnectors.requestAuth({
+                integration_type: 'googlecalendar',
+                reason: 'برای افزودن خودکار تکالیف به تقویم گوگل شما',
+                scopes: ['https://www.googleapis.com/auth/calendar.events']
+              });
+              toast.success("در حال انتقال به صفحه مجوزدهی...");
+            } catch(authErr) {
+              console.error("Auth request failed", authErr);
+              toast.error("خطا در درخواست دسترسی به تقویم");
+            }
+         } else {
+            toast.error(data.details || "خطا در اتصال به تقویم");
+         }
+      } else {
+         const added = data?.added || 0;
+         const updated = data?.updated || 0;
+         if (added === 0 && updated === 0) {
+           toast.info("همه تکالیف قبلاً همگام شده‌اند.");
+         } else {
+           toast.success(`${added} تکلیف جدید اضافه شد و ${updated} تکلیف به‌روزرسانی شد.`);
+         }
+      }
+    } catch (error) {
+      console.error("Sync error:", error);
+      if (error.response && (error.response.status === 403 || error.response.data?.code === 'AUTH_REQUIRED')) {
+          try {
+            await base44.appConnectors.requestAuth({
+              integration_type: 'googlecalendar',
+              reason: 'برای افزودن خودکار تکالیف به تقویم گوگل شما',
+              scopes: ['https://www.googleapis.com/auth/calendar.events']
+            });
+            toast.success("در حال انتقال به صفحه مجوزدهی...");
+          } catch(authErr) {
+            console.error("Auth request failed", authErr);
+            toast.error("خطا در درخواست دسترسی به تقویم");
+          }
+      } else {
+         toast.error("خطا در همگام‌سازی با تقویم");
+      }
+    } finally {
+      setSyncingCalendar(false);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
