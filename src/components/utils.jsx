@@ -105,6 +105,13 @@ export function isOverdue(dueDate) {
   }
 }
 
+export function normalizeScore(score, maxScore) {
+  if (score === null || score === undefined) return 0;
+  const max = maxScore || 20; // Default to 20 if maxScore is missing or 0
+  if (max === 0) return 0; // Avoid division by zero
+  return (score / max) * 20;
+}
+
 export function calculateStreak(submissions) {
   if (!submissions || submissions.length === 0) {
     return { current: 0, longest: 0, weeklyActivity: [false, false, false, false, false, false, false] };
