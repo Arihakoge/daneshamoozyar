@@ -18,7 +18,6 @@ import {
 import { toPersianDate, toPersianDateShort, formatDaysRemaining, isOverdue, toPersianNumber } from "@/components/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { checkAndAwardBadges } from "@/components/gamification/BadgeSystem";
-import { applySubmissionRules } from "@/components/gamification/ScoringSystem";
 import { toast } from "sonner";
 
 export default function StudentAssignments() {
@@ -149,12 +148,6 @@ export default function StudentAssignments() {
       if (newBadges.length > 0) {
         toast.success(`تبریک! شما ${newBadges.length} نشان جدید کسب کردید!`);
       }
-
-      // Apply smart scoring rules (e.g. Early Submission)
-      await applySubmissionRules({
-        ...submissionData, 
-        submitted_at: new Date().toISOString() // Ensure consistent format
-      }, selectedAssignment);
 
       setSelectedAssignment(null);
       setSubmissionContent("");

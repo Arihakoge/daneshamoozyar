@@ -194,7 +194,6 @@ export default function Layout({ children, currentPageName }) {
         { title: "مدیریت تکالیف", url: createPageUrl("TeacherAssignments"), icon: FileText },
         { title: "پیام‌ها", url: createPageUrl("Messages"), icon: MessageCircle },
         { title: "گزارش‌های عملکرد", url: createPageUrl("TeacherReports"), icon: FileText },
-        { title: "قوانین امتیازدهی", url: createPageUrl("ScoringRules"), icon: Trophy },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
       ];

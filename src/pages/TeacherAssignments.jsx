@@ -23,9 +23,8 @@ import { toPersianDate, toPersianDateShort, toPersianNumber } from "@/components
 import PersianDatePicker from "@/components/ui/PersianDatePicker";
 import { sendAssignmentEmail } from "@/functions/sendAssignmentEmail";
 import { checkAndAwardBadges } from "@/components/gamification/BadgeSystem";
-import { applyGradingRules } from "@/components/gamification/ScoringSystem";
 
-  // Simple Persian Calendar Component for Teacher View
+// Simple Persian Calendar Component for Teacher View
 const TeacherCalendarView = ({ assignments }) => {
   // Simplified calendar logic: Show next 30 days with deadlines
   const [days, setDays] = useState([]);
@@ -481,14 +480,6 @@ export default function TeacherAssignments() {
              score: Number(score), 
              maxScore: assignment ? assignment.max_score : 20 
          });
-
-         // Apply grading rules (e.g. Perfect Score bonus)
-         if (assignment) {
-            await applyGradingRules({ 
-              ...sub, 
-              score: Number(score) 
-            }, assignment);
-         }
       }
 
       loadData();
