@@ -43,7 +43,7 @@ export default function StudentAssignments() {
 
       if (currentUser.grade) {
         const gradeAssignments = await base44.entities.Assignment.filter(
-          { grade: currentUser.grade }, 
+          { grade: currentUser.grade, is_active: true }, 
           "-created_date"
         );
         // Filter by class_id if assignment is specific to a class
@@ -52,14 +52,20 @@ export default function StudentAssignments() {
         );
         setAssignments(filteredAssignments);
 
+        const validAssignmentIds = filteredAssignments.map(a => a.id);
+
         const userSubmissions = await base44.entities.Submission.filter(
           { student_id: currentUser.id }, 
           "-created_date"
         );
-        setSubmissions(userSubmissions);
+        // Filter out submissions for deleted assignments
+        const validSubmissions = userSubmissions.filter(s => validAssignmentIds.includes(s.assignment_id));
+        setSubmissions(validSubmissions);
 
         const userBookmarks = await base44.entities.Bookmark.filter({ user_id: currentUser.id });
-        setBookmarks(userBookmarks);
+        // Filter out bookmarks for deleted assignments
+        const validBookmarks = userBookmarks.filter(b => validAssignmentIds.includes(b.assignment_id));
+        setBookmarks(validBookmarks);
       }
     } catch (error) {
       console.error("خطا در بارگیری داده‌ها:", error);
