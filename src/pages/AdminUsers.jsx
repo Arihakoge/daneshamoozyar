@@ -21,6 +21,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [showPendingOnly, setShowPendingOnly] = useState(false);
   
   // State for new assignment addition
   const [newAssignment, setNewAssignment] = useState({ grade: "", class_id: "", subject: "" });
