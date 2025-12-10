@@ -15,8 +15,9 @@ import {
   LogOut,
   X,
   Users,
-  Edit
-} from "lucide-react";
+  Edit,
+  Activity
+  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ProfileSetupModal from "@/components/shared/ProfileSetupModal";
