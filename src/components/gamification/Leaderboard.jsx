@@ -57,21 +57,42 @@ export default function Leaderboard({ currentUser }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-center gap-4 mb-6">
-        <Button 
-          variant={filter === "class" ? "default" : "outline"}
-          onClick={() => setFilter("class")}
-          className={filter === "class" ? "bg-purple-600" : "text-gray-400 border-gray-600"}
-        >
-          کلاس من
-        </Button>
-        <Button 
-          variant={filter === "global" ? "default" : "outline"}
-          onClick={() => setFilter("global")}
-          className={filter === "global" ? "bg-purple-600" : "text-gray-400 border-gray-600"}
-        >
-          کل مدرسه
-        </Button>
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+        <div className="flex gap-2">
+          <Button 
+            variant={filter === "class" ? "default" : "outline"}
+            onClick={() => setFilter("class")}
+            className={filter === "class" ? "bg-purple-600" : "text-gray-400 border-gray-600"}
+          >
+            کلاس من
+          </Button>
+          <Button 
+            variant={filter === "global" ? "default" : "outline"}
+            onClick={() => setFilter("global")}
+            className={filter === "global" ? "bg-purple-600" : "text-gray-400 border-gray-600"}
+          >
+            کل مدرسه
+          </Button>
+        </div>
+
+        <div className="flex gap-2 bg-slate-800/50 p-1 rounded-lg">
+          <Button 
+            variant="ghost"
+            size="sm"
+            onClick={() => setSortBy("coins")}
+            className={sortBy === "coins" ? "bg-yellow-500/20 text-yellow-400" : "text-gray-400"}
+          >
+            بیشترین سکه
+          </Button>
+          <Button 
+            variant="ghost"
+            size="sm"
+            onClick={() => setSortBy("level")}
+            className={sortBy === "level" ? "bg-blue-500/20 text-blue-400" : "text-gray-400"}
+          >
+            بالاترین سطح
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3">
