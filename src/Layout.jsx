@@ -330,8 +330,9 @@ export default function Layout({ children, currentPageName }) {
               <a href="https://www.coffeebede.com/daneshamoozyar" target="_blank" rel="noopener noreferrer" className="inline-block hover:scale-105 transition-transform duration-200">
                 <img className="h-12 w-auto" src="https://coffeebede.ir/DashboardTemplateV2/app-assets/images/banner/default-yellow.svg" alt="CoffeeBede" />
               </a>
-            </div>
-          </footer>
+              </div>
+              <p className="mt-4 text-[10px] text-gray-500 opacity-60">با کمک پارک علم و فناوری یزد</p>
+              </footer>
         </main>
 
         {/* Sidebar */}
