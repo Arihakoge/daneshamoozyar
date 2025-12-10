@@ -153,10 +153,6 @@ export const checkAllRetroactiveBadges = async (userId) => {
     let gradedCount = 0;
     let mathScores = [];
     let scienceScores = [];
-    let literatureScores = []; // New
-    let mathCount = 0; // New
-    let scienceCount = 0; // New
-    let literatureCount = 0; // New
     let perfectQuizzes = 0;
 
     submissions.forEach(sub => {
@@ -177,18 +173,8 @@ export const checkAllRetroactiveBadges = async (userId) => {
                  totalScore += normalizedScore;
                  gradedCount++;
 
-                 if (assignment.subject === 'ریاضی') {
-                     mathScores.push(normalizedScore);
-                     mathCount++;
-                 }
-                 if (assignment.subject === 'علوم') {
-                     scienceScores.push(normalizedScore);
-                     scienceCount++;
-                 }
-                 if (['فارسی', 'نگارش'].includes(assignment.subject)) {
-                     literatureScores.push(normalizedScore);
-                     literatureCount++;
-                 }
+                 if (assignment.subject === 'ریاضی') mathScores.push(normalizedScore);
+                 if (assignment.subject === 'علوم') scienceScores.push(normalizedScore);
              }
 
              // Early Bird
@@ -210,27 +196,6 @@ export const checkAllRetroactiveBadges = async (userId) => {
     if (perfectScores >= 5) await award('perfect_score', 'silver');
     if (perfectScores >= 10) await award('perfect_score', 'gold');
     
-    // Perfect 10 (Special Milestone)
-    if (perfectScores >= 10) await award('perfect_10');
-
-    // Assignment Warrior (Total Graded Submissions)
-    if (gradedCount >= 10) await award('assignment_warrior', 'bronze');
-    if (gradedCount >= 50) await award('assignment_warrior', 'silver');
-    if (gradedCount >= 100) await award('assignment_warrior', 'gold');
-
-    // Subject Heroes (Submission Counts)
-    if (mathCount >= 5) await award('math_hero', 'bronze');
-    if (mathCount >= 10) await award('math_hero', 'silver');
-    if (mathCount >= 20) await award('math_hero', 'gold');
-
-    if (scienceCount >= 5) await award('science_hero', 'bronze');
-    if (scienceCount >= 10) await award('science_hero', 'silver');
-    if (scienceCount >= 20) await award('science_hero', 'gold');
-
-    if (literatureCount >= 5) await award('literature_hero', 'bronze');
-    if (literatureCount >= 10) await award('literature_hero', 'silver');
-    if (literatureCount >= 20) await award('literature_hero', 'gold');
-
     // Early Bird (Tiered)
     if (earlySubmissions >= 3) await award('early_bird', 'bronze');
     if (earlySubmissions >= 7) await award('early_bird', 'silver');
