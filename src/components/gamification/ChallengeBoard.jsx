@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
-import { CheckCircle2, Circle, Gift, Zap, BookOpen, MessageCircle } from "lucide-react";
+import { CheckCircle2, Circle, Gift, Zap, BookOpen, MessageCircle, TrendingUp } from "lucide-react";
 import { toPersianNumber } from "@/components/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
