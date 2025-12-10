@@ -130,9 +130,6 @@ export default function ChallengeBoard({ currentUser }) {
        }
        const today = new Date().toISOString().split("T")[0];
        
-       // Update remote
-       // Since we might have fetched a transient object or existing one, we need to be careful.
-       // Re-fetch to get ID is safest or rely on logic.
        const existing = await base44.entities.DailyChallenge.filter({
            user_id: currentUser.id, 
            date: today
@@ -145,7 +142,6 @@ export default function ChallengeBoard({ currentUser }) {
            challengeId = existing[0].id;
            currentClaimed = existing[0].claimed || {};
        } else {
-           // Should exist from load, but fallback
            const res = await base44.entities.DailyChallenge.create({
                user_id: currentUser.id, 
                date: today,
@@ -155,20 +151,23 @@ export default function ChallengeBoard({ currentUser }) {
            challengeId = res.id;
        }
        
-       // Update User Coins
        await base44.auth.updateMe({
            coins: (currentUser.coins || 0) + task.reward
        });
 
-       // Update Challenge Entity
        const newClaimed = { ...currentClaimed, [taskId]: true };
+       // Also mark as progressed if it's dynamic
+       const newProgress = { ...(dailyState?.progress || {}), [taskId]: true };
+       
        await base44.entities.DailyChallenge.update(challengeId, {
-           claimed: newClaimed
+           claimed: newClaimed,
+           progress: newProgress
        });
 
        setDailyState(prev => ({
            ...prev,
-           claimed: newClaimed
+           claimed: newClaimed,
+           progress: newProgress
        }));
 
        confetti({
@@ -188,7 +187,7 @@ export default function ChallengeBoard({ currentUser }) {
   if (loading) return <div className="text-center p-8 text-gray-400">در حال بارگیری چالش‌ها...</div>;
 
   const completedCount = dailyState ? Object.keys(dailyState.progress || {}).length : 0;
-  const progressPercent = (completedCount / DAILY_TASKS.length) * 100;
+  const progressPercent = (completedCount / allTasks.length) * 100;
 
   return (
     <div className="space-y-6">
@@ -207,12 +206,12 @@ export default function ChallengeBoard({ currentUser }) {
                چالش‌های روزانه
              </h2>
              <div className="text-sm text-gray-300">
-                {toPersianNumber(completedCount)} از {toPersianNumber(DAILY_TASKS.length)} تکمیل شده
+                {toPersianNumber(completedCount)} از {toPersianNumber(allTasks.length)} تکمیل شده
              </div>
           </div>
 
           <div className="grid gap-4">
-             {DAILY_TASKS.map(task => {
+             {allTasks.map(task => {
                 const isCompleted = dailyState?.progress?.[task.id];
                 const isClaimed = dailyState?.claimed?.[task.id];
                 const Icon = task.icon;
