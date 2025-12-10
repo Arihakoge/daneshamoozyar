@@ -176,14 +176,26 @@ export default function AdminUsers() {
 
         <Card className="bg-slate-900 border-slate-800 shadow-xl">
           <CardHeader className="border-b border-slate-800">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-white flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                لیست کاربران سیستم
-              </CardTitle>
-              <Badge variant="outline" className="bg-slate-800 text-slate-400 border-slate-700">
-                {users.length} کاربر
-              </Badge>
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-4 w-full md:w-auto">
+                <CardTitle className="text-white flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                  لیست کاربران سیستم
+                </CardTitle>
+                <Badge variant="outline" className="bg-slate-800 text-slate-400 border-slate-700">
+                  {filteredUsers.length} کاربر
+                </Badge>
+              </div>
+              
+              <div className="flex gap-2 w-full md:w-auto">
+                 <Button 
+                    variant={showPendingOnly ? "default" : "outline"} 
+                    onClick={() => setShowPendingOnly(!showPendingOnly)}
+                    className={`border-slate-700 ${showPendingOnly ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                 >
+                    {showPendingOnly ? "نمایش همه کاربران" : "فقط دانش‌آموزان بدون کلاس"}
+                 </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -197,7 +209,7 @@ export default function AdminUsers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map(user => (
+                {filteredUsers.map(user => (
                   <TableRow key={user.user_id} className="border-slate-800 hover:bg-slate-800/30 transition-colors">
                     <TableCell className="font-medium text-white">
                       <div className="flex items-center gap-3">
