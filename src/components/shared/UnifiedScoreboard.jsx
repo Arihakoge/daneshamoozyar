@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Crown, Star, Shield, Medal, Search, Users, School } from "lucide-react";
+import { Trophy, Crown, Star, Shield, Medal, Search, Users, School, Gift, PlusCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toPersianNumber } from "@/components/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
@@ -15,9 +19,16 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
   
   // View Mode: 'all', 'grade', 'my_students' (for teachers)
   const [viewMode, setViewMode] = useState(defaultViewMode);
-  const [sortBy, setSortBy] = useState("combined"); // 'combined', 'coins', 'average'
+  const [sortBy, setSortBy] = useState("combined"); // 'combined', 'coins', 'average', 'submissions'
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("all"); // For Admin filter
+  
+  // Bonus Modal State
+  const [bonusModalOpen, setBonusModalOpen] = useState(false);
+  const [selectedStudentForBonus, setSelectedStudentForBonus] = useState(null);
+  const [bonusAmount, setBonusAmount] = useState(10);
+  const [bonusReason, setBonusReason] = useState("");
+  const [givingBonus, setGivingBonus] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -82,6 +93,53 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
     }
   };
 
+  const handleGiveBonus = async () => {
+    if (!selectedStudentForBonus) return;
+    
+    setGivingBonus(true);
+    try {
+      // 1. Update coins
+      await base44.entities.PublicProfile.update(selectedStudentForBonus.id, {
+        coins: (selectedStudentForBonus.coins || 0) + bonusAmount
+      });
+
+      // 2. Log activity
+      await base44.entities.ActivityLog.create({
+        user_id: selectedStudentForBonus.user_id,
+        activity_type: "badge_earned", // Using badge_earned or similar for positive reinforcement
+        points_earned: bonusAmount,
+        details: bonusReason || "پاداش معلم"
+      });
+
+      // 3. Update local state
+      setStudents(prev => prev.map(s => {
+        if (s.id === selectedStudentForBonus.id) {
+           const newCoins = (s.coins || 0) + bonusAmount;
+           // Recalculate combined score logic roughly or just update raw coins
+           const newStats = { ...s.stats, rawCoins: newCoins }; 
+           return { ...s, coins: newCoins, stats: newStats };
+        }
+        return s;
+      }));
+
+      toast.success(`پاداش ${bonusAmount} سکه به ${selectedStudentForBonus.full_name} اهدا شد.`);
+      setBonusModalOpen(false);
+      setBonusAmount(10);
+      setBonusReason("");
+      setSelectedStudentForBonus(null);
+    } catch (error) {
+      console.error("Error giving bonus:", error);
+      toast.error("خطا در اهدای پاداش");
+    } finally {
+      setGivingBonus(false);
+    }
+  };
+
+  const openBonusModal = (student) => {
+    setSelectedStudentForBonus(student);
+    setBonusModalOpen(true);
+  };
+
   const filteredAndSortedStudents = useMemo(() => {
     let result = [...students];
 
@@ -115,9 +173,10 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
 
     // 4. Sort
     result.sort((a, b) => {
-      if (sortBy === 'coins') return b.stats.rawCoins - a.stats.rawCoins;
-      if (sortBy === 'average') return b.stats.averageScore - a.stats.averageScore;
-      return b.stats.combinedScore - a.stats.combinedScore;
+    if (sortBy === 'coins') return b.stats.rawCoins - a.stats.rawCoins;
+    if (sortBy === 'average') return b.stats.averageScore - a.stats.averageScore;
+    if (sortBy === 'submissions') return b.stats.submissionsCount - a.stats.submissionsCount;
+    return b.stats.combinedScore - a.stats.combinedScore;
     });
 
     return result;
@@ -225,6 +284,14 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
                 className={`h-8 rounded-md ${sortBy === 'average' ? 'bg-slate-700 text-white' : 'text-slate-400'}`}
                 >
                 <Star className="w-4 h-4 mr-2" /> نمره
+                </Button>
+                <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSortBy('submissions')}
+                className={`h-8 rounded-md ${sortBy === 'submissions' ? 'bg-slate-700 text-white' : 'text-slate-400'}`}
+                >
+                <Shield className="w-4 h-4 mr-2" /> تکالیف
                 </Button>
             </div>
 
@@ -436,13 +503,29 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
                         {toPersianNumber(
                             sortBy === 'coins' ? student.stats.rawCoins :
                             sortBy === 'average' ? student.stats.averageScore :
+                            sortBy === 'submissions' ? student.stats.submissionsCount :
                             student.stats.combinedScore
                         )}
                       </div>
                       <div className="text-[10px] text-slate-500">
-                        {sortBy === 'coins' ? 'سکه' : sortBy === 'average' ? 'نمره' : 'امتیاز'}
+                        {sortBy === 'coins' ? 'سکه' : sortBy === 'average' ? 'نمره' : sortBy === 'submissions' ? 'تکلیف' : 'امتیاز'}
                       </div>
                    </div>
+
+                   {/* Teacher Bonus Action */}
+                   {currentUser?.student_role === 'teacher' && (
+                     <div className="border-r border-slate-700 pr-4 mr-4 hidden md:block">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10"
+                          onClick={() => openBonusModal(student)}
+                        >
+                           <Gift className="w-4 h-4 mr-2" />
+                           پاداش
+                        </Button>
+                     </div>
+                   )}
                 </div>
               </motion.div>
             );
@@ -459,6 +542,56 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
           </div>
         )}
       </div>
+
+      {/* Bonus Modal */}
+      <Dialog open={bonusModalOpen} onOpenChange={setBonusModalOpen}>
+        <DialogContent className="bg-slate-900 border border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-yellow-500" />
+              اهدای پاداش به {selectedStudentForBonus?.full_name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>مقدار پاداش (سکه)</Label>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" size="sm" 
+                  onClick={() => setBonusAmount(Math.max(5, bonusAmount - 5))}
+                  className="border-slate-700 text-slate-300"
+                >-</Button>
+                <div className="flex-1 text-center font-bold text-xl text-yellow-400">
+                  {toPersianNumber(bonusAmount)} 🪙
+                </div>
+                <Button 
+                  variant="outline" size="sm" 
+                  onClick={() => setBonusAmount(bonusAmount + 5)}
+                  className="border-slate-700 text-slate-300"
+                >+</Button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>علت پاداش (اختیاری)</Label>
+              <Textarea 
+                placeholder="مثال: مشارکت عالی در کلاس..." 
+                value={bonusReason}
+                onChange={(e) => setBonusReason(e.target.value)}
+                className="bg-slate-800 border-slate-700 text-white"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBonusModalOpen(false)} className="text-slate-400">انصراف</Button>
+            <Button onClick={handleGiveBonus} disabled={givingBonus} className="bg-yellow-600 hover:bg-yellow-700 text-white">
+              {givingBonus ? "در حال ثبت..." : "ثبت پاداش"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
