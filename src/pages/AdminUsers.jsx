@@ -18,6 +18,7 @@ const GRADES = ["هفتم", "هشتم", "نهم"];
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [classMap, setClassMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
