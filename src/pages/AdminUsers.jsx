@@ -37,7 +37,7 @@ export default function AdminUsers() {
     setLoading(true);
     try {
       const [allPublicProfiles, allClasses] = await Promise.all([
-        base44.entities.PublicProfile.list(),
+        base44.entities.PublicProfile.list('-created_date', 1000),
         base44.entities.Class.list()
       ]);
       // Sort by newest first
