@@ -326,7 +326,7 @@ export default function StudentDashboard() {
           className="space-y-6">
           
           {/* Level Progress Card */}
-          <LevelProgress level={user?.level || 1} coins={user?.coins || 0} />
+          <LevelProgress level={user?.level || 1} coins={user?.coins || 0} xp={user?.total_xp || 0} />
 
           {/* Recent Badges */}
           <div className="clay-card p-6">

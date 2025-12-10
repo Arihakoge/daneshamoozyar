@@ -22,14 +22,18 @@ export function calculateLevel(totalXP) {
   };
 }
 
+export function getLevelTier(level) {
+  if (level < 5) return { name: "تازه کار", color: "from-gray-400 to-gray-600" };
+  if (level < 10) return { name: "مبتدی", color: "from-green-400 to-green-600" };
+  if (level < 20) return { name: "کارآموز", color: "from-blue-400 to-blue-600" };
+  if (level < 30) return { name: "دانش‌پژوه", color: "from-purple-400 to-purple-600" };
+  if (level < 40) return { name: "محقق", color: "from-pink-400 to-pink-600" };
+  if (level < 50) return { name: "متخصص", color: "from-orange-400 to-orange-600" };
+  if (level < 75) return { name: "استاد", color: "from-red-400 to-red-600" };
+  if (level < 100) return { name: "دانشمند", color: "from-cyan-400 to-cyan-600" };
+  return { name: "افسانه", color: "from-yellow-400 to-amber-500" };
+}
+
 export function getLevelTitle(level) {
-  if (level < 5) return "تازه کار";
-  if (level < 10) return "مبتدی";
-  if (level < 20) return "کارآموز";
-  if (level < 30) return "دانش‌پژوه";
-  if (level < 40) return "محقق";
-  if (level < 50) return "متخصص";
-  if (level < 75) return "استاد";
-  if (level < 100) return "دانشمند";
-  return "افسانه";
+  return getLevelTier(level).name;
 }
