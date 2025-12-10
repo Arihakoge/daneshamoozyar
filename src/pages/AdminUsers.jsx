@@ -237,7 +237,7 @@ export default function AdminUsers() {
                           <Badge variant="secondary" className="bg-slate-800 text-slate-300">{user.grade || "تعیین نشده"}</Badge>
                           <span className="text-slate-500">/</span>
                           <span className="text-slate-400">
-                            {classes.find(c => c.id === user.class_id)?.name || "بدون کلاس"}
+                            {classMap[user.class_id] ? classMap[user.class_id].name : "بدون کلاس"}
                           </span>
                         </div>
                       )}
