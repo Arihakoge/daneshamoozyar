@@ -461,7 +461,7 @@ export default function AdminContent() {
                   <FileText className="w-10 h-10 text-blue-500 opacity-50" />
                 </CardContent>
               </Card>
-              <Card className="bg-slate-900 border-slate-800">
+              <Card className="clay-card">
                 <CardContent className="p-6 flex items-center justify-between">
                   <div>
                     <p className="text-slate-400 text-sm mb-1">بازدید کل</p>
@@ -472,7 +472,7 @@ export default function AdminContent() {
                   <Eye className="w-10 h-10 text-green-500 opacity-50" />
                 </CardContent>
               </Card>
-              <Card className="bg-slate-900 border-slate-800">
+              <Card className="clay-card">
                 <CardContent className="p-6 flex items-center justify-between">
                   <div>
                     <p className="text-slate-400 text-sm mb-1">اطلاعیه‌های فعال</p>
