@@ -10,10 +10,11 @@ export default function Leaderboard({ currentUser }) {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("class"); // 'global' or 'class'
+  const [sortBy, setSortBy] = useState("coins"); // 'coins' or 'level'
 
   useEffect(() => {
     loadLeaders();
-  }, [filter, currentUser]);
+  }, [filter, sortBy, currentUser]);
 
   const loadLeaders = async () => {
     setLoading(true);
@@ -24,11 +25,8 @@ export default function Leaderboard({ currentUser }) {
         query.class_id = currentUser.class_id;
       }
 
-      // Fetch top 50 students based on filter
-      // Note: Actual sorting by coins usually happens on DB level, 
-      // but assuming standard list returns limited set or we filter client side for MVP if list is small.
-      // Ideally: base44.entities.PublicProfile.filter(query, "-coins", 50)
-      const profiles = await base44.entities.PublicProfile.filter(query, "-coins", 50);
+      const sortField = sortBy === "coins" ? "-coins" : "-level";
+      const profiles = await base44.entities.PublicProfile.filter(query, sortField, 50);
       
       setLeaders(profiles);
     } catch (error) {
