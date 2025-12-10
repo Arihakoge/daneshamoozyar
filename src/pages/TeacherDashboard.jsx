@@ -367,23 +367,7 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          <div id="quick-actions" className="clay-card p-6">
-            <h2 className="text-xl font-bold text-white mb-4">دسترسی سریع</h2>
-            <div className="space-y-3">
-              <Link to={createPageUrl("TeacherAssignments")}>
-                <button className="w-full clay-button p-3 text-white hover:bg-purple-500/20 flex items-center gap-3">
-                  <BookOpen className="w-5 h-5" />
-                  مدیریت تکالیف
-                </button>
-              </Link>
-              <Link to={createPageUrl("TeacherScoreboard")}>
-                <button className="w-full clay-button p-3 text-white hover:bg-blue-500/20 flex items-center gap-3">
-                  <TrendingUp className="w-5 h-5" />
-                  تابلوی امتیازات
-                </button>
-              </Link>
-            </div>
-          </div>
+
         </motion.div>
       </div>
     </div>
