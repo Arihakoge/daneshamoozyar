@@ -33,6 +33,7 @@ export default function StudentAssignments() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [filterSubject, setFilterSubject] = useState("all");
+  const [activePowerups, setActivePowerups] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -44,30 +45,49 @@ export default function StudentAssignments() {
       setUser(currentUser);
 
       if (currentUser.grade) {
-        const gradeAssignments = await base44.entities.Assignment.filter(
-          { grade: currentUser.grade, is_active: true }, 
-          "-created_date"
-        );
-        // Filter by class_id if assignment is specific to a class
+        const [gradeAssignments, userSubmissions, userBookmarks, userInventory] = await Promise.all([
+          base44.entities.Assignment.filter({ grade: currentUser.grade, is_active: true }, "-created_date"),
+          base44.entities.Submission.filter({ student_id: currentUser.id }, "-created_date"),
+          base44.entities.Bookmark.filter({ user_id: currentUser.id }),
+          base44.entities.UserInventory.filter({ user_id: currentUser.id, is_active: true })
+        ]);
+
+        // Filter by class_id
         const filteredAssignments = gradeAssignments.filter(a => 
           !a.class_id || (currentUser.class_id && a.class_id === currentUser.class_id)
         );
         setAssignments(filteredAssignments);
-
         const validAssignmentIds = filteredAssignments.map(a => a.id);
-
-        const userSubmissions = await base44.entities.Submission.filter(
-          { student_id: currentUser.id }, 
-          "-created_date"
-        );
-        // Filter out submissions for deleted assignments
+        
+        // Filter valid submissions
         const validSubmissions = userSubmissions.filter(s => validAssignmentIds.includes(s.assignment_id));
         setSubmissions(validSubmissions);
-
-        const userBookmarks = await base44.entities.Bookmark.filter({ user_id: currentUser.id });
-        // Filter out bookmarks for deleted assignments
+        
+        // Filter valid bookmarks
         const validBookmarks = userBookmarks.filter(b => validAssignmentIds.includes(b.assignment_id));
         setBookmarks(validBookmarks);
+
+        // Process active powerups
+        const now = new Date();
+        const validPowerups = [];
+        
+        if (userInventory.length > 0) {
+          const allItems = await base44.entities.StoreItem.list();
+          userInventory.forEach(inv => {
+            if (new Date(inv.expires_at) > now) {
+              const itemDef = allItems.find(i => i.id === inv.item_id);
+              if (itemDef && itemDef.type === 'powerup') {
+                try {
+                  const effect = JSON.parse(itemDef.value);
+                  validPowerups.push({ ...inv, effect });
+                } catch (e) {
+                  console.error("Failed to parse powerup effect", e);
+                }
+              }
+            }
+          });
+        }
+        setActivePowerups(validPowerups);
       }
     } catch (error) {
       console.error("خطا در بارگیری داده‌ها:", error);
@@ -101,7 +121,18 @@ export default function StudentAssignments() {
 
   const getAssignmentStatus = (assignment) => {
     const submission = submissions.find(s => s.assignment_id === assignment.id);
-    const overdueStatus = assignment.due_date && isOverdue(assignment.due_date);
+    
+    // Calculate effective due date
+    let effectiveDueDate = new Date(assignment.due_date);
+    const extensionPowerup = activePowerups.find(p => p.effect.effect === 'extend_deadline');
+    let isExtended = false;
+    
+    if (extensionPowerup && assignment.due_date) {
+       effectiveDueDate.setDate(effectiveDueDate.getDate() + (extensionPowerup.effect.days || 0));
+       isExtended = true;
+    }
+    
+    const overdueStatus = assignment.due_date && new Date() > effectiveDueDate;
     
     if (submission) {
       if (submission.status === "graded") {
@@ -114,7 +145,7 @@ export default function StudentAssignments() {
       return { status: "overdue", text: "مهلت گذشته", color: "red" };
     }
     
-    return { status: "pending", text: "در انتظار ارسال", color: "orange" };
+    return { status: "pending", text: "در انتظار ارسال", color: "orange", isExtended, effectiveDueDate };
   };
 
   const submitAssignment = async () => {
@@ -236,7 +267,10 @@ export default function StudentAssignments() {
         {filteredAssignments.map((assignment, index) => {
           const status = getAssignmentStatus(assignment);
           const submission = submissions.find(s => s.assignment_id === assignment.id);
-          const daysLeft = formatDaysRemaining(assignment.due_date);
+          
+          // Use effective due date for days left if extended
+          const displayDueDate = status.isExtended ? status.effectiveDueDate.toISOString() : assignment.due_date;
+          const daysLeft = formatDaysRemaining(displayDueDate);
           
           return (
             <motion.div
