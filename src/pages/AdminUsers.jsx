@@ -33,7 +33,9 @@ export default function AdminUsers() {
         base44.entities.PublicProfile.list(),
         base44.entities.Class.list()
       ]);
-      setUsers(allPublicProfiles);
+      // Sort by newest first
+      const sortedUsers = allPublicProfiles.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      setUsers(sortedUsers);
       setClasses(allClasses);
     } catch (error) {
       console.error("Error loading data:", error);
