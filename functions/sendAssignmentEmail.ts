@@ -122,9 +122,7 @@ Deno.serve(async (req) => {
                     "Authorization": `Bearer ${resendApiKey}`
                 },
                 body: JSON.stringify({
-                    // IMPORTANT: To avoid spam and work for everyone, you MUST verify a domain in Resend
-                    // and change this 'from' address to something like 'notifications@your-domain.com'
-                    from: "onboarding@resend.dev", 
+                    from: "daneshamoozyar.taklif@gmail.com", 
                     to,
                     bcc,
                     subject,
