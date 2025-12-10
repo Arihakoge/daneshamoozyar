@@ -423,7 +423,7 @@ export default function AdminUsers() {
                                 <span>پایه {assign.grade}</span>
                                 <span className="mx-2 text-slate-600">|</span>
                                 <span className="text-slate-400">
-                                  {assign.class_id ? `کلاس ${classes.find(c => c.id === assign.class_id)?.section || assign.class_id}` : "همه کلاس‌ها"}
+                                  {assign.class_id ? (classMap[assign.class_id] ? classMap[assign.class_id].name : assign.class_id) : "همه کلاس‌ها"}
                                 </span>
                               </div>
                               <button 
