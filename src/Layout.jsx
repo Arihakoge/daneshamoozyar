@@ -88,8 +88,8 @@ export default function Layout({ children, currentPageName }) {
         user = await base44.auth.me();
       }
 
-      const needsProfileCompletion = !user.full_name || user.full_name.trim() === "" ||
-                                     (user.student_role === "student" && !user.grade);
+      // Relaxed profile completion check: Only require name
+      const needsProfileCompletion = !user.full_name || user.full_name.trim() === "";
 
       if (needsProfileCompletion) {
         setShowProfileSetup(true);
