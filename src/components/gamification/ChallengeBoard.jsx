@@ -16,6 +16,7 @@ const DAILY_TASKS = [
 export default function ChallengeBoard({ currentUser }) {
   const [dailyState, setDailyState] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dynamicTasks, setDynamicTasks] = useState([]);
 
   useEffect(() => {
     loadDailyChallenge();
@@ -25,6 +26,49 @@ export default function ChallengeBoard({ currentUser }) {
     if (!currentUser) return;
     setLoading(true);
     try {
+      // 1. Analyze Weaknesses for Dynamic Challenge
+      const submissions = await base44.entities.Submission.filter({ student_id: currentUser.id }, "-created_date", 20);
+      const assignments = await base44.entities.Assignment.list(); // Ideally filter by IDs in submissions
+      const assignmentMap = {};
+      assignments.forEach(a => assignmentMap[a.id] = a);
+
+      const subjectStats = {};
+      submissions.forEach(sub => {
+          const assign = assignmentMap[sub.assignment_id];
+          if (assign && sub.status === 'graded' && typeof sub.score === 'number') {
+              if (!subjectStats[assign.subject]) subjectStats[assign.subject] = { sum: 0, count: 0 };
+              const normalized = (sub.score / (assign.max_score || 20)) * 20;
+              subjectStats[assign.subject].sum += normalized;
+              subjectStats[assign.subject].count++;
+          }
+      });
+
+      const newDynamicTasks = [];
+      let lowestSubject = null;
+      let minAvg = 20;
+
+      Object.entries(subjectStats).forEach(([subject, stats]) => {
+          const avg = stats.sum / stats.count;
+          if (avg < 17 && avg < minAvg) {
+              minAvg = avg;
+              lowestSubject = subject;
+          }
+      });
+
+      if (lowestSubject) {
+          newDynamicTasks.push({
+              id: `improve_${lowestSubject}`,
+              title: `تقویت ${lowestSubject}`,
+              reward: 50, // Higher reward
+              icon: TrendingUp,
+              description: `کسب نمره بالای ۱۸ در درس ${lowestSubject}`,
+              subject: lowestSubject
+          });
+      }
+
+      setDynamicTasks(newDynamicTasks);
+
+      // 2. Load Challenge State
       const today = new Date().toISOString().split("T")[0];
       const challenges = await base44.entities.DailyChallenge.filter({
         user_id: currentUser.id,
@@ -35,17 +79,12 @@ export default function ChallengeBoard({ currentUser }) {
       if (challenges.length > 0) {
         currentChallenge = challenges[0];
       } else {
-        // Create new record for today if checking logic happens elsewhere or initialize here
-        // Usually creation happens on first action, but we can init display
         currentChallenge = {
            user_id: currentUser.id,
            date: today,
-           progress: { login: true }, // Auto complete login if they are here
+           progress: { login: true }, 
            claimed: {}
         };
-        // We don't necessarily create the entity here to avoid spam, 
-        // but we can render based on this transient state.
-        // If we want to persist the 'login' immediately:
         await base44.entities.DailyChallenge.create(currentChallenge);
       }
       setDailyState(currentChallenge);
@@ -55,11 +94,40 @@ export default function ChallengeBoard({ currentUser }) {
     setLoading(false);
   };
 
+  const allTasks = [...DAILY_TASKS, ...dynamicTasks];
+
   const handleClaim = async (taskId) => {
     if (!dailyState || dailyState.claimed[taskId]) return;
     
     try {
-       const task = DAILY_TASKS.find(t => t.id === taskId);
+       const task = allTasks.find(t => t.id === taskId);
+       
+       // Verification for Dynamic Tasks
+       if (taskId.startsWith('improve_') && task.subject) {
+           const todayStart = new Date();
+           todayStart.setHours(0,0,0,0);
+           // We need to check if they actually submitted and got a good score TODAY
+           // Fetch today's submissions for this subject
+           // This is a "Claim" button, so we verify NOW.
+           const submissions = await base44.entities.Submission.filter({ student_id: currentUser.id }, "-created_date", 10);
+           const assignments = await base44.entities.Assignment.list();
+           
+           const qualifyingSubmission = submissions.find(sub => {
+               const assign = assignments.find(a => a.id === sub.assignment_id);
+               if (!assign || assign.subject !== task.subject) return false;
+               
+               const subDate = new Date(sub.created_date); // or submitted_at
+               if (subDate < todayStart) return false;
+               
+               const normalized = (sub.score / (assign.max_score || 20)) * 20;
+               return sub.status === 'graded' && normalized >= 18;
+           });
+
+           if (!qualifyingSubmission) {
+               toast.error("هنوز نمره بالای ۱۸ در این درس برای امروز ثبت نشده است!");
+               return;
+           }
+       }
        const today = new Date().toISOString().split("T")[0];
        
        // Update remote
