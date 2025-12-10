@@ -71,23 +71,65 @@ export default function Layout({ children, currentPageName }) {
       let user = await base44.auth.me();
       console.log("کاربر فعلی:", user);
 
-      if (!user.student_role) {
-        const allUsers = await base44.entities.User.list();
-        const usersWithRoles = allUsers.filter(u => u.student_role);
+      // Check PublicProfile first - it is the source of truth for Admin edits
+      const publicProfiles = await base44.entities.PublicProfile.filter({ user_id: user.id });
+      let publicProfile = publicProfiles.length > 0 ? publicProfiles[0] : null;
 
-        let role = "student";
-        if (usersWithRoles.length === 0) {
-          role = "admin";
+      if (publicProfile) {
+        // Sync vital data from PublicProfile to Auth User
+        const updates = {};
+        if (publicProfile.student_role && publicProfile.student_role !== user.student_role) updates.student_role = publicProfile.student_role;
+        if (publicProfile.grade && publicProfile.grade !== user.grade) updates.grade = publicProfile.grade;
+        if (publicProfile.class_id && publicProfile.class_id !== user.class_id) updates.class_id = publicProfile.class_id;
+        
+        // Sync stats if PublicProfile has them (trusting PublicProfile as primary storage)
+        if (publicProfile.coins !== undefined && publicProfile.coins !== user.coins) updates.coins = publicProfile.coins;
+        if (publicProfile.level !== undefined && publicProfile.level !== user.level) updates.level = publicProfile.level;
+        if (publicProfile.total_xp !== undefined && publicProfile.total_xp !== user.total_xp) updates.total_xp = publicProfile.total_xp;
+        if (publicProfile.avatar_color && publicProfile.avatar_color !== user.avatar_color) updates.avatar_color = publicProfile.avatar_color;
+        if (publicProfile.active_frame && publicProfile.active_frame !== user.active_frame) updates.active_frame = publicProfile.active_frame;
+
+        if (Object.keys(updates).length > 0) {
+           console.log("Syncing from PublicProfile to Auth:", updates);
+           await base44.auth.updateMe(updates);
+           user = { ...user, ...updates };
+        }
+      } else {
+        // No PublicProfile, initialize new user
+        if (!user.student_role) {
+            const allUsers = await base44.entities.User.list();
+            const usersWithRoles = allUsers.filter(u => u.student_role);
+    
+            let role = "student";
+            if (usersWithRoles.length === 0) {
+              role = "admin";
+            }
+    
+            const initialUpdates = {
+              student_role: role,
+              coins: role === "student" ? 50 : 0,
+              level: 1,
+              avatar_color: getRandomColor()
+            };
+
+            await base44.auth.updateMe(initialUpdates);
+            user = { ...user, ...initialUpdates };
         }
 
-        await base44.auth.updateMe({
-          student_role: role,
-          coins: role === "student" ? 50 : 0,
-          level: 1,
-          avatar_color: getRandomColor()
-        });
-
-        user = await base44.auth.me();
+        // Create PublicProfile
+        const profileData = {
+            user_id: user.id,
+            full_name: user.full_name || user.display_name || "کاربر",
+            display_name: user.display_name || user.full_name || "کاربر",
+            grade: user.grade || "",
+            student_role: user.student_role,
+            avatar_color: user.avatar_color || getRandomColor(),
+            profile_image_url: user.profile_image_url || "",
+            coins: user.coins || 0,
+            level: user.level || 1,
+            total_xp: user.total_xp || 0
+        };
+        await base44.entities.PublicProfile.create(profileData);
       }
 
       // Relaxed profile completion check: Only require name
@@ -95,31 +137,6 @@ export default function Layout({ children, currentPageName }) {
 
       if (needsProfileCompletion) {
         setShowProfileSetup(true);
-      }
-
-      // ایجاد یا بروزرسانی پروفایل عمومی
-      try {
-        const publicProfiles = await base44.entities.PublicProfile.filter({ user_id: user.id });
-        
-        const profileData = {
-          user_id: user.id,
-          full_name: user.full_name || user.display_name || "کاربر",
-          display_name: user.display_name || user.full_name || "کاربر",
-          grade: user.grade || "",
-          student_role: user.student_role || "student",
-          avatar_color: user.avatar_color || getRandomColor(),
-          profile_image_url: user.profile_image_url || "",
-          coins: user.coins || 0,
-          level: user.level || 1
-        };
-
-        if (publicProfiles.length > 0) {
-          await base44.entities.PublicProfile.update(publicProfiles[0].id, profileData);
-        } else {
-          await base44.entities.PublicProfile.create(profileData);
-        }
-      } catch (error) {
-        console.error("خطا در ایجاد یا بروزرسانی پروفایل عمومی:", error);
       }
 
       setCurrentUser(user);
