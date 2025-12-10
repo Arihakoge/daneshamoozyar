@@ -35,7 +35,12 @@ const badgeConfigs = {
   monthly_champion: { name: "قهرمان ماه", icon: Crown, color: "from-purple-500 to-violet-600", description: "رتبه اول ماه" },
   all_subjects: { name: "همه‌فن‌حریف", icon: Star, color: "from-violet-400 to-fuchsia-500", description: "نمره بالای ۱۵ در همه دروس" },
   team_player: { name: "بازیکن تیمی", icon: Users, color: "from-cyan-400 to-blue-500", description: "همکاری موثر با کلاس" },
-  class_champion: { name: "قهرمان کلاس", icon: Crown, color: "from-rose-400 to-pink-500", description: "بهترین عملکرد کلاسی" }
+  class_champion: { name: "قهرمان کلاس", icon: Crown, color: "from-rose-400 to-pink-500", description: "بهترین عملکرد کلاسی" },
+  math_hero: { name: "قهرمان ریاضی", icon: Zap, color: "from-blue-600 to-cyan-500", description: "انجام تکالیف ریاضی" },
+  science_hero: { name: "قهرمان علوم", icon: Zap, color: "from-green-600 to-emerald-500", description: "انجام تکالیف علوم" },
+  literature_hero: { name: "قهرمان ادبیات", icon: Zap, color: "from-pink-600 to-rose-500", description: "انجام تکالیف ادبیات" },
+  perfect_10: { name: "ده‌تایی طلایی", icon: Star, color: "from-yellow-300 via-amber-400 to-orange-500", description: "۱۰ نمره کامل" },
+  assignment_warrior: { name: "جنگجوی تکالیف", icon: Target, color: "from-slate-600 to-slate-800", description: "تعداد تکالیف انجام شده" }
 };
 
 const tierConfigs = {
