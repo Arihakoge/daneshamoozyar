@@ -194,6 +194,7 @@ export default function Layout({ children, currentPageName }) {
         { title: "مدیریت تکالیف", url: createPageUrl("TeacherAssignments"), icon: FileText },
         { title: "پیام‌ها", url: createPageUrl("Messages"), icon: MessageCircle },
         { title: "گزارش‌های عملکرد", url: createPageUrl("TeacherReports"), icon: FileText },
+        { title: "قوانین امتیازدهی", url: createPageUrl("ScoringRules"), icon: Trophy },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
       ];
@@ -315,10 +316,18 @@ export default function Layout({ children, currentPageName }) {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 lg:mr-80 pt-20 lg:pt-0 transition-all duration-300">
-          <div className="p-6">
+        <main className="flex-1 lg:mr-80 pt-20 lg:pt-0 transition-all duration-300 flex flex-col min-h-screen">
+          <div className="p-6 flex-1">
             {children}
           </div>
+          <footer className="py-8 text-center text-gray-400 border-t border-gray-700/30 mt-auto bg-black/10 backdrop-blur-sm">
+            <p className="mb-4 font-medium text-sm">طراحی شده توسط آرش با ❤️ و ☕</p>
+            <div className="flex justify-center">
+              <a href="https://www.coffeebede.com/daneshamoozyar" target="_blank" rel="noopener noreferrer" className="inline-block hover:scale-105 transition-transform duration-200">
+                <img className="h-12 w-auto" src="https://coffeebede.ir/DashboardTemplateV2/app-assets/images/banner/default-yellow.svg" alt="CoffeeBede" />
+              </a>
+            </div>
+          </footer>
         </main>
 
         {/* Sidebar */}
