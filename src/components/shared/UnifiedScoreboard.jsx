@@ -512,8 +512,8 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
                       </div>
                    </div>
 
-                   {/* Teacher Bonus Action */}
-                   {currentUser?.student_role === 'teacher' && (
+                   {/* Teacher/Admin Bonus Action */}
+                   {(currentUser?.student_role === 'teacher' || currentUser?.student_role === 'admin') && (
                      <div className="border-r border-slate-700 pr-4 mr-4 hidden md:block">
                         <Button 
                           size="sm" 
