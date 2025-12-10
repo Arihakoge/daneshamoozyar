@@ -158,6 +158,10 @@ export default function AdminUsers() {
       </div>
     );
   }
+
+  const filteredUsers = showPendingOnly 
+    ? users.filter(u => u.student_role === 'student' && !u.class_id)
+    : users;
   
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 p-8 font-sans">
