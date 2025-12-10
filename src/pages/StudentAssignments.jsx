@@ -344,17 +344,17 @@ export default function StudentAssignments() {
                   </p>
                   
                   <div className="flex items-center justify-between text-sm flex-wrap gap-2">
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        مهلت: {toPersianDateShort(assignment.due_date)}
-                      </span>
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <Calendar className="w-4 h-4" />
+                    <span>
+                      مهلت: {toPersianDateShort(displayDueDate)}
+                    </span>
+                  </div>
+                  {status.status !== 'overdue' && (
+                    <div className="text-orange-300 font-medium">
+                      ⏰ {daysLeft}
                     </div>
-                    {!isOverdue(assignment.due_date) && (
-                      <div className="text-orange-300 font-medium">
-                        ⏰ {daysLeft}
-                      </div>
-                    )}
+                  )}
                     <div className="text-gray-300">
                       حداکثر نمره: {toPersianNumber(assignment.max_score)}
                     </div>
