@@ -15,8 +15,7 @@ import {
   LogOut,
   X,
   Users,
-  Edit,
-  Activity
+  Edit
   } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
