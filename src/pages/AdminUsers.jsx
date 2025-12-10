@@ -38,6 +38,9 @@ export default function AdminUsers() {
       const sortedUsers = allPublicProfiles.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
       setUsers(sortedUsers);
       setClasses(allClasses);
+      const map = {};
+      allClasses.forEach(c => map[c.id] = c);
+      setClassMap(map);
     } catch (error) {
       console.error("Error loading data:", error);
     }
