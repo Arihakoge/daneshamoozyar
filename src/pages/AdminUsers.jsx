@@ -168,7 +168,7 @@ export default function AdminUsers() {
     : users;
   
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 p-8 font-sans">
+    <div className="font-sans">
       <div className="max-w-7xl mx-auto">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
@@ -178,8 +178,8 @@ export default function AdminUsers() {
           <p className="text-slate-400 text-lg">تعریف نقش‌ها، کلاس‌بندی دانش‌آموزان و تخصیص دقیق دروس معلمین</p>
         </motion.div>
 
-        <Card className="bg-slate-900 border-slate-800 shadow-xl">
-          <CardHeader className="border-b border-slate-800">
+        <Card className="clay-card">
+          <CardHeader className="border-b border-white/10">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-4 w-full md:w-auto">
                 <CardTitle className="text-white flex items-center gap-2">
@@ -204,8 +204,8 @@ export default function AdminUsers() {
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader className="bg-slate-800/50">
-                <TableRow className="hover:bg-slate-800/50 border-slate-700">
+              <TableHeader className="bg-black/20">
+                <TableRow className="hover:bg-black/30 border-white/10">
                   <TableHead className="text-slate-300">نام کامل</TableHead>
                   <TableHead className="text-slate-300">نقش</TableHead>
                   <TableHead className="text-slate-300 w-[40%]">جزئیات تحصیلی / تدریس</TableHead>
@@ -214,7 +214,7 @@ export default function AdminUsers() {
               </TableHeader>
               <TableBody>
                 {filteredUsers.map(user => (
-                  <TableRow key={user.user_id} className="border-slate-800 hover:bg-slate-800/30 transition-colors">
+                  <TableRow key={user.user_id} className="border-white/10 hover:bg-black/20 transition-colors">
                     <TableCell className="font-medium text-white">
                       <div className="flex items-center gap-3">
                         <div 

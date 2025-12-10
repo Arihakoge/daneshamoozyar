@@ -155,7 +155,7 @@ export default function AdminContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 p-8 font-sans" dir="rtl">
+    <div className="font-sans" dir="rtl">
       <div className="max-w-7xl mx-auto">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
@@ -166,8 +166,8 @@ export default function AdminContent() {
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-slate-900 border border-slate-800">
-            <TabsTrigger value="resources" className="data-[state=active]:bg-purple-600">
+          <TabsList className="clay-card border-none bg-black/20">
+            <TabsTrigger value="resources" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-slate-300">
               <FileText className="w-4 h-4 ml-2" /> منابع آموزشی
             </TabsTrigger>
             <TabsTrigger value="announcements" className="data-[state=active]:bg-purple-600">
@@ -283,10 +283,10 @@ export default function AdminContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {resources.map((resource) => (
-                <Card key={resource.id} className="bg-slate-900 border-slate-800 hover:shadow-lg transition-all">
+                <Card key={resource.id} className="clay-card hover:scale-[1.02] transition-transform">
                   <CardHeader className="flex flex-row items-start justify-between pb-2">
                     <div className="flex items-center gap-2">
-                      <div className="p-2 bg-slate-800 rounded-lg">
+                      <div className="p-2 bg-black/20 rounded-lg">
                         {getTypeIcon(resource.type)}
                       </div>
                       <div>
@@ -301,7 +301,7 @@ export default function AdminContent() {
                     <p className="text-sm text-slate-400 mb-4 line-clamp-2 h-10">
                       {resource.description || "بدون توضیحات"}
                     </p>
-                    <div className="flex justify-between items-center pt-4 border-t border-slate-800">
+                    <div className="flex justify-between items-center pt-4 border-t border-white/10">
                       <div className="flex items-center gap-4 text-xs text-slate-500">
                         <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {toPersianNumber(resource.view_count)}</span>
                         <span>{toPersianDate(resource.created_date)}</span>
@@ -407,7 +407,7 @@ export default function AdminContent() {
 
             <div className="space-y-4">
               {announcements.map((ann) => (
-                <Card key={ann.id} className="bg-slate-900 border-slate-800">
+                <Card key={ann.id} className="clay-card">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
@@ -452,7 +452,7 @@ export default function AdminContent() {
           {/* Analytics Tab */}
           <TabsContent value="analytics">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card className="bg-slate-900 border-slate-800">
+              <Card className="clay-card">
                 <CardContent className="p-6 flex items-center justify-between">
                   <div>
                     <p className="text-slate-400 text-sm mb-1">کل منابع</p>
@@ -483,14 +483,14 @@ export default function AdminContent() {
               </Card>
             </div>
 
-            <Card className="bg-slate-900 border-slate-800">
+            <Card className="clay-card">
               <CardHeader>
                 <CardTitle className="text-white">پر بازدیدترین منابع</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-slate-800">
+                    <TableRow className="border-white/10">
                       <TableHead className="text-slate-400">عنوان</TableHead>
                       <TableHead className="text-slate-400">نوع</TableHead>
                       <TableHead className="text-slate-400">بازدید</TableHead>
@@ -498,7 +498,7 @@ export default function AdminContent() {
                   </TableHeader>
                   <TableBody>
                     {[...resources].sort((a,b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 5).map(res => (
-                      <TableRow key={res.id} className="border-slate-800 hover:bg-slate-800/50">
+                      <TableRow key={res.id} className="border-white/10 hover:bg-black/20">
                         <TableCell className="text-white font-medium">{res.title}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="border-slate-700 text-slate-300">

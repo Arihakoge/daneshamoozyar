@@ -13,15 +13,15 @@ function AdminStatCard({ title, value, icon: Icon, color, delay }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="relative overflow-hidden rounded-2xl bg-slate-800 border border-slate-700 shadow-xl"
+      className="clay-card relative overflow-hidden p-6"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-10`} />
-      <div className="p-6 relative z-10">
+      <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
-          <div className={`p-3 rounded-xl bg-slate-900/50 border border-slate-700 ${color.replace('from-', 'text-').split(' ')[0]}`}>
+          <div className={`p-3 rounded-xl bg-black/20 ${color.replace('from-', 'text-').split(' ')[0]}`}>
             <Icon className="w-6 h-6" />
           </div>
-          <span className="text-xs font-medium text-slate-400 px-2 py-1 rounded-full bg-slate-900/50 border border-slate-700">
+          <span className="text-xs font-medium text-slate-400 px-2 py-1 rounded-full bg-black/20">
             بروزرسانی لحظه‌ای
           </span>
         </div>
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 p-8 font-sans">
+    <div className="space-y-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-6">
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
              </h2>
              <div className="grid sm:grid-cols-2 gap-4">
                 <Link to={createPageUrl("AdminUsers")}>
-                  <div className="group p-6 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800 transition-all cursor-pointer">
+                  <div className="clay-card p-6 hover:scale-[1.02] transition-transform cursor-pointer group">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
                         <Users className="w-6 h-6" />
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
                 </Link>
 
                 <Link to={createPageUrl("AdminClasses")}>
-                  <div className="group p-6 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-800 transition-all cursor-pointer">
+                  <div className="clay-card p-6 hover:scale-[1.02] transition-transform cursor-pointer group">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
                         <GraduationCap className="w-6 h-6" />
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
                 </Link>
                 
                 <Link to={createPageUrl("AdminScoreboard")}>
-                   <div className="group p-6 rounded-xl bg-slate-900 border border-slate-800 hover:border-yellow-500/50 hover:bg-slate-800 transition-all cursor-pointer">
+                   <div className="clay-card p-6 hover:scale-[1.02] transition-transform cursor-pointer group">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-lg bg-yellow-500/10 text-yellow-400 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
                         <Activity className="w-6 h-6" />
@@ -194,14 +194,14 @@ export default function AdminDashboard() {
           </div>
 
           {/* Recent Registrations */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+          <div className="clay-card p-6">
             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
               <Clock className="w-5 h-5 text-cyan-500" />
               آخرین ثبت‌نام‌ها
             </h2>
             <div className="space-y-4">
               {recentActivity.map((user) => (
-                <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700">
+                <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-black/10 transition-colors">
                   <div 
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg"
                     style={{ backgroundColor: user.avatar_color || '#64748b' }}
