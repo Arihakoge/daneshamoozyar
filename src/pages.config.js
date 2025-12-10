@@ -20,6 +20,8 @@ import ContentGenerator from './pages/ContentGenerator';
 import Messages from './pages/Messages';
 import ScoringRules from './pages/ScoringRules';
 import AdminContent from './pages/AdminContent';
+import AdminActivityLogs from './pages/AdminActivityLogs';
+import AdminUserTemplates from './pages/AdminUserTemplates';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +48,8 @@ export const PAGES = {
     "Messages": Messages,
     "ScoringRules": ScoringRules,
     "AdminContent": AdminContent,
+    "AdminActivityLogs": AdminActivityLogs,
+    "AdminUserTemplates": AdminUserTemplates,
 }
 
 export const pagesConfig = {

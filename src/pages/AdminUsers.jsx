@@ -7,6 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const ALL_SUBJECTS = [
   "قرآن", "پیام‌های آسمان", "فارسی", "نگارش", "ریاضی", "علوم", "مطالعات اجتماعی",
@@ -23,6 +26,9 @@ export default function AdminUsers() {
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [bulkAction, setBulkAction] = useState("");
+  const [bulkTarget, setBulkTarget] = useState("");
   
   // State for new assignment addition
   const [newAssignment, setNewAssignment] = useState({ grade: "", class_id: "", subject: "" });
@@ -60,11 +66,70 @@ export default function AdminUsers() {
           await base44.entities.PublicProfile.delete(profiles[0].id);
         }
         loadData();
+        toast.success("کاربر حذف شد");
       } catch (error) {
         console.error("Failed to delete user:", error);
-        alert("خطا در حذف کاربر.");
+        toast.error("خطا در حذف کاربر.");
       }
     }
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedUsers(filteredUsers.map(u => u.id));
+    } else {
+      setSelectedUsers([]);
+    }
+  };
+
+  const handleSelectUser = (id, checked) => {
+    if (checked) {
+      setSelectedUsers(prev => [...prev, id]);
+    } else {
+      setSelectedUsers(prev => prev.filter(uid => uid !== id));
+    }
+  };
+
+  const executeBulkAction = async () => {
+    if (!bulkAction || selectedUsers.length === 0) {
+      toast.error("لطفا عملیات و کاربران را انتخاب کنید");
+      return;
+    }
+
+    if (!window.confirm(`آیا مطمئن هستید که می‌خواهید این عملیات را روی ${selectedUsers.length} کاربر انجام دهید؟`)) return;
+
+    setLoading(true);
+    try {
+      const updates = selectedUsers.map(id => {
+        const updateData = {};
+        if (bulkAction === "assign_class") {
+           const cls = classes.find(c => c.id === bulkTarget);
+           if (cls) {
+             updateData.class_id = bulkTarget;
+             updateData.grade = cls.grade;
+           }
+        } else if (bulkAction === "set_role") {
+           updateData.student_role = bulkTarget;
+        } else if (bulkAction === "delete") {
+            // Special handling for delete
+            return base44.entities.PublicProfile.delete(id);
+        }
+        
+        return base44.entities.PublicProfile.update(id, updateData);
+      });
+
+      await Promise.all(updates);
+      
+      toast.success("عملیات گروهی با موفقیت انجام شد");
+      setSelectedUsers([]);
+      setBulkAction("");
+      setBulkTarget("");
+      loadData();
+    } catch (error) {
+      console.error("Bulk action failed:", error);
+      toast.error("خطا در انجام عملیات گروهی");
+    }
+    setLoading(false);
   };
 
   const openEditModal = (user) => {
@@ -178,6 +243,54 @@ export default function AdminUsers() {
           <p className="text-slate-400 text-lg">تعریف نقش‌ها، کلاس‌بندی دانش‌آموزان و تخصیص دقیق دروس معلمین</p>
         </motion.div>
 
+        {/* Bulk Actions Bar */}
+        {selectedUsers.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 p-4 clay-card bg-purple-900/20 border-purple-500/30 flex flex-wrap items-center gap-4">
+            <span className="text-white font-bold ml-4">{selectedUsers.length} کاربر انتخاب شده</span>
+
+            <Select value={bulkAction} onValueChange={setBulkAction}>
+              <SelectTrigger className="w-48 bg-slate-900 border-slate-700 text-white">
+                <SelectValue placeholder="انتخاب عملیات" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-slate-700 text-white">
+                <SelectItem value="assign_class">تخصیص به کلاس</SelectItem>
+                <SelectItem value="set_role">تغییر نقش</SelectItem>
+                <SelectItem value="delete">حذف کاربران</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {bulkAction === "assign_class" && (
+              <Select value={bulkTarget} onValueChange={setBulkTarget}>
+                <SelectTrigger className="w-48 bg-slate-900 border-slate-700 text-white">
+                  <SelectValue placeholder="انتخاب کلاس" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-700 text-white">
+                  {classes.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {bulkAction === "set_role" && (
+              <Select value={bulkTarget} onValueChange={setBulkTarget}>
+                <SelectTrigger className="w-48 bg-slate-900 border-slate-700 text-white">
+                  <SelectValue placeholder="انتخاب نقش" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-700 text-white">
+                  <SelectItem value="student">دانش‌آموز</SelectItem>
+                  <SelectItem value="teacher">معلم</SelectItem>
+                  <SelectItem value="admin">مدیر</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            <Button onClick={executeBulkAction} className="bg-purple-600 hover:bg-purple-700">
+              اعمال تغییرات
+            </Button>
+          </motion.div>
+        )}
+
         <Card className="clay-card">
           <CardHeader className="border-b border-white/10">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -190,7 +303,7 @@ export default function AdminUsers() {
                   {filteredUsers.length} کاربر
                 </Badge>
               </div>
-              
+
               <div className="flex gap-2 w-full md:w-auto">
                  <Button 
                     variant={showPendingOnly ? "default" : "outline"} 
@@ -206,6 +319,13 @@ export default function AdminUsers() {
             <Table>
               <TableHeader className="bg-black/20">
                 <TableRow className="hover:bg-black/30 border-white/10">
+                  <TableHead className="w-12">
+                    <Checkbox 
+                       checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                       onCheckedChange={handleSelectAll}
+                       className="border-slate-500 data-[state=checked]:bg-purple-500"
+                    />
+                  </TableHead>
                   <TableHead className="text-slate-300">نام کامل</TableHead>
                   <TableHead className="text-slate-300">نقش</TableHead>
                   <TableHead className="text-slate-300 w-[40%]">جزئیات تحصیلی / تدریس</TableHead>
@@ -215,6 +335,13 @@ export default function AdminUsers() {
               <TableBody>
                 {filteredUsers.map(user => (
                   <TableRow key={user.user_id} className="border-white/10 hover:bg-black/20 transition-colors">
+                    <TableCell>
+                      <Checkbox 
+                         checked={selectedUsers.includes(user.id)}
+                         onCheckedChange={(checked) => handleSelectUser(user.id, checked)}
+                         className="border-slate-500 data-[state=checked]:bg-purple-500"
+                      />
+                    </TableCell>
                     <TableCell className="font-medium text-white">
                       <div className="flex items-center gap-3">
                         <div 
