@@ -19,6 +19,7 @@ import Achievements from './pages/Achievements';
 import ContentGenerator from './pages/ContentGenerator';
 import Messages from './pages/Messages';
 import ScoringRules from './pages/ScoringRules';
+import AdminContent from './pages/AdminContent';
 import __Layout from './Layout.jsx';
 
 
@@ -44,6 +45,7 @@ export const PAGES = {
     "ContentGenerator": ContentGenerator,
     "Messages": Messages,
     "ScoringRules": ScoringRules,
+    "AdminContent": AdminContent,
 }
 
 export const pagesConfig = {
