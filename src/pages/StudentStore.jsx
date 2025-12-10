@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Star, Shield, Palette, Sparkles, Check, Lock, Coins, Loader2 } from "lucide-react";
+import { ShoppingBag, Star, Shield, Palette, Sparkles, Check, Lock, Coins, Loader2, Zap, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { toPersianNumber } from "@/components/utils";
@@ -63,6 +63,15 @@ export default function StudentStore() {
       { name: "مبتکر", description: "عنوان نمایشی کنار نام", cost: 300, type: "title", value: "مبتکر", image_url: "" },
       { name: "کادر طلایی", description: "کادر طلایی دور عکس پروفایل", cost: 500, type: "profile_frame", value: "border-4 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]", image_url: "" },
       { name: "کادر نئونی", description: "کادر درخشان دور عکس پروفایل", cost: 600, type: "profile_frame", value: "border-2 border-cyan-400 shadow-[0_0_10px_#22d3ee] animate-pulse", image_url: "" },
+      { 
+        name: "تمدید مهلت (هفتگی)", 
+        description: "مهلت ارسال تکالیف را به مدت یک هفته، ۲ روز افزایش می‌دهد.", 
+        cost: 300, 
+        type: "powerup", 
+        value: "{\"effect\": \"extend_deadline\", \"days\": 2}", 
+        duration_hours: 168, // 7 days
+        image_url: "" 
+      },
     ];
     
     // Create items sequentially to avoid race conditions if needed, or Promise.all
@@ -118,27 +127,53 @@ export default function StudentStore() {
   const handleEquip = async (item) => {
     if (!userProfile) return;
     
-    setPurchasing(item.id); // Reusing loading state
+    setPurchasing(item.id);
     try {
-      const updateData = {};
-      if (item.type === "avatar_color") {
-        updateData.avatar_color = item.value;
-      } else if (item.type === "profile_frame") {
-        updateData.active_frame = item.value;
-      } else if (item.type === "title") {
-        updateData.active_title = item.value;
+      if (item.type === "powerup") {
+        // Find the inventory item
+        const inventoryItem = inventory.find(inv => inv.item_id === item.id && !inv.is_active);
+        
+        if (inventoryItem) {
+          const now = new Date();
+          const expiresAt = new Date(now.getTime() + (item.duration_hours * 60 * 60 * 1000));
+          
+          await base44.entities.UserInventory.update(inventoryItem.id, {
+            is_active: true,
+            activated_at: now.toISOString(),
+            expires_at: expiresAt.toISOString()
+          });
+
+          // Update local state
+          setInventory(prev => prev.map(inv => 
+            inv.id === inventoryItem.id 
+              ? { ...inv, is_active: true, activated_at: now.toISOString(), expires_at: expiresAt.toISOString() } 
+              : inv
+          ));
+          
+          toast.success(`${item.name} فعال شد و تا ${toPersianNumber(item.duration_hours / 24)} روز آینده معتبر است!`);
+        } else {
+           // Maybe user clicked on an already active item or logic error
+           toast.error("آیتم قابل استفاده یافت نشد");
+        }
+      } else {
+        // Cosmetic items
+        const updateData = {};
+        if (item.type === "avatar_color") {
+          updateData.avatar_color = item.value;
+        } else if (item.type === "profile_frame") {
+          updateData.active_frame = item.value;
+        } else if (item.type === "title") {
+          updateData.active_title = item.value;
+        }
+
+        await base44.entities.PublicProfile.update(userProfile.id, updateData);
+        await base44.auth.updateMe(updateData);
+        setUserProfile(prev => ({ ...prev, ...updateData }));
+        toast.success(`${item.name} تجهیز شد!`);
       }
-
-      await base44.entities.PublicProfile.update(userProfile.id, updateData);
-      
-      // Also update auth user for consistency if needed, though PublicProfile is source of truth for display
-      await base44.auth.updateMe(updateData);
-
-      setUserProfile(prev => ({ ...prev, ...updateData }));
-      toast.success(`${item.name} فعال شد!`);
     } catch (error) {
-      console.error("Equip failed:", error);
-      toast.error("خطا در فعال‌سازی");
+      console.error("Action failed:", error);
+      toast.error("خطا در عملیات");
     } finally {
       setPurchasing(null);
     }
@@ -153,6 +188,7 @@ export default function StudentStore() {
       case "avatar_color": return <Palette className="w-5 h-5 text-purple-400" />;
       case "profile_frame": return <Shield className="w-5 h-5 text-yellow-400" />;
       case "title": return <Sparkles className="w-5 h-5 text-blue-400" />;
+      case "powerup": return <Zap className="w-5 h-5 text-orange-400" />;
       default: return <Star className="w-5 h-5 text-gray-400" />;
     }
   };
@@ -193,17 +229,32 @@ export default function StudentStore() {
           <TabsTrigger value="avatar_color" className="flex-1">رنگ‌ها</TabsTrigger>
           <TabsTrigger value="profile_frame" className="flex-1">کادرها</TabsTrigger>
           <TabsTrigger value="title" className="flex-1">عنوان‌ها</TabsTrigger>
+          <TabsTrigger value="powerup" className="flex-1">قدرت‌ها</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <AnimatePresence mode="popLayout">
               {filteredItems.map((item, index) => {
-                const owned = inventory.some(inv => inv.item_id === item.id);
-                const isActive = 
-                  (item.type === "avatar_color" && userProfile?.avatar_color === item.value) ||
-                  (item.type === "profile_frame" && userProfile?.active_frame === item.value) ||
-                  (item.type === "title" && userProfile?.active_title === item.value);
+                // Check if owned (for consumables/powerups, check if we have an inactive one available OR if one is currently active)
+                const inventoryItems = inventory.filter(inv => inv.item_id === item.id);
+                const owned = inventoryItems.length > 0;
+                
+                // For cosmetics: check if applied on profile
+                // For powerups: check if ANY instance is currently active
+                let isActive = false;
+                let activeExpiration = null;
+
+                if (item.type === "powerup") {
+                   const activeItem = inventoryItems.find(inv => inv.is_active && new Date(inv.expires_at) > new Date());
+                   isActive = !!activeItem;
+                   if (activeItem) activeExpiration = activeItem.expires_at;
+                } else {
+                   isActive = 
+                    (item.type === "avatar_color" && userProfile?.avatar_color === item.value) ||
+                    (item.type === "profile_frame" && userProfile?.active_frame === item.value) ||
+                    (item.type === "title" && userProfile?.active_title === item.value);
+                }
 
                 return (
                   <motion.div
@@ -242,8 +293,15 @@ export default function StudentStore() {
                         <h3 className="text-lg font-bold text-white mb-1">{item.name}</h3>
                         <p className="text-xs text-gray-400 mb-4 line-clamp-2">{item.description}</p>
 
+                        {activeExpiration && (
+                           <div className="mb-2 text-[10px] text-green-400 flex items-center gap-1 bg-green-900/20 px-2 py-1 rounded">
+                              <Clock className="w-3 h-3" />
+                              فعال تا: {new Date(activeExpiration).toLocaleDateString('fa-IR')}
+                           </div>
+                        )}
+
                         <div className="mt-auto w-full">
-                          {owned ? (
+                          {owned && item.type !== "powerup" ? (
                             isActive ? (
                               <Button disabled className="w-full bg-slate-700 text-slate-400 cursor-not-allowed">
                                 <Check className="w-4 h-4 mr-2" /> فعال است
@@ -254,9 +312,63 @@ export default function StudentStore() {
                                 disabled={purchasing === item.id}
                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white clay-button"
                               >
-                                {purchasing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "استفاده"}
+                                {purchasing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "تجهیز"}
                               </Button>
                             )
+                          ) : owned && item.type === "powerup" ? (
+                             isActive ? (
+                                <Button disabled className="w-full bg-slate-700 text-slate-400 cursor-not-allowed text-xs">
+                                   <Zap className="w-3 h-3 mr-1" /> در حال اجرا
+                                </Button>
+                             ) : (
+                                // Check if we have inactive stock
+                                inventoryItems.some(inv => !inv.is_active) ? (
+                                   <Button 
+                                     onClick={() => handleEquip(item)} 
+                                     disabled={purchasing === item.id}
+                                     className="w-full bg-green-600 hover:bg-green-700 text-white clay-button"
+                                   >
+                                     {purchasing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "فعال‌سازی"}
+                                   </Button>
+                                ) : (
+                                   // Owned but all used/expired? Actually logic above handles active check.
+                                   // If we are here, it means we don't have an active one, BUT we might not have an inactive one either (expired ones).
+                                   // Wait, `owned` is based on ANY inventory item.
+                                   // So if I have only expired ones, `owned` is true, `isActive` is false.
+                                   // But I can't equip expired ones.
+                                   // I need to be able to buy more if I don't have stock.
+                                   
+                                   // Let's adjust the button logic:
+                                   // If (isActive) -> Show "Active"
+                                   // Else If (Has Inactive Stock) -> Show "Activate"
+                                   // Else -> Show "Buy"
+                                   
+                                   // To Keep structure simple, let's defer to the outer logic which was:
+                                   // {owned ? (...) : (Buy Button)}
+                                   // I need to change "owned" to "hasStockOrIsActive" for cosmetic, or similar.
+                                   
+                                   // Actually, for powerups, you can have multiple in inventory.
+                                   // If I have 0 active and 0 inactive (all expired), I should be able to buy.
+                                   <Button 
+                                      onClick={() => handleBuy(item)} 
+                                      disabled={purchasing === item.id || (userProfile?.coins || 0) < item.cost}
+                                      className={`w-full clay-button ${
+                                        (userProfile?.coins || 0) >= item.cost 
+                                          ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                                          : "bg-slate-700 text-slate-500 hover:bg-slate-700 cursor-not-allowed"
+                                      }`}
+                                    >
+                                      {purchasing === item.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <>
+                                          {item.cost > (userProfile?.coins || 0) ? <Lock className="w-4 h-4 mr-2" /> : <ShoppingBag className="w-4 h-4 mr-2" />}
+                                          {toPersianNumber(item.cost)} سکه
+                                        </>
+                                      )}
+                                    </Button>
+                                )
+                             )
                           ) : (
                             <Button 
                               onClick={() => handleBuy(item)} 
