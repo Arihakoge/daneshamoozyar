@@ -74,7 +74,10 @@ export default function StudentAssignments() {
         if (userInventory.length > 0) {
           const allItems = await base44.entities.StoreItem.list();
           userInventory.forEach(inv => {
-            if (new Date(inv.expires_at) > now) {
+            // Check expiry for timed items, or just is_active for consumable (logic handled elsewhere but good to check)
+            // For one-time use items (duration=0), if they are active, they are waiting to be consumed on next action.
+            // So we treat is_active=true as "Equipped/Ready" for consumables.
+            if (inv.is_active && new Date(inv.expires_at) > now) {
               const itemDef = allItems.find(i => i.id === inv.item_id);
               if (itemDef && itemDef.type === 'powerup') {
                 try {
@@ -172,9 +175,36 @@ export default function StudentAssignments() {
 
       await base44.entities.Submission.create(submissionData);
       
+      // Calculate XP and Coins with Powerups
+      const coinBooster = activePowerups.find(p => p.effect.effect === 'double_coins');
+      const xpBooster = activePowerups.find(p => p.effect.effect === 'double_xp');
+      
+      const coinsEarned = (selectedAssignment.coins_reward || 0) * (coinBooster ? 2 : 1);
+      const xpEarned = (selectedAssignment.coins_reward || 10) * (xpBooster ? 2 : 1); // Base XP = Coins reward roughly
+
+      // Update User
       await base44.auth.updateMe({
-        coins: (user.coins || 0) + selectedAssignment.coins_reward
+        coins: (user.coins || 0) + coinsEarned,
+        total_xp: (user.total_xp || 0) + xpEarned
       });
+      
+      // Update Public Profile as well
+      await base44.entities.PublicProfile.update(user.id, {
+          coins: (user.coins || 0) + coinsEarned,
+          total_xp: (user.total_xp || 0) + xpEarned
+      });
+
+      // Consume boosters
+      if (coinBooster) {
+         await base44.entities.UserInventory.update(coinBooster.id, { is_active: true, expires_at: new Date().toISOString() }); // Expire immediately
+      }
+      if (xpBooster) {
+         await base44.entities.UserInventory.update(xpBooster.id, { is_active: true, expires_at: new Date().toISOString() });
+      }
+
+      if (coinBooster || xpBooster) {
+          toast.success(`قدرت‌های فعال استفاده شدند! (${toPersianNumber(coinsEarned)} سکه, ${toPersianNumber(xpEarned)} تجربه)`);
+      }
 
       // Check for badges
       const newBadges = await checkAndAwardBadges(user.id, 'submission', { assignment: selectedAssignment });

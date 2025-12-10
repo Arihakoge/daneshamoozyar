@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Star, Shield, Palette, Sparkles, Check, Lock, Coins, Loader2, Zap, Clock } from "lucide-react";
+import { ShoppingBag, Zap, Shield, Lock, Coins, Loader2, ArrowUpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { toPersianNumber } from "@/components/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { calculateLevel } from "@/components/gamification/LevelSystem";
 
 export default function StudentStore() {
   const [items, setItems] = useState([]);
@@ -15,7 +15,7 @@ export default function StudentStore() {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(null);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("powerup");
 
   useEffect(() => {
     loadStoreData();
@@ -26,22 +26,29 @@ export default function StudentStore() {
       setLoading(true);
       const user = await base44.auth.me();
       
-      // Load public profile
       const profiles = await base44.entities.PublicProfile.filter({ user_id: user.id });
-      if (profiles.length > 0) setUserProfile(profiles[0]);
+      if (profiles.length > 0) {
+        // Migration: If total_xp is 0 but has coins/level, initialize it roughly
+        let profile = profiles[0];
+        if (!profile.total_xp && profile.coins > 0) {
+           const estimatedXP = profile.coins * 2; // Rough estimate
+           await base44.entities.PublicProfile.update(profile.id, { total_xp: estimatedXP });
+           profile.total_xp = estimatedXP;
+        }
+        setUserProfile(profile);
+      }
 
-      // Load items
       let storeItems = await base44.entities.StoreItem.filter({ is_active: true });
       
-      // Auto-seed if empty
-      if (storeItems.length === 0) {
+      // Auto-seed if we need to update items or if empty (Checking if we have powerups)
+      const hasPowerups = storeItems.some(i => i.type === 'powerup');
+      if (storeItems.length === 0 || !hasPowerups) {
         await seedStoreItems();
         storeItems = await base44.entities.StoreItem.filter({ is_active: true });
       }
       
       setItems(storeItems);
 
-      // Load inventory
       const userInventory = await base44.entities.UserInventory.filter({ user_id: user.id });
       setInventory(userInventory);
       
@@ -54,29 +61,85 @@ export default function StudentStore() {
   };
 
   const seedStoreItems = async () => {
-    const defaultItems = [
-      { name: "آبی آسمانی", description: "رنگ آواتار آبی روشن", cost: 50, type: "avatar_color", value: "#38bdf8", image_url: "" },
-      { name: "بنفش سلطنتی", description: "رنگ آواتار بنفش خاص", cost: 100, type: "avatar_color", value: "#7c3aed", image_url: "" },
-      { name: "قرمز آتشین", description: "رنگ آواتار قرمز تند", cost: 75, type: "avatar_color", value: "#ef4444", image_url: "" },
-      { name: "سبز نئونی", description: "رنگ آواتار سبز درخشان", cost: 150, type: "avatar_color", value: "#4ade80", image_url: "" },
-      { name: "دانش‌پژوه", description: "عنوان نمایشی کنار نام", cost: 200, type: "title", value: "دانش‌پژوه", image_url: "" },
-      { name: "مبتکر", description: "عنوان نمایشی کنار نام", cost: 300, type: "title", value: "مبتکر", image_url: "" },
-      { name: "کادر طلایی", description: "کادر طلایی دور عکس پروفایل", cost: 500, type: "profile_frame", value: "border-4 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]", image_url: "" },
-      { name: "کادر نئونی", description: "کادر درخشان دور عکس پروفایل", cost: 600, type: "profile_frame", value: "border-2 border-cyan-400 shadow-[0_0_10px_#22d3ee] animate-pulse", image_url: "" },
+    // Clear old items first if needed? For now just create new ones.
+    const newItems = [
+      // Powerups
       { 
-        name: "تمدید مهلت (هفتگی)", 
-        description: "مهلت ارسال تکالیف را به مدت یک هفته، ۲ روز افزایش می‌دهد.", 
-        cost: 300, 
+        name: "ماشین زمان (۲ روز)", 
+        description: "مهلت ارسال تکلیف را ۲ روز تمدید می‌کند.", 
+        cost: 150, 
         type: "powerup", 
-        value: "{\"effect\": \"extend_deadline\", \"days\": 2}", 
-        duration_hours: 168, // 7 days
+        value: JSON.stringify({ effect: "extend_deadline", days: 2 }), 
+        duration_hours: 168,
+        min_level: 1,
         image_url: "" 
       },
+      { 
+        name: "ماشین زمان (۱ هفته)", 
+        description: "مهلت ارسال تکلیف را یک هفته تمدید می‌کند.", 
+        cost: 400, 
+        type: "powerup", 
+        value: JSON.stringify({ effect: "extend_deadline", days: 7 }), 
+        duration_hours: 168,
+        min_level: 5,
+        image_url: "" 
+      },
+      { 
+        name: "ضریب سکه (۲ برابر)", 
+        description: "سکه دریافتی از تکلیف بعدی را ۲ برابر می‌کند.", 
+        cost: 100, 
+        type: "powerup", 
+        value: JSON.stringify({ effect: "double_coins" }), 
+        duration_hours: 0, // Consumable on use
+        min_level: 2,
+        image_url: "" 
+      },
+      { 
+        name: "معجون تجربه (۲ برابر)", 
+        description: "امتیاز تجربه (XP) تکلیف بعدی را ۲ برابر می‌کند.", 
+        cost: 100, 
+        type: "powerup", 
+        value: JSON.stringify({ effect: "double_xp" }), 
+        duration_hours: 0,
+        min_level: 2,
+        image_url: "" 
+      },
+      { 
+        name: "سپر محافظ استریک", 
+        description: "اگر یک روز تمرین ارسال نکنید، زنجیره فعالیت شما قطع نمی‌شود.", 
+        cost: 300, 
+        type: "powerup", 
+        value: JSON.stringify({ effect: "freeze_streak" }), 
+        duration_hours: 24,
+        min_level: 3,
+        image_url: "" 
+      },
+      { 
+        name: "حذف جریمه تاخیر", 
+        description: "جریمه کسر نمره برای ارسال دیر هنگام را حذف می‌کند.", 
+        cost: 250, 
+        type: "powerup", 
+        value: JSON.stringify({ effect: "remove_late_penalty" }), 
+        duration_hours: 0,
+        min_level: 4,
+        image_url: "" 
+      },
+      
+      // Frames
+      { name: "کادر برنزی", description: "یک کادر ساده و شیک", cost: 50, type: "profile_frame", value: "border-4 border-orange-700", min_level: 1, image_url: "" },
+      { name: "کادر نقره‌ای", description: "نشانه پیشرفت", cost: 150, type: "profile_frame", value: "border-4 border-slate-300 shadow-md", min_level: 2, image_url: "" },
+      { name: "کادر طلایی", description: "برای بهترین‌ها", cost: 500, type: "profile_frame", value: "border-4 border-yellow-400 shadow-lg shadow-yellow-500/50", min_level: 5, image_url: "" },
+      { name: "کادر نئونی آبی", description: "درخشش خیره کننده", cost: 800, type: "profile_frame", value: "border-2 border-cyan-400 shadow-[0_0_15px_#22d3ee] animate-pulse", min_level: 8, image_url: "" },
+      { name: "کادر آتشین", description: "قدرت خالص", cost: 1000, type: "profile_frame", value: "border-4 border-red-500 shadow-[0_0_20px_#ef4444]", min_level: 10, image_url: "" },
+      { name: "کادر رنگین‌کمان", description: "بسیار کمیاب", cost: 2000, type: "profile_frame", value: "bg-gradient-to-r from-red-500 via-green-500 to-blue-500 p-1 rounded-full", min_level: 15, image_url: "" },
     ];
     
-    // Create items sequentially to avoid race conditions if needed, or Promise.all
-    for (const item of defaultItems) {
-      await base44.entities.StoreItem.create(item);
+    // Check existence and create
+    const existing = await base44.entities.StoreItem.list();
+    for (const item of newItems) {
+      if (!existing.find(e => e.name === item.name)) {
+        await base44.entities.StoreItem.create(item);
+      }
     }
   };
 
@@ -85,6 +148,13 @@ export default function StudentStore() {
     if (userProfile.coins < item.cost) {
       toast.error("سکه کافی ندارید!");
       return;
+    }
+    
+    // Level Check
+    const { level } = calculateLevel(userProfile.total_xp);
+    if (level < (item.min_level || 1)) {
+       toast.error(`برای خرید این آیتم باید به سطح ${toPersianNumber(item.min_level)} برسید!`);
+       return;
     }
 
     setPurchasing(item.id);
@@ -99,7 +169,8 @@ export default function StudentStore() {
         user_id: userProfile.user_id,
         item_id: item.id,
         item_type: item.type,
-        purchased_at: new Date().toISOString()
+        purchased_at: new Date().toISOString(),
+        is_active: false // Powerups start inactive, Frames bought
       });
 
       // 3. Log activity
@@ -107,15 +178,14 @@ export default function StudentStore() {
         user_id: userProfile.user_id,
         activity_type: "purchase",
         points_earned: -item.cost,
-        details: `خرید آیتم ${item.name}`
+        details: `خرید ${item.name}`
       });
 
-      // Update local state
       setUserProfile(prev => ({ ...prev, coins: prev.coins - item.cost }));
-      const newInventoryItem = { item_id: item.id, item_type: item.type }; // simplified
+      const newInventoryItem = { item_id: item.id, item_type: item.type, is_active: false };
       setInventory(prev => [...prev, newInventoryItem]);
       
-      toast.success(`آیتم ${item.name} خریداری شد!`);
+      toast.success(`${item.name} خریداری شد!`);
     } catch (error) {
       console.error("Purchase failed:", error);
       toast.error("خطا در خرید آیتم");
@@ -124,74 +194,59 @@ export default function StudentStore() {
     }
   };
 
-  const handleEquip = async (item) => {
+  const handleActivatePowerup = async (item) => {
+      // Find inactive inventory item
+      const inventoryItem = inventory.find(inv => inv.item_id === item.id && !inv.is_active);
+      if (!inventoryItem) return;
+
+      setPurchasing(item.id);
+      try {
+        const now = new Date();
+        // If duration is 0, it's "next assignment" type, usually tracked by is_active=true and consumed on submission
+        // We set expiration to far future or just handle logic elsewhere.
+        // Let's set expiration to 1 year if 0, logic will consume it.
+        const duration = item.duration_hours > 0 ? item.duration_hours : 8760; 
+        const expiresAt = new Date(now.getTime() + (duration * 60 * 60 * 1000));
+        
+        await base44.entities.UserInventory.update(inventoryItem.id, {
+          is_active: true,
+          activated_at: now.toISOString(),
+          expires_at: expiresAt.toISOString()
+        });
+
+        setInventory(prev => prev.map(inv => 
+          inv.id === inventoryItem.id 
+            ? { ...inv, is_active: true, activated_at: now.toISOString(), expires_at: expiresAt.toISOString() } 
+            : inv
+        ));
+        
+        toast.success(`${item.name} فعال شد!`);
+      } catch (error) {
+        console.error("Activation failed:", error);
+        toast.error("خطا در فعال‌سازی");
+      } finally {
+        setPurchasing(null);
+      }
+  };
+
+  const handleEquipFrame = async (item) => {
     if (!userProfile) return;
-    
     setPurchasing(item.id);
     try {
-      if (item.type === "powerup") {
-        // Find the inventory item
-        const inventoryItem = inventory.find(inv => inv.item_id === item.id && !inv.is_active);
-        
-        if (inventoryItem) {
-          const now = new Date();
-          const expiresAt = new Date(now.getTime() + (item.duration_hours * 60 * 60 * 1000));
-          
-          await base44.entities.UserInventory.update(inventoryItem.id, {
-            is_active: true,
-            activated_at: now.toISOString(),
-            expires_at: expiresAt.toISOString()
-          });
-
-          // Update local state
-          setInventory(prev => prev.map(inv => 
-            inv.id === inventoryItem.id 
-              ? { ...inv, is_active: true, activated_at: now.toISOString(), expires_at: expiresAt.toISOString() } 
-              : inv
-          ));
-          
-          toast.success(`${item.name} فعال شد و تا ${toPersianNumber(item.duration_hours / 24)} روز آینده معتبر است!`);
-        } else {
-           // Maybe user clicked on an already active item or logic error
-           toast.error("آیتم قابل استفاده یافت نشد");
-        }
-      } else {
-        // Cosmetic items
-        const updateData = {};
-        if (item.type === "avatar_color") {
-          updateData.avatar_color = item.value;
-        } else if (item.type === "profile_frame") {
-          updateData.active_frame = item.value;
-        } else if (item.type === "title") {
-          updateData.active_title = item.value;
-        }
-
-        await base44.entities.PublicProfile.update(userProfile.id, updateData);
-        await base44.auth.updateMe(updateData);
-        setUserProfile(prev => ({ ...prev, ...updateData }));
-        toast.success(`${item.name} تجهیز شد!`);
-      }
+      const updateData = { active_frame: item.value };
+      await base44.entities.PublicProfile.update(userProfile.id, updateData);
+      await base44.auth.updateMe(updateData);
+      setUserProfile(prev => ({ ...prev, ...updateData }));
+      toast.success(`${item.name} روی پروفایل قرار گرفت!`);
     } catch (error) {
-      console.error("Action failed:", error);
-      toast.error("خطا در عملیات");
+        toast.error("خطا در تغییر فریم");
     } finally {
-      setPurchasing(null);
+        setPurchasing(null);
     }
   };
 
-  const filteredItems = activeTab === "all" 
-    ? items 
-    : items.filter(item => item.type === activeTab);
-
-  const getItemIcon = (type) => {
-    switch(type) {
-      case "avatar_color": return <Palette className="w-5 h-5 text-purple-400" />;
-      case "profile_frame": return <Shield className="w-5 h-5 text-yellow-400" />;
-      case "title": return <Sparkles className="w-5 h-5 text-blue-400" />;
-      case "powerup": return <Zap className="w-5 h-5 text-orange-400" />;
-      default: return <Star className="w-5 h-5 text-gray-400" />;
-    }
-  };
+  const filteredItems = items.filter(item => item.type === activeTab).sort((a,b) => a.cost - b.cost);
+  const currentLevel = userProfile ? calculateLevel(userProfile.total_xp).level : 1;
 
   if (loading) {
     return (
@@ -207,54 +262,53 @@ export default function StudentStore() {
         <div>
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
             <ShoppingBag className="w-8 h-8 text-pink-500" />
-            فروشگاه جوایز
+            فروشگاه قدرت و افتخار
           </h1>
-          <p className="text-gray-300">سکه‌های خود را خرج کنید و پروفایل خود را شخصی‌سازی کنید!</p>
+          <p className="text-gray-300">با پیشرفت در درس‌ها، قدرت‌های جدید آزاد کنید!</p>
         </div>
         
-        <div className="clay-card p-4 flex items-center gap-3 bg-slate-900/50 border-purple-500/30">
-          <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
-            <Coins className="w-6 h-6 text-yellow-400" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-400">موجودی شما</p>
-            <p className="text-xl font-bold text-white">{toPersianNumber(userProfile?.coins || 0)} سکه</p>
-          </div>
+        <div className="flex gap-4">
+             <div className="clay-card p-4 flex items-center gap-3 bg-slate-900/50 border-purple-500/30">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <ArrowUpCircle className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                    <p className="text-xs text-gray-400">سطح شما</p>
+                    <p className="text-xl font-bold text-white">{toPersianNumber(currentLevel)}</p>
+                </div>
+            </div>
+            <div className="clay-card p-4 flex items-center gap-3 bg-slate-900/50 border-purple-500/30">
+                <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                    <Coins className="w-6 h-6 text-yellow-400" />
+                </div>
+                <div>
+                    <p className="text-xs text-gray-400">موجودی</p>
+                    <p className="text-xl font-bold text-white">{toPersianNumber(userProfile?.coins || 0)} سکه</p>
+                </div>
+            </div>
         </div>
       </motion.div>
 
-      <Tabs defaultValue="all" onValueChange={setActiveTab} className="space-y-8">
+      <Tabs defaultValue="powerup" onValueChange={setActiveTab} className="space-y-8">
         <TabsList className="bg-slate-800 border border-slate-700 w-full md:w-auto p-1">
-          <TabsTrigger value="all" className="flex-1">همه</TabsTrigger>
-          <TabsTrigger value="avatar_color" className="flex-1">رنگ‌ها</TabsTrigger>
-          <TabsTrigger value="profile_frame" className="flex-1">کادرها</TabsTrigger>
-          <TabsTrigger value="title" className="flex-1">عنوان‌ها</TabsTrigger>
-          <TabsTrigger value="powerup" className="flex-1">قدرت‌ها</TabsTrigger>
+          <TabsTrigger value="powerup" className="flex-1 px-8">⚡ قدرت‌ها</TabsTrigger>
+          <TabsTrigger value="profile_frame" className="flex-1 px-8">🛡️ فریم‌ها</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AnimatePresence mode="popLayout">
               {filteredItems.map((item, index) => {
-                // Check if owned (for consumables/powerups, check if we have an inactive one available OR if one is currently active)
                 const inventoryItems = inventory.filter(inv => inv.item_id === item.id);
-                const owned = inventoryItems.length > 0;
+                const ownedCount = inventoryItems.length;
                 
-                // For cosmetics: check if applied on profile
-                // For powerups: check if ANY instance is currently active
-                let isActive = false;
-                let activeExpiration = null;
+                // Active check for frames
+                const isEquipped = item.type === "profile_frame" && userProfile?.active_frame === item.value;
+                
+                // Active check for powerups
+                const activePowerup = item.type === "powerup" && inventoryItems.some(inv => inv.is_active && new Date(inv.expires_at) > new Date());
 
-                if (item.type === "powerup") {
-                   const activeItem = inventoryItems.find(inv => inv.is_active && new Date(inv.expires_at) > new Date());
-                   isActive = !!activeItem;
-                   if (activeItem) activeExpiration = activeItem.expires_at;
-                } else {
-                   isActive = 
-                    (item.type === "avatar_color" && userProfile?.avatar_color === item.value) ||
-                    (item.type === "profile_frame" && userProfile?.active_frame === item.value) ||
-                    (item.type === "title" && userProfile?.active_title === item.value);
-                }
+                const isLocked = currentLevel < (item.min_level || 1);
 
                 return (
                   <motion.div
@@ -263,132 +317,70 @@ export default function StudentStore() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <Card className={`clay-card h-full flex flex-col ${isActive ? 'border-2 border-green-500' : ''}`}>
-                      <CardContent className="p-6 flex flex-col h-full items-center text-center relative overflow-hidden">
-                        {isActive && (
-                          <div className="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-lg z-10">
-                            فعال
+                    <Card className={`clay-card h-full flex flex-col relative overflow-hidden ${isEquipped || activePowerup ? 'border-2 border-green-500' : isLocked ? 'opacity-75 grayscale-[0.5]' : ''}`}>
+                      {isLocked && (
+                          <div className="absolute inset-0 bg-black/60 z-10 flex flex-col items-center justify-center text-center p-4">
+                              <Lock className="w-12 h-12 text-gray-400 mb-2" />
+                              <p className="text-white font-bold">قفل شده</p>
+                              <p className="text-sm text-gray-300">نیاز به سطح {toPersianNumber(item.min_level)}</p>
                           </div>
-                        )}
-                        
-                        <div className="w-24 h-24 mb-4 rounded-full bg-slate-800 flex items-center justify-center relative group">
-                          {item.type === "avatar_color" && (
-                            <div className="w-20 h-20 rounded-full shadow-inner" style={{ backgroundColor: item.value }} />
-                          )}
-                          {item.type === "profile_frame" && (
-                            <div className={`w-20 h-20 rounded-full bg-slate-700 ${item.value}`} />
-                          )}
-                          {item.type === "title" && (
-                            <div className="px-3 py-1 bg-slate-700 rounded-lg text-white font-bold text-sm">
-                              {item.value}
-                            </div>
+                      )}
+                      
+                      <CardContent className="p-6 flex flex-col h-full items-center text-center">
+                        <div className="w-20 h-20 mb-4 rounded-full bg-slate-800 flex items-center justify-center relative">
+                          {item.type === "profile_frame" ? (
+                              <div className={`w-16 h-16 rounded-full bg-slate-700 ${item.value}`} />
+                          ) : (
+                              <Zap className="w-10 h-10 text-orange-400" />
                           )}
                           
-                          {/* Preview tooltip logic could go here */}
-                          <div className="absolute -bottom-2 -right-2 bg-slate-900 rounded-full p-2 border border-slate-700">
-                             {getItemIcon(item.type)}
-                          </div>
+                           {ownedCount > 0 && item.type === "powerup" && (
+                              <div className="absolute -top-2 -left-2 bg-blue-600 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold border-2 border-slate-900 z-20">
+                                  {toPersianNumber(ownedCount)}
+                              </div>
+                           )}
                         </div>
 
-                        <h3 className="text-lg font-bold text-white mb-1">{item.name}</h3>
-                        <p className="text-xs text-gray-400 mb-4 line-clamp-2">{item.description}</p>
+                        <h3 className="text-lg font-bold text-white mb-2">{item.name}</h3>
+                        <p className="text-xs text-gray-400 mb-6 flex-1">{item.description}</p>
 
-                        {activeExpiration && (
-                           <div className="mb-2 text-[10px] text-green-400 flex items-center gap-1 bg-green-900/20 px-2 py-1 rounded">
-                              <Clock className="w-3 h-3" />
-                              فعال تا: {new Date(activeExpiration).toLocaleDateString('fa-IR')}
-                           </div>
-                        )}
-
-                        <div className="mt-auto w-full">
-                          {owned && item.type !== "powerup" ? (
-                            isActive ? (
-                              <Button disabled className="w-full bg-slate-700 text-slate-400 cursor-not-allowed">
-                                <Check className="w-4 h-4 mr-2" /> فعال است
-                              </Button>
-                            ) : (
-                              <Button 
-                                onClick={() => handleEquip(item)} 
-                                disabled={purchasing === item.id}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white clay-button"
-                              >
-                                {purchasing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "تجهیز"}
-                              </Button>
-                            )
-                          ) : owned && item.type === "powerup" ? (
-                             isActive ? (
-                                <Button disabled className="w-full bg-slate-700 text-slate-400 cursor-not-allowed text-xs">
-                                   <Zap className="w-3 h-3 mr-1" /> در حال اجرا
-                                </Button>
-                             ) : (
-                                // Check if we have inactive stock
-                                inventoryItems.some(inv => !inv.is_active) ? (
-                                   <Button 
-                                     onClick={() => handleEquip(item)} 
-                                     disabled={purchasing === item.id}
-                                     className="w-full bg-green-600 hover:bg-green-700 text-white clay-button"
-                                   >
-                                     {purchasing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "فعال‌سازی"}
+                        <div className="w-full mt-auto">
+                           {item.type === "profile_frame" ? (
+                               ownedCount > 0 ? (
+                                   isEquipped ? (
+                                       <Button disabled className="w-full bg-slate-700 text-slate-300">
+                                           فعال است
+                                       </Button>
+                                   ) : (
+                                       <Button onClick={() => handleEquipFrame(item)} disabled={purchasing === item.id} className="w-full bg-blue-600 hover:bg-blue-700 text-white clay-button">
+                                           {purchasing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "تجهیز"}
+                                       </Button>
+                                   )
+                               ) : (
+                                   <Button onClick={() => handleBuy(item)} disabled={isLocked || purchasing === item.id} className="w-full bg-purple-600 hover:bg-purple-700 text-white clay-button">
+                                       {purchasing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ShoppingBag className="w-4 h-4 mr-2" /> {toPersianNumber(item.cost)} سکه</>}
                                    </Button>
-                                ) : (
-                                   // Owned but all used/expired? Actually logic above handles active check.
-                                   // If we are here, it means we don't have an active one, BUT we might not have an inactive one either (expired ones).
-                                   // Wait, `owned` is based on ANY inventory item.
-                                   // So if I have only expired ones, `owned` is true, `isActive` is false.
-                                   // But I can't equip expired ones.
-                                   // I need to be able to buy more if I don't have stock.
+                               )
+                           ) : (
+                               // Powerups
+                               <div className="flex flex-col gap-2 w-full">
+                                   {activePowerup ? (
+                                       <Button disabled className="w-full bg-green-900/50 text-green-400 border border-green-500/30">
+                                           <Zap className="w-4 h-4 mr-2 animate-pulse" /> در حال اجرا
+                                       </Button>
+                                   ) : (
+                                       inventoryItems.some(inv => !inv.is_active) ? (
+                                           <Button onClick={() => handleActivatePowerup(item)} disabled={purchasing === item.id} className="w-full bg-green-600 hover:bg-green-700 text-white clay-button">
+                                               {purchasing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "فعال‌سازی"}
+                                           </Button>
+                                       ) : null
+                                   )}
                                    
-                                   // Let's adjust the button logic:
-                                   // If (isActive) -> Show "Active"
-                                   // Else If (Has Inactive Stock) -> Show "Activate"
-                                   // Else -> Show "Buy"
-                                   
-                                   // To Keep structure simple, let's defer to the outer logic which was:
-                                   // {owned ? (...) : (Buy Button)}
-                                   // I need to change "owned" to "hasStockOrIsActive" for cosmetic, or similar.
-                                   
-                                   // Actually, for powerups, you can have multiple in inventory.
-                                   // If I have 0 active and 0 inactive (all expired), I should be able to buy.
-                                   <Button 
-                                      onClick={() => handleBuy(item)} 
-                                      disabled={purchasing === item.id || (userProfile?.coins || 0) < item.cost}
-                                      className={`w-full clay-button ${
-                                        (userProfile?.coins || 0) >= item.cost 
-                                          ? "bg-purple-600 hover:bg-purple-700 text-white" 
-                                          : "bg-slate-700 text-slate-500 hover:bg-slate-700 cursor-not-allowed"
-                                      }`}
-                                    >
-                                      {purchasing === item.id ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                      ) : (
-                                        <>
-                                          {item.cost > (userProfile?.coins || 0) ? <Lock className="w-4 h-4 mr-2" /> : <ShoppingBag className="w-4 h-4 mr-2" />}
-                                          {toPersianNumber(item.cost)} سکه
-                                        </>
-                                      )}
-                                    </Button>
-                                )
-                             )
-                          ) : (
-                            <Button 
-                              onClick={() => handleBuy(item)} 
-                              disabled={purchasing === item.id || (userProfile?.coins || 0) < item.cost}
-                              className={`w-full clay-button ${
-                                (userProfile?.coins || 0) >= item.cost 
-                                  ? "bg-purple-600 hover:bg-purple-700 text-white" 
-                                  : "bg-slate-700 text-slate-500 hover:bg-slate-700 cursor-not-allowed"
-                              }`}
-                            >
-                              {purchasing === item.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <>
-                                  {item.cost > (userProfile?.coins || 0) ? <Lock className="w-4 h-4 mr-2" /> : <ShoppingBag className="w-4 h-4 mr-2" />}
-                                  {toPersianNumber(item.cost)} سکه
-                                </>
-                              )}
-                            </Button>
-                          )}
+                                   <Button onClick={() => handleBuy(item)} disabled={isLocked || purchasing === item.id} variant={ownedCount > 0 ? "outline" : "default"} className={`w-full clay-button ${ownedCount > 0 ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}>
+                                       {purchasing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <>{ownedCount > 0 ? "خرید بیشتر" : "خرید"} ({toPersianNumber(item.cost)} سکه)</>}
+                                   </Button>
+                               </div>
+                           )}
                         </div>
                       </CardContent>
                     </Card>
