@@ -311,7 +311,7 @@ export default function AdminUsers() {
                                       </div>
                                   </div>
                                   <div className="flex gap-2">
-                                      <Button size="sm" onClick={() => handleEditUser(guest)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                      <Button size="sm" onClick={() => openEditModal(guest)} className="bg-blue-600 hover:bg-blue-700 text-white">
                                           تعیین نقش
                                       </Button>
                                   </div>
