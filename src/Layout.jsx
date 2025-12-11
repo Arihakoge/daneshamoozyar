@@ -100,11 +100,11 @@ export default function Layout({ children, currentPageName }) {
             const allUsers = await base44.entities.User.list();
             const usersWithRoles = allUsers.filter(u => u.student_role);
     
-            let role = "student";
+            let role = "guest";
             if (usersWithRoles.length === 0) {
               role = "admin";
             }
-    
+
             const initialUpdates = {
               student_role: role,
               coins: role === "student" ? 50 : 0,
@@ -230,10 +230,15 @@ export default function Layout({ children, currentPageName }) {
         { title: "تولید محتوای AI", url: createPageUrl("ContentGenerator"), icon: MessageCircle },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
-      ];
-    }
+        ];
+        } else if (role === "guest") {
+        return [
+         { title: "پروفایل من", url: createPageUrl("StudentProfile"), icon: UserIcon },
+         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
+        ];
+        }
 
-    return [];
+        return [];
   };
 
   if (loading) {

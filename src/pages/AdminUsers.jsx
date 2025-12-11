@@ -287,6 +287,42 @@ export default function AdminUsers() {
           <p className="text-slate-400 text-lg">تعریف نقش‌ها، کلاس‌بندی دانش‌آموزان و تخصیص دقیق دروس معلمین</p>
         </motion.div>
 
+        {/* Guest Users Section */}
+        {users.some(u => u.student_role === 'guest') && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+              <Card className="clay-card border-yellow-500/30 bg-yellow-900/10">
+                  <CardHeader>
+                      <CardTitle className="text-yellow-400 flex items-center gap-2 text-lg">
+                          <Users className="w-5 h-5" />
+                          کاربران جدید / مهمان ({users.filter(u => u.student_role === 'guest').length})
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <div className="space-y-3">
+                          {users.filter(u => u.student_role === 'guest').map(guest => (
+                              <div key={guest.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                                  <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold">
+                                          {guest.full_name?.charAt(0) || "G"}
+                                      </div>
+                                      <div>
+                                          <p className="font-bold text-white">{guest.full_name || "کاربر ناشناس"}</p>
+                                          <p className="text-xs text-slate-400">ثبت نام: {new Date(guest.created_date).toLocaleDateString('fa-IR')}</p>
+                                      </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                      <Button size="sm" onClick={() => handleEditUser(guest)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                          تعیین نقش
+                                      </Button>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  </CardContent>
+              </Card>
+          </motion.div>
+        )}
+
         {/* Pending Requests Section */}
         {classRequests.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
