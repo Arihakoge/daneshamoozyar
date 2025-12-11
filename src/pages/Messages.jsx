@@ -7,6 +7,7 @@ import { MessageCircle, Users, Search, Plus, Send, Paperclip, X, Clock } from "l
 import { toPersianDate, toPersianTimeAgo, toPersianNumber } from "@/components/utils";
 import { toast } from "sonner";
 import { Check, CheckCheck } from "lucide-react";
+import { updateDailyChallenge } from "@/components/gamification/ChallengeUtils";
 
 export default function Messages() {
   const [user, setUser] = useState(null);
@@ -174,6 +175,9 @@ export default function Messages() {
         last_message: newMessage.trim() || `📎 ${fileName}`,
         last_message_at: new Date().toISOString()
       });
+
+      // Update Daily Challenge
+      updateDailyChallenge(user.id, "send_message");
 
       setNewMessage("");
       setFile(null);

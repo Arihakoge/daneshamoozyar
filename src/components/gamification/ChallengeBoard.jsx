@@ -6,12 +6,7 @@ import { toPersianNumber } from "@/components/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
-
-const DAILY_TASKS = [
-  { id: "login", title: "ورود روزانه", reward: 10, icon: Zap, description: "ورود به اپلیکیشن" },
-  { id: "check_assignments", title: "بررسی تکالیف", reward: 15, icon: BookOpen, description: "باز کردن صفحه تکالیف" },
-  { id: "send_message", title: "مشارکت کلاسی", reward: 20, icon: MessageCircle, description: "ارسال پیام در گروه کلاس" }
-];
+import { DAILY_TASKS_DEFINITIONS } from "@/components/gamification/ChallengeUtils";
 
 export default function ChallengeBoard({ currentUser }) {
   const [dailyState, setDailyState] = useState(null);
@@ -59,7 +54,7 @@ export default function ChallengeBoard({ currentUser }) {
     if (!dailyState || dailyState.claimed[taskId]) return;
     
     try {
-       const task = DAILY_TASKS.find(t => t.id === taskId);
+       const task = DAILY_TASKS_DEFINITIONS.find(t => t.id === taskId);
        const today = new Date().toISOString().split("T")[0];
        
        // Update remote
@@ -120,7 +115,7 @@ export default function ChallengeBoard({ currentUser }) {
   if (loading) return <div className="text-center p-8 text-gray-400">در حال بارگیری چالش‌ها...</div>;
 
   const completedCount = dailyState ? Object.keys(dailyState.progress || {}).length : 0;
-  const progressPercent = (completedCount / DAILY_TASKS.length) * 100;
+  const progressPercent = (completedCount / DAILY_TASKS_DEFINITIONS.length) * 100;
 
   return (
     <div className="space-y-6">
@@ -139,12 +134,12 @@ export default function ChallengeBoard({ currentUser }) {
                چالش‌های روزانه
              </h2>
              <div className="text-sm text-gray-300">
-                {toPersianNumber(completedCount)} از {toPersianNumber(DAILY_TASKS.length)} تکمیل شده
+                {toPersianNumber(completedCount)} از {toPersianNumber(DAILY_TASKS_DEFINITIONS.length)} تکمیل شده
              </div>
           </div>
 
           <div className="grid gap-4">
-             {DAILY_TASKS.map(task => {
+             {DAILY_TASKS_DEFINITIONS.map(task => {
                 const isCompleted = dailyState?.progress?.[task.id];
                 const isClaimed = dailyState?.claimed?.[task.id];
                 const Icon = task.icon;

@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { checkAndAwardBadges } from "@/components/gamification/BadgeSystem";
 import { applySubmissionRules } from "@/components/gamification/ScoringSystem";
 import { toast } from "sonner";
+import { updateDailyChallenge } from "@/components/gamification/ChallengeUtils";
 
 export default function StudentAssignments() {
   const [user, setUser] = useState(null);
@@ -91,6 +92,9 @@ export default function StudentAssignments() {
           });
         }
         setActivePowerups(validPowerups);
+        
+        // Trigger check_assignments challenge
+        updateDailyChallenge(currentUser.id, "check_assignments");
       }
     } catch (error) {
       console.error("خطا در بارگیری داده‌ها:", error);
@@ -217,6 +221,9 @@ export default function StudentAssignments() {
         ...submissionData, 
         submitted_at: new Date().toISOString() // Ensure consistent format
       }, selectedAssignment);
+      
+      // Update Daily Challenge
+      updateDailyChallenge(user.id, "submit_assignment");
 
       setSelectedAssignment(null);
       setSubmissionContent("");
