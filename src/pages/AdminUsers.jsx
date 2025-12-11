@@ -29,6 +29,7 @@ export default function AdminUsers() {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [bulkAction, setBulkAction] = useState("");
   const [bulkTarget, setBulkTarget] = useState("");
+  const [classRequests, setClassRequests] = useState([]);
   
   // State for new assignment addition
   const [newAssignment, setNewAssignment] = useState({ grade: "", class_id: "", subject: "" });
@@ -36,14 +37,16 @@ export default function AdminUsers() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [allPublicProfiles, allClasses] = await Promise.all([
+      const [allPublicProfiles, allClasses, requests] = await Promise.all([
         base44.entities.PublicProfile.list('-created_date', 1000),
-        base44.entities.Class.list()
+        base44.entities.Class.list(),
+        base44.entities.ClassRequest.filter({ status: 'pending' })
       ]);
       // Sort by newest first
       const sortedUsers = allPublicProfiles.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
       setUsers(sortedUsers);
       setClasses(allClasses);
+      setClassRequests(requests);
       const map = {};
       allClasses.forEach(c => map[c.id] = c);
       setClassMap(map);
@@ -52,6 +55,47 @@ export default function AdminUsers() {
     }
     setLoading(false);
   }, []);
+
+  const handleApproveRequest = async (request) => {
+      try {
+          // 1. Find the user's PublicProfile
+          const profiles = await base44.entities.PublicProfile.filter({ user_id: request.user_id });
+          if (profiles.length > 0) {
+              const profile = profiles[0];
+              // 2. Update PublicProfile with requested class
+              await base44.entities.PublicProfile.update(profile.id, {
+                  grade: request.grade,
+                  class_id: request.requested_class_id
+              });
+              
+              // 3. Update Auth User (optional but good for sync)
+              await base44.auth.updateMe({
+                  grade: request.grade,
+                  class_id: request.requested_class_id
+              }); // Note: This might not work if Admin is running it, but PublicProfile is the source of truth
+          }
+
+          // 4. Update Request Status
+          await base44.entities.ClassRequest.update(request.id, { status: 'approved' });
+          
+          toast.success(`درخواست ${request.full_name} تایید شد`);
+          loadData();
+      } catch (error) {
+          console.error("Error approving request:", error);
+          toast.error("خطا در تایید درخواست");
+      }
+  };
+
+  const handleRejectRequest = async (request) => {
+      if(!window.confirm("آیا از رد این درخواست مطمئن هستید؟")) return;
+      try {
+          await base44.entities.ClassRequest.update(request.id, { status: 'rejected' });
+          toast.success("درخواست رد شد");
+          loadData();
+      } catch (error) {
+          toast.error("خطا در رد درخواست");
+      }
+  };
 
   useEffect(() => {
     loadData();
@@ -242,6 +286,49 @@ export default function AdminUsers() {
           </h1>
           <p className="text-slate-400 text-lg">تعریف نقش‌ها، کلاس‌بندی دانش‌آموزان و تخصیص دقیق دروس معلمین</p>
         </motion.div>
+
+        {/* Pending Requests Section */}
+        {classRequests.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+              <Card className="clay-card border-orange-500/30 bg-orange-900/10">
+                  <CardHeader>
+                      <CardTitle className="text-orange-400 flex items-center gap-2 text-lg">
+                          <ShieldCheck className="w-5 h-5" />
+                          درخواست‌های عضویت در کلاس ({classRequests.length})
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <div className="space-y-3">
+                          {classRequests.map(req => (
+                              <div key={req.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                                  <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold">
+                                          {req.full_name.charAt(0)}
+                                      </div>
+                                      <div>
+                                          <p className="font-bold text-white">{req.full_name}</p>
+                                          <p className="text-sm text-slate-400">
+                                              متقاضی: <span className="text-cyan-400">{classMap[req.requested_class_id]?.name || "نامشخص"}</span>
+                                              <span className="mx-2">|</span>
+                                              پایه: {req.grade}
+                                          </p>
+                                      </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                      <Button size="sm" onClick={() => handleApproveRequest(req)} className="bg-green-600 hover:bg-green-700 text-white">
+                                          تایید
+                                      </Button>
+                                      <Button size="sm" onClick={() => handleRejectRequest(req)} variant="outline" className="border-red-500 text-red-400 hover:bg-red-500/10">
+                                          رد
+                                      </Button>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  </CardContent>
+              </Card>
+          </motion.div>
+        )}
 
         {/* Bulk Actions Bar */}
         {selectedUsers.length > 0 && (

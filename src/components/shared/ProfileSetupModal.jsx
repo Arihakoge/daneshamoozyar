@@ -16,6 +16,23 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
   const [gradeOpen, setGradeOpen] = useState(false);
   const [classOpen, setClassOpen] = useState(false);
   const [availableClasses, setAvailableClasses] = useState([]);
+  const [pendingRequest, setPendingRequest] = useState(null);
+
+  useEffect(() => {
+    checkPendingRequest();
+  }, [currentUser]);
+
+  const checkPendingRequest = async () => {
+    if (currentUser) {
+      const requests = await base44.entities.ClassRequest.filter({ 
+        user_id: currentUser.id, 
+        status: 'pending' 
+      });
+      if (requests.length > 0) {
+        setPendingRequest(requests[0]);
+      }
+    }
+  };
 
   useEffect(() => {
     if (currentUser) {
@@ -51,6 +68,37 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
 
   if (!isOpen || !currentUser) return null;
 
+  if (pendingRequest) {
+    return (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="clay-card p-8 max-w-md w-full text-center"
+          >
+            <div className="p-4 rounded-full bg-yellow-500/20 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <AlertCircle className="w-10 h-10 text-yellow-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">درخواست شما ارسال شد</h2>
+            <p className="text-gray-300 mb-6">
+              درخواست عضویت شما در کلاس 
+              <span className="text-purple-400 font-bold mx-1">
+                 {availableClasses.find(c => c.id === pendingRequest.requested_class_id)?.name || "انتخاب شده"}
+              </span>
+              برای مدیر ارسال شده است. <br/>
+              لطفاً منتظر تایید مدیر بمانید.
+            </p>
+            <Button 
+                onClick={() => window.location.reload()}
+                className="w-full clay-button bg-purple-600 text-white"
+            >
+                بررسی وضعیت (بارگذاری مجدد)
+            </Button>
+          </motion.div>
+        </div>
+    );
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -80,19 +128,62 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
 
     setLoading(true);
     try {
+      // 1. Update Basic User Info (Name)
       const updateData = {
         full_name: formData.full_name.trim(),
         display_name: formData.full_name.trim(),
       };
-
-      if (currentUser.student_role === "student") {
-        updateData.grade = formData.grade;
-        updateData.class_id = formData.class_id;
-      }
-
       await base44.auth.updateMe(updateData);
-      
-      try {
+
+      // 2. Handle Student Class Request vs Teacher/Admin Direct Update
+      if (currentUser.student_role === "student") {
+         // Create Request
+         await base44.entities.ClassRequest.create({
+            user_id: currentUser.id,
+            full_name: formData.full_name.trim(),
+            grade: formData.grade,
+            requested_class_id: formData.class_id,
+            status: "pending"
+         });
+         
+         // Create PublicProfile WITHOUT class_id/grade yet (waiting for approval)
+         // We set them to empty or keep existing if any
+         const profiles = await base44.entities.PublicProfile.filter({ user_id: currentUser.id });
+         const profileData = {
+            user_id: currentUser.id,
+            full_name: formData.full_name.trim(),
+            display_name: formData.full_name.trim(),
+            student_role: currentUser.student_role,
+            avatar_color: currentUser.avatar_color || "#8B5CF6",
+            profile_image_url: currentUser.profile_image_url || "",
+            coins: currentUser.coins || 0,
+            level: currentUser.level || 1,
+            // Do NOT set grade/class_id here for students, Admin will set it
+         };
+
+         if (profiles.length > 0) {
+           await base44.entities.PublicProfile.update(profiles[0].id, profileData);
+         } else {
+           await base44.entities.PublicProfile.create(profileData);
+         }
+
+         setPendingRequest({
+             grade: formData.grade,
+             requested_class_id: formData.class_id
+         });
+         
+         // Don't close modal yet, show pending state
+         setLoading(false);
+         return;
+
+      } else {
+        // Teacher/Admin - Direct Update as before
+        if (currentUser.student_role === "student") {
+            // Should not happen due to if above, but keeping logic structure
+            updateData.grade = formData.grade;
+            updateData.class_id = formData.class_id;
+        }
+
         const profiles = await base44.entities.PublicProfile.filter({ user_id: currentUser.id });
         const profileData = {
           user_id: currentUser.id,
@@ -103,8 +194,8 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
           profile_image_url: currentUser.profile_image_url || "",
           coins: currentUser.coins || 0,
           level: currentUser.level || 1,
-          grade: updateData.grade || "",
-          class_id: updateData.class_id || ""
+          grade: formData.grade || "",
+          class_id: formData.class_id || ""
         };
 
         if (profiles.length > 0) {
@@ -112,11 +203,9 @@ export default function ProfileSetupModal({ isOpen, currentUser, onComplete }) {
         } else {
           await base44.entities.PublicProfile.create(profileData);
         }
-      } catch (publicProfileError) {
-        console.error("خطا در ایجاد پروفایل عمومی:", publicProfileError);
+        
+        onComplete();
       }
-      
-      onComplete();
     } catch (error) {
       console.error("خطا در بروزرسانی پروفایل:", error);
       setError("خطا در ذخیره اطلاعات. لطفاً دوباره تلاش کنید.");
