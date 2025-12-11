@@ -165,7 +165,7 @@ export default function StudentStore() {
       });
 
       // 2. Add to inventory
-      await base44.entities.UserInventory.create({
+      const createdItem = await base44.entities.UserInventory.create({
         user_id: userProfile.user_id,
         item_id: item.id,
         item_type: item.type,
@@ -182,8 +182,7 @@ export default function StudentStore() {
       });
 
       setUserProfile(prev => ({ ...prev, coins: prev.coins - item.cost }));
-      const newInventoryItem = { item_id: item.id, item_type: item.type, is_active: false };
-      setInventory(prev => [...prev, newInventoryItem]);
+      setInventory(prev => [...prev, createdItem]);
       
       toast.success(`${item.name} خریداری شد!`);
     } catch (error) {

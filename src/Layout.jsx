@@ -393,20 +393,22 @@ export default function Layout({ children, currentPageName }) {
               {currentUser && (
                 <div className="clay-card p-4">
                   <div className="flex items-center gap-3">
-                    {currentUser.profile_image_url ? (
-                      <img
-                        src={currentUser.profile_image_url}
-                        alt="تصویر پروفایل"
-                        className="w-12 h-12 rounded-full object-cover border-2 border-purple-500"
-                      />
-                    ) : (
-                      <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
-                        style={{ backgroundColor: currentUser.avatar_color }}
-                      >
-                        {(currentUser.display_name || currentUser.full_name || "ک").charAt(0)}
-                      </div>
-                    )}
+                    <div className={`w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center relative overflow-hidden ${currentUser.active_frame || "border-2 border-purple-500"}`}>
+                        {currentUser.profile_image_url ? (
+                          <img
+                            src={currentUser.profile_image_url}
+                            alt="تصویر پروفایل"
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="w-full h-full rounded-full flex items-center justify-center text-white font-bold"
+                            style={{ backgroundColor: currentUser.avatar_color }}
+                          >
+                            {(currentUser.display_name || currentUser.full_name || "ک").charAt(0)}
+                          </div>
+                        )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-gray-200 truncate">
                         {currentUser.display_name || currentUser.full_name || "کاربر"}

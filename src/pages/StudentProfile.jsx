@@ -159,20 +159,22 @@ export default function StudentProfile() {
           className="clay-card p-6"
         >
           <div className="text-center">
-            {user?.profile_image_url ? (
-              <img
-                src={user.profile_image_url}
-                alt="Profile"
-                className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-purple-500"
-              />
-            ) : (
-              <div
-                className="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold"
-                style={{ backgroundColor: user?.avatar_color || "#8B5CF6" }}
-              >
-                {(user?.full_name || "کاربر").charAt(0)}
-              </div>
-            )}
+            <div className={`w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center relative overflow-hidden ${user?.active_frame || "border-4 border-purple-500"}`}>
+                {user?.profile_image_url ? (
+                  <img
+                    src={user.profile_image_url}
+                    alt="Profile"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full rounded-full flex items-center justify-center text-white text-3xl font-bold"
+                    style={{ backgroundColor: user?.avatar_color || "#8B5CF6" }}
+                  >
+                    {(user?.full_name || "کاربر").charAt(0)}
+                  </div>
+                )}
+            </div>
             <h2 className="text-2xl font-bold text-white mb-2">
               {user?.full_name || "دانش‌آموز"}
             </h2>
