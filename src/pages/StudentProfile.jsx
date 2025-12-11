@@ -159,7 +159,7 @@ export default function StudentProfile() {
           className="clay-card p-6"
         >
           <div className="text-center">
-            <div className={`w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center relative overflow-hidden ${user?.active_frame || "border-4 border-purple-500"}`}>
+            <div className={`w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center relative ${user?.active_frame || "border-4 border-purple-500"}`}>
                 {user?.profile_image_url ? (
                   <img
                     src={user.profile_image_url}
