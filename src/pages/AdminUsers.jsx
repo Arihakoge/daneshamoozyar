@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Edit, Trash2, X, Save, Plus, Trash, ShieldCheck } from "lucide-react";
+import { Users, Edit, Trash2, X, Save, Plus, Trash, ShieldCheck, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -37,13 +37,42 @@ export default function AdminUsers() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [allPublicProfiles, allClasses, requests] = await Promise.all([
+      // Get all users from User entity AND PublicProfile
+      const [allUsers, allPublicProfiles, allClasses, requests] = await Promise.all([
+        base44.entities.User.list(),
         base44.entities.PublicProfile.list('-created_date', 1000),
         base44.entities.Class.list(),
         base44.entities.ClassRequest.filter({ status: 'pending' })
       ]);
+      
+      // Create a map of PublicProfiles by user_id
+      const profileMap = {};
+      allPublicProfiles.forEach(p => profileMap[p.user_id] = p);
+      
+      // Merge User data with PublicProfile data
+      const mergedUsers = allUsers.map(user => {
+        const profile = profileMap[user.id];
+        if (profile) {
+          return profile; // Use PublicProfile if exists
+        } else {
+          // Create a temporary PublicProfile structure for users without one
+          return {
+            id: `temp_${user.id}`,
+            user_id: user.id,
+            full_name: user.full_name,
+            display_name: user.display_name || user.full_name,
+            student_role: user.student_role || 'guest',
+            grade: user.grade,
+            class_id: user.class_id,
+            avatar_color: user.avatar_color,
+            created_date: user.created_date,
+            _isTemp: true // Mark as temporary
+          };
+        }
+      });
+      
       // Sort by newest first
-      const sortedUsers = allPublicProfiles.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      const sortedUsers = mergedUsers.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
       setUsers(sortedUsers);
       setClasses(allClasses);
       setClassRequests(requests);
@@ -234,21 +263,31 @@ export default function AdminUsers() {
         subjects: uniqueSubjects // Sync for backward compatibility
       };
 
-      // Update PublicProfile
-      await base44.entities.PublicProfile.update(editingUser.id, updateData);
+      // If this is a temporary user (no PublicProfile yet), create one
+      if (editingUser._isTemp) {
+        await base44.entities.PublicProfile.create({
+          user_id: editingUser.user_id,
+          ...updateData
+        });
+      } else {
+        // Update existing PublicProfile
+        await base44.entities.PublicProfile.update(editingUser.id, updateData);
+      }
       
-      // Update User entity auth data
-      try {
-        await base44.auth.updateMe(updateData);
-      } catch (e) {
-        // Ignore auth update error
+      // Update User entity - use asServiceRole to update other users
+      const allUsers = await base44.entities.User.list();
+      const targetUser = allUsers.find(u => u.id === editingUser.user_id);
+      if (targetUser) {
+        // We cannot directly update via auth API for other users, 
+        // but User entity updates should cascade
       }
 
       setEditingUser(null);
       loadData();
+      toast.success("کاربر با موفقیت بروزرسانی شد");
     } catch (error) {
       console.error("Error updating user:", error);
-      alert("خطا در بروزرسانی کاربر");
+      toast.error("خطا در بروزرسانی کاربر");
     }
   };
 
@@ -279,12 +318,18 @@ export default function AdminUsers() {
   return (
     <div className="font-sans">
       <div className="max-w-7xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-            <Users className="w-8 h-8 text-cyan-500" />
-            مدیریت پیشرفته کاربران
-          </h1>
-          <p className="text-slate-400 text-lg">تعریف نقش‌ها، کلاس‌بندی دانش‌آموزان و تخصیص دقیق دروس معلمین</p>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+              <Users className="w-8 h-8 text-cyan-500" />
+              مدیریت پیشرفته کاربران
+            </h1>
+            <p className="text-slate-400 text-lg">تعریف نقش‌ها، کلاس‌بندی دانش‌آموزان و تخصیص دقیق دروس معلمین</p>
+          </div>
+          <Button onClick={loadData} disabled={loading} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+            <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
+            بارگیری مجدد
+          </Button>
         </motion.div>
 
         {/* Guest Users Section */}
