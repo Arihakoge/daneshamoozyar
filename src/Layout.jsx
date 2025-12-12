@@ -222,6 +222,7 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد مدیریت", url: createPageUrl("AdminDashboard"), icon: LayoutDashboard },
         { title: "مدیریت کاربران", url: createPageUrl("AdminUsers"), icon: Users },
+        { title: "مدیریت والدین", url: createPageUrl("AdminParentManagement"), icon: Users },
         { title: "مدیریت کلاس‌ها", url: createPageUrl("AdminClasses"), icon: GraduationCap },
         { title: "مدیریت محتوا", url: createPageUrl("AdminContent"), icon: FileText },
         { title: "گزارش فعالیت‌ها", url: createPageUrl("AdminActivityLogs"), icon: Activity },
@@ -231,6 +232,11 @@ export default function Layout({ children, currentPageName }) {
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
         ];
+        } else if (role === "parent") {
+          return [
+            { title: "پنل والدین", url: createPageUrl("ParentDashboard"), icon: Users },
+            { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
+          ];
         } else if (role === "guest") {
         return [
          { title: "پروفایل من", url: createPageUrl("StudentProfile"), icon: UserIcon },
@@ -422,6 +428,7 @@ export default function Layout({ children, currentPageName }) {
                         {currentUser.student_role === "teacher" && `معلم ${(currentUser.teaching_assignments && currentUser.teaching_assignments.length > 0) ? [...new Set(currentUser.teaching_assignments.map(a => a.subject))].join("، ") : (currentUser.subjects ? currentUser.subjects.join("، ") : (currentUser.subject || ""))}`}
                         {currentUser.student_role === "student" && `دانش‌آموز ${currentUser.grade || ""}`}
                         {currentUser.student_role === "admin" && "مدیر"}
+                        {currentUser.student_role === "parent" && "والدین"}
                       </p>
                       {currentUser.student_role === "student" && (
                         <div className="flex items-center gap-2 mt-1">
@@ -533,6 +540,7 @@ export default function Layout({ children, currentPageName }) {
                               {currentUser.student_role === "teacher" && `معلم ${(currentUser.teaching_assignments && currentUser.teaching_assignments.length > 0) ? [...new Set(currentUser.teaching_assignments.map(a => a.subject))].join("، ") : (currentUser.subjects ? currentUser.subjects.join("، ") : (currentUser.subject || ""))}`}
                               {currentUser.student_role === "student" && `دانش‌آموز ${currentUser.grade || ""}`}
                               {currentUser.student_role === "admin" && "مدیر"}
+                              {currentUser.student_role === "parent" && "والدین"}
                             </p>
                           </div>
                         </div>
