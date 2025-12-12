@@ -2,160 +2,137 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { UserCheck, Calendar, Users, CheckCircle, XCircle, Clock, FileText } from "lucide-react";
+import { Users, Check, X, Clock, Save, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { toPersianNumber } from "@/components/utils";
-
-const STATUS_CONFIG = {
-  "حاضر": { color: "bg-green-500/10 text-green-400 border-green-500/20", icon: CheckCircle },
-  "غایب": { color: "bg-red-500/10 text-red-400 border-red-500/20", icon: XCircle },
-  "تاخیر": { color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20", icon: Clock },
-  "مرخصی": { color: "bg-blue-500/10 text-blue-400 border-blue-500/20", icon: FileText }
-};
+import { toPersianDate } from "@/components/utils";
 
 export default function TeacherAttendance() {
   const [user, setUser] = useState(null);
-  const [schedules, setSchedules] = useState([]);
   const [classes, setClasses] = useState([]);
   const [students, setStudents] = useState([]);
-  const [attendances, setAttendances] = useState([]);
-  const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [schedules, setSchedules] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [attendance, setAttendance] = useState({});
+  const [existingAttendance, setExistingAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [attendanceData, setAttendanceData] = useState({});
 
   useEffect(() => {
     loadData();
   }, []);
 
-  useEffect(() => {
-    if (selectedSchedule) {
-      loadStudentsAndAttendance();
-    }
-  }, [selectedSchedule, selectedDate]);
-
   const loadData = async () => {
-    setLoading(true);
     try {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
 
-      const [allSchedules, allClasses] = await Promise.all([
-        base44.entities.Schedule.filter({ teacher_id: currentUser.id, is_active: true }),
-        base44.entities.Class.list()
+      const [allClasses, allSchedules, allStudents] = await Promise.all([
+        base44.entities.Class.list(),
+        base44.entities.Schedule.filter({ teacher_id: currentUser.id }),
+        base44.entities.PublicProfile.filter({ student_role: "student" })
       ]);
 
+      // Get unique classes from teacher's schedule
+      const teacherClassIds = [...new Set(allSchedules.map(s => s.class_id))];
+      const teacherClasses = allClasses.filter(c => teacherClassIds.includes(c.id));
+      
+      setClasses(teacherClasses);
       setSchedules(allSchedules);
-      setClasses(allClasses);
+      setStudents(allStudents);
     } catch (error) {
-      console.error("خطا در بارگیری:", error);
-      toast.error("خطا در بارگیری داده‌ها");
+      console.error("خطا در بارگیری داده‌ها:", error);
     }
     setLoading(false);
   };
 
-  const loadStudentsAndAttendance = async () => {
-    if (!selectedSchedule) return;
+  useEffect(() => {
+    if (selectedClass && selectedDate) {
+      loadAttendanceForDate();
+    }
+  }, [selectedClass, selectedDate]);
 
+  const loadAttendanceForDate = async () => {
     try {
-      const [allStudents, todayAttendances] = await Promise.all([
-        base44.entities.PublicProfile.filter({ 
-          student_role: "student", 
-          class_id: selectedSchedule.class_id 
-        }),
-        base44.entities.Attendance.filter({ 
-          schedule_id: selectedSchedule.id,
-          date: selectedDate
-        })
-      ]);
-
-      setStudents(allStudents);
-      setAttendances(todayAttendances);
-
-      const data = {};
-      todayAttendances.forEach(att => {
-        data[att.student_id] = { status: att.status, note: att.note || "", id: att.id };
+      const records = await base44.entities.Attendance.filter({
+        class_id: selectedClass,
+        date: selectedDate
       });
-      setAttendanceData(data);
+      
+      setExistingAttendance(records);
+      
+      // Initialize attendance state
+      const classStudents = students.filter(s => s.class_id === selectedClass);
+      const attendanceMap = {};
+      
+      classStudents.forEach(student => {
+        const existing = records.find(r => r.student_id === student.user_id);
+        attendanceMap[student.user_id] = existing?.status || "present";
+      });
+      
+      setAttendance(attendanceMap);
     } catch (error) {
-      console.error("خطا در بارگیری دانش‌آموزان:", error);
+      console.error("خطا در بارگیری حضور و غیاب:", error);
     }
   };
 
-  const handleStatusChange = (studentId, status) => {
-    setAttendanceData({
-      ...attendanceData,
-      [studentId]: { 
-        status, 
-        note: attendanceData[studentId]?.note || "",
-        id: attendanceData[studentId]?.id
-      }
-    });
-  };
-
-  const handleNoteChange = (studentId, note) => {
-    setAttendanceData({
-      ...attendanceData,
-      [studentId]: { 
-        ...attendanceData[studentId],
-        status: attendanceData[studentId]?.status || "حاضر",
-        note
-      }
-    });
-  };
-
-  const saveAttendance = async () => {
-    if (!selectedSchedule || !user) return;
+  const handleSaveAttendance = async () => {
+    if (!selectedClass || !selectedDate) {
+      toast.error("لطفا کلاس و تاریخ را انتخاب کنید");
+      return;
+    }
 
     try {
-      const updates = Object.keys(attendanceData).map(async (studentId) => {
-        const data = attendanceData[studentId];
-        const recordData = {
-          date: selectedDate,
-          schedule_id: selectedSchedule.id,
-          class_id: selectedSchedule.class_id,
-          student_id: studentId,
-          status: data.status,
+      const classStudents = students.filter(s => s.class_id === selectedClass);
+      
+      for (const student of classStudents) {
+        const status = attendance[student.user_id] || "present";
+        const existing = existingAttendance.find(r => r.student_id === student.user_id);
+        
+        const attendanceData = {
+          class_id: selectedClass,
+          student_id: student.user_id,
           teacher_id: user.id,
-          note: data.note || ""
+          date: selectedDate,
+          status: status
         };
 
-        if (data.id) {
-          await base44.entities.Attendance.update(data.id, recordData);
+        if (existing) {
+          await base44.entities.Attendance.update(existing.id, attendanceData);
         } else {
-          await base44.entities.Attendance.create(recordData);
+          await base44.entities.Attendance.create(attendanceData);
         }
-      });
+      }
 
-      await Promise.all(updates);
-      toast.success("حضور غیاب ثبت شد");
-      loadStudentsAndAttendance();
+      toast.success("حضور و غیاب ذخیره شد");
+      await loadAttendanceForDate();
     } catch (error) {
-      console.error("خطا در ذخیره:", error);
-      toast.error("خطا در ثبت حضور غیاب");
+      console.error("خطا در ذخیره حضور و غیاب:", error);
+      toast.error("خطا در ذخیره");
     }
   };
 
-  const markAllPresent = () => {
-    const newData = {};
-    students.forEach(student => {
-      newData[student.user_id] = { 
-        status: "حاضر", 
-        note: "",
-        id: attendanceData[student.user_id]?.id
-      };
-    });
-    setAttendanceData(newData);
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "present": return "bg-green-500/10 text-green-400 border-green-500/20";
+      case "absent": return "bg-red-500/10 text-red-400 border-red-500/20";
+      case "late": return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+      case "excused": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      default: return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+    }
   };
 
-  const getAttendanceStats = () => {
-    const stats = { حاضر: 0, غایب: 0, تاخیر: 0, مرخصی: 0 };
-    Object.values(attendanceData).forEach(data => {
-      if (data.status) stats[data.status]++;
-    });
-    return stats;
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case "present": return "حاضر";
+      case "absent": return "غایب";
+      case "late": return "تاخیر";
+      case "excused": return "مرخصی";
+      default: return "نامشخص";
+    }
   };
 
   if (loading) {
@@ -166,177 +143,161 @@ export default function TeacherAttendance() {
     );
   }
 
-  const stats = selectedSchedule ? getAttendanceStats() : null;
-  const classInfo = selectedSchedule ? classes.find(c => c.id === selectedSchedule.class_id) : null;
+  const classStudents = students.filter(s => s.class_id === selectedClass);
 
   return (
     <div className="max-w-7xl mx-auto">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-          <UserCheck className="w-10 h-10 text-purple-500" />
-          حضور و غیاب
+          <Users className="w-10 h-10 text-blue-500" />
+          حضور و غیاب کلاس
         </h1>
-        <p className="text-gray-300 text-lg">ثبت حضور غیاب دانش‌آموزان</p>
+        <p className="text-gray-300 text-lg">مشاهده لیست دانش‌آموزان و ثبت حضور و غیاب</p>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card className="clay-card">
-          <CardHeader>
-            <CardTitle className="text-white text-lg">انتخاب جلسه درسی</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {schedules.length === 0 ? (
-              <p className="text-gray-400 text-sm">برنامه درسی تعریف نشده</p>
-            ) : (
-              schedules.map(schedule => {
-                const cls = classes.find(c => c.id === schedule.class_id);
-                return (
-                  <button
-                    key={schedule.id}
-                    onClick={() => setSelectedSchedule(schedule)}
-                    className={`w-full text-right p-3 rounded-lg transition-colors ${
-                      selectedSchedule?.id === schedule.id
-                        ? 'bg-purple-500/20 border-2 border-purple-500'
-                        : 'clay-button hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="text-sm font-bold text-white">{schedule.subject}</div>
-                    <div className="text-xs text-gray-400">{cls?.name || "نامشخص"}</div>
-                    <div className="text-xs text-purple-400">{schedule.day_of_week} - {schedule.start_time}</div>
-                  </button>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
+      <Card className="clay-card mb-6">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">انتخاب کلاس</label>
+              <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectValue placeholder="کلاس را انتخاب کنید" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                  {classes.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {selectedSchedule && (
-          <>
-            <Card className="clay-card">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">اطلاعات جلسه</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-400">درس</p>
-                  <p className="text-white font-bold">📚 {selectedSchedule.subject}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400">کلاس</p>
-                  <p className="text-white font-bold">{classInfo?.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400">تعداد دانش‌آموزان</p>
-                  <p className="text-white font-bold">{toPersianNumber(students.length)} نفر</p>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">تاریخ</label>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={e => setSelectedDate(e.target.value)}
-                    className="w-full p-2 rounded bg-slate-800 border-slate-700 text-white"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="clay-card">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">آمار حضور</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {Object.keys(STATUS_CONFIG).map(status => {
-                  const Icon = STATUS_CONFIG[status].icon;
-                  return (
-                    <div key={status} className="flex justify-between items-center p-2 rounded bg-slate-800/50">
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4" />
-                        <span className="text-white text-sm">{status}</span>
-                      </div>
-                      <span className="text-white font-bold">{toPersianNumber(stats[status])}</span>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
-
-      {selectedSchedule && students.length > 0 && (
-        <Card className="clay-card">
-          <CardHeader className="border-b border-white/10">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-400" />
-                لیست دانش‌آموزان - {classInfo?.name}
-              </CardTitle>
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">تاریخ</label>
               <div className="flex gap-2">
-                <Button onClick={markAllPresent} variant="outline" className="clay-button text-white">
-                  <CheckCircle className="w-4 h-4 ml-2" />
-                  همه حاضر
-                </Button>
-                <Button onClick={saveAttendance} className="clay-button bg-purple-500 text-white">
-                  ذخیره حضور غیاب
-                </Button>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="flex-1 p-2 rounded-md bg-slate-800 text-white border border-slate-700"
+                />
+                <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 px-3 flex items-center">
+                  {toPersianDate(selectedDate)}
+                </Badge>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-white/10">
-              {students.map((student, index) => {
-                const attendance = attendanceData[student.user_id] || { status: "حاضر", note: "" };
-                return (
-                  <div key={student.user_id} className="p-4 hover:bg-white/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 text-gray-400 font-bold">{toPersianNumber(index + 1)}</div>
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+          </div>
+        </CardContent>
+      </Card>
+
+      {selectedClass && (
+        <>
+          <Card className="clay-card mb-6">
+            <CardHeader className="border-b border-slate-700">
+              <CardTitle className="text-white flex items-center justify-between">
+                <span>لیست دانش‌آموزان</span>
+                <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20">
+                  {classStudents.length} نفر
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="space-y-2 p-6">
+                {classStudents.map((student, index) => (
+                  <motion.div
+                    key={student.user_id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="clay-card p-4 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
                         style={{ backgroundColor: student.avatar_color || "#8B5CF6" }}
                       >
-                        {student.full_name.charAt(0)}
+                        {(student.full_name || "؟").charAt(0)}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-white font-bold">{student.full_name}</p>
-                        <p className="text-sm text-gray-400">{student.display_name}</p>
+                      <div>
+                        <div className="font-bold text-white">{student.full_name}</div>
+                        <div className="text-sm text-gray-400">{student.grade}</div>
                       </div>
-                      <div className="flex gap-2">
-                        {Object.keys(STATUS_CONFIG).map(status => (
-                          <button
-                            key={status}
-                            onClick={() => handleStatusChange(student.user_id, status)}
-                            className={`px-3 py-1 rounded-lg text-sm transition-all ${
-                              attendance.status === status
-                                ? STATUS_CONFIG[status].color + " border"
-                                : "clay-button text-gray-400"
-                            }`}
-                          >
-                            {status}
-                          </button>
-                        ))}
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="یادداشت..."
-                        value={attendance.note}
-                        onChange={e => handleNoteChange(student.user_id, e.target.value)}
-                        className="w-48 p-2 rounded bg-slate-800 border-slate-700 text-white text-sm"
-                      />
                     </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={attendance[student.user_id] === "present" ? "default" : "outline"}
+                        onClick={() => setAttendance({...attendance, [student.user_id]: "present"})}
+                        className={attendance[student.user_id] === "present" ? "bg-green-600" : "border-slate-700"}
+                      >
+                        <Check className="w-4 h-4" />
+                        حاضر
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant={attendance[student.user_id] === "absent" ? "default" : "outline"}
+                        onClick={() => setAttendance({...attendance, [student.user_id]: "absent"})}
+                        className={attendance[student.user_id] === "absent" ? "bg-red-600" : "border-slate-700"}
+                      >
+                        <X className="w-4 h-4" />
+                        غایب
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant={attendance[student.user_id] === "late" ? "default" : "outline"}
+                        onClick={() => setAttendance({...attendance, [student.user_id]: "late"})}
+                        className={attendance[student.user_id] === "late" ? "bg-yellow-600" : "border-slate-700"}
+                      >
+                        <Clock className="w-4 h-4" />
+                        تاخیر
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant={attendance[student.user_id] === "excused" ? "default" : "outline"}
+                        onClick={() => setAttendance({...attendance, [student.user_id]: "excused"})}
+                        className={attendance[student.user_id] === "excused" ? "bg-blue-600" : "border-slate-700"}
+                      >
+                        مرخصی
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {classStudents.length === 0 && (
+                  <div className="text-center py-12 text-gray-400">
+                    <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p>هیچ دانش‌آموزی در این کلاس یافت نشد</p>
                   </div>
-                );
-              })}
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {classStudents.length > 0 && (
+            <div className="flex justify-end gap-3">
+              <Button
+                onClick={handleSaveAttendance}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Save className="w-4 h-4 ml-2" />
+                ذخیره حضور و غیاب
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </>
       )}
 
-      {selectedSchedule && students.length === 0 && (
+      {!selectedClass && (
         <Card className="clay-card">
           <CardContent className="p-12 text-center">
-            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-400">هیچ دانش‌آموزی در این کلاس یافت نشد</p>
+            <Users className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">
+              لطفا کلاس و تاریخ را انتخاب کنید
+            </p>
           </CardContent>
         </Card>
       )}

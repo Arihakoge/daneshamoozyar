@@ -223,8 +223,8 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد مدیریت", url: createPageUrl("AdminDashboard"), icon: LayoutDashboard },
         { title: "مدیریت کاربران", url: createPageUrl("AdminUsers"), icon: Users },
+        { title: "برنامه درسی هفتگی", url: createPageUrl("AdminSchedule"), icon: Activity },
         { title: "مدیریت کلاس‌ها", url: createPageUrl("AdminClasses"), icon: GraduationCap },
-        { title: "برنامه درسی", url: createPageUrl("AdminSchedule"), icon: Activity },
         { title: "مدیریت محتوا", url: createPageUrl("AdminContent"), icon: FileText },
         { title: "گزارش فعالیت‌ها", url: createPageUrl("AdminActivityLogs"), icon: Activity },
         { title: "الگوهای کاربری", url: createPageUrl("AdminUserTemplates"), icon: FileText },

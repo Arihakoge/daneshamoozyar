@@ -4,98 +4,129 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Plus, Trash2, Clock, BookOpen } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Calendar, Clock, Plus, Trash2, Save } from "lucide-react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { toPersianNumber } from "@/components/utils";
 
 const DAYS = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه"];
-const ALL_SUBJECTS = [
-  "قرآن", "پیام‌های آسمان", "فارسی", "نگارش", "ریاضی", "علوم", "مطالعات اجتماعی",
-  "فرهنگ و هنر", "عربی", "انگلیسی", "کار و فناوری", "تفکر و سبک زندگی", "آمادگی دفاعی"
+const PERIODS = [1, 2, 3, 4, 5, 6, 7];
+const GRADES = ["هفتم", "هشتم", "نهم"];
+const SUBJECTS = [
+  "قرآن", "پیام‌های آسمان", "فارسی", "نگارش", "ریاضی", "علوم", 
+  "مطالعات اجتماعی", "فرهنگ و هنر", "عربی", "انگلیسی", 
+  "کار و فناوری", "تفکر و سبک زندگی", "آمادگی دفاعی"
 ];
 
 export default function AdminSchedule() {
-  const [schedules, setSchedules] = useState([]);
+  const [academicYear, setAcademicYear] = useState("1403-1404");
+  const [selectedGrade, setSelectedGrade] = useState("");
+  const [selectedClass, setSelectedClass] = useState("");
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState("1403-1404");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    academic_year: "1403-1404",
-    day_of_week: "شنبه",
-    start_time: "",
-    end_time: "",
-    class_id: "",
-    subject: "",
-    teacher_id: ""
-  });
+  const [editingCell, setEditingCell] = useState(null);
 
   useEffect(() => {
     loadData();
-  }, [selectedYear]);
+  }, []);
 
   const loadData = async () => {
-    setLoading(true);
     try {
-      const [allSchedules, allClasses, allProfiles] = await Promise.all([
-        base44.entities.Schedule.filter({ academic_year: selectedYear }),
+      const [allClasses, allUsers, allSchedules] = await Promise.all([
         base44.entities.Class.list(),
-        base44.entities.PublicProfile.filter({ student_role: "teacher" })
+        base44.entities.User.list(),
+        base44.entities.Schedule.list()
       ]);
-      setSchedules(allSchedules);
+      
       setClasses(allClasses);
-      setTeachers(allProfiles);
+      setTeachers(allUsers.filter(u => u.student_role === "teacher"));
+      setSchedules(allSchedules);
     } catch (error) {
-      console.error("خطا در بارگیری:", error);
-      toast.error("خطا در بارگیری داده‌ها");
+      console.error("خطا در بارگیری داده‌ها:", error);
     }
     setLoading(false);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.class_id || !formData.subject || !formData.teacher_id || !formData.start_time) {
-      toast.error("لطفا تمام فیلدهای ضروری را پر کنید");
+  const loadScheduleForClass = async () => {
+    if (!selectedClass) return;
+    
+    try {
+      const classSchedules = await base44.entities.Schedule.filter({
+        academic_year: academicYear,
+        class_id: selectedClass
+      });
+      setSchedules(classSchedules);
+    } catch (error) {
+      console.error("خطا در بارگیری برنامه:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedClass) {
+      loadScheduleForClass();
+    }
+  }, [selectedClass, academicYear]);
+
+  const getScheduleCell = (day, period) => {
+    return schedules.find(s => 
+      s.day_of_week === day && 
+      s.period === period && 
+      s.class_id === selectedClass &&
+      s.academic_year === academicYear
+    );
+  };
+
+  const handleSaveCell = async (day, period, data) => {
+    if (!data.subject || !data.teacher_id) {
+      toast.error("لطفا درس و معلم را انتخاب کنید");
       return;
     }
 
     try {
-      await base44.entities.Schedule.create(formData);
-      toast.success("برنامه درسی اضافه شد");
-      setShowAddModal(false);
-      setFormData({
-        academic_year: selectedYear,
-        day_of_week: "شنبه",
-        start_time: "",
-        end_time: "",
-        class_id: "",
-        subject: "",
-        teacher_id: ""
-      });
-      loadData();
+      const existingCell = getScheduleCell(day, period);
+      
+      const scheduleData = {
+        academic_year: academicYear,
+        grade: selectedGrade,
+        class_id: selectedClass,
+        day_of_week: day,
+        period: period,
+        subject: data.subject,
+        teacher_id: data.teacher_id,
+        start_time: data.start_time || "",
+        end_time: data.end_time || ""
+      };
+
+      if (existingCell) {
+        await base44.entities.Schedule.update(existingCell.id, scheduleData);
+      } else {
+        await base44.entities.Schedule.create(scheduleData);
+      }
+
+      await loadScheduleForClass();
+      setEditingCell(null);
+      toast.success("برنامه ذخیره شد");
     } catch (error) {
-      console.error("خطا در افزودن:", error);
-      toast.error("خطا در افزودن برنامه");
+      console.error("خطا در ذخیره:", error);
+      toast.error("خطا در ذخیره برنامه");
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("آیا از حذف این جلسه مطمئن هستید؟")) return;
+  const handleDeleteCell = async (day, period) => {
+    const cell = getScheduleCell(day, period);
+    if (!cell) return;
+
+    if (!window.confirm("آیا از حذف این ساعت درس مطمئن هستید؟")) return;
+
     try {
-      await base44.entities.Schedule.delete(id);
-      toast.success("جلسه حذف شد");
-      loadData();
+      await base44.entities.Schedule.delete(cell.id);
+      await loadScheduleForClass();
+      toast.success("ساعت درس حذف شد");
     } catch (error) {
+      console.error("خطا در حذف:", error);
       toast.error("خطا در حذف");
     }
-  };
-
-  const getSchedulesByDay = (day) => {
-    return schedules
-      .filter(s => s.day_of_week === day)
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
   };
 
   if (loading) {
@@ -109,188 +140,209 @@ export default function AdminSchedule() {
   return (
     <div className="max-w-7xl mx-auto">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-              <Calendar className="w-10 h-10 text-purple-500" />
-              مدیریت برنامه درسی
-            </h1>
-            <p className="text-gray-300 text-lg">تنظیم برنامه کلاسی هفتگی</p>
-          </div>
-          <Button onClick={() => setShowAddModal(true)} className="clay-button bg-purple-500 text-white">
-            <Plus className="w-4 h-4 ml-2" />
-            افزودن جلسه
-          </Button>
-        </div>
+        <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
+          <Calendar className="w-10 h-10 text-purple-500" />
+          مدیریت برنامه درسی هفتگی
+        </h1>
+        <p className="text-gray-300 text-lg">ایجاد و ویرایش برنامه درسی برای کل سال تحصیلی</p>
       </motion.div>
 
-      <div className="clay-card p-4 mb-6">
-        <div className="flex items-center gap-4">
-          <span className="text-white font-medium">سال تحصیلی:</span>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="clay-button px-4 py-2 bg-slate-800 border-slate-700 text-white rounded-lg"
-          >
-            <option value="1403-1404">۱۴۰۳-۱۴۰۴</option>
-            <option value="1404-1405">۱۴۰۴-۱۴۰۵</option>
-            <option value="1405-1406">۱۴۰۵-۱۴۰۶</option>
-          </select>
-        </div>
-      </div>
+      <Card className="clay-card mb-6">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">سال تحصیلی</label>
+              <Input
+                value={academicYear}
+                onChange={(e) => setAcademicYear(e.target.value)}
+                placeholder="1403-1404"
+                className="bg-slate-800 border-slate-700 text-white"
+              />
+            </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {DAYS.map(day => (
-          <Card key={day} className="clay-card">
-            <CardHeader className="border-b border-white/10">
-              <CardTitle className="text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-purple-400" />
-                {day}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 space-y-3">
-              {getSchedulesByDay(day).length === 0 ? (
-                <p className="text-gray-400 text-center py-4">برنامه‌ای تعریف نشده</p>
-              ) : (
-                getSchedulesByDay(day).map(schedule => {
-                  const classInfo = classes.find(c => c.id === schedule.class_id);
-                  const teacherInfo = teachers.find(t => t.user_id === schedule.teacher_id);
-                  return (
-                    <div key={schedule.id} className="clay-card p-3 hover:bg-white/5 transition-colors">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs text-purple-400 font-medium">
-                              {schedule.start_time} - {schedule.end_time}
-                            </span>
-                          </div>
-                          <h4 className="font-bold text-white text-sm mb-1">
-                            📚 {schedule.subject}
-                          </h4>
-                          <p className="text-xs text-gray-400">
-                            کلاس: {classInfo?.name || "نامشخص"}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            معلم: {teacherInfo?.full_name || "نامشخص"}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(schedule.id)}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">پایه تحصیلی</label>
+              <Select value={selectedGrade} onValueChange={(val) => {
+                setSelectedGrade(val);
+                setSelectedClass("");
+              }}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectValue placeholder="انتخاب پایه" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                  {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
 
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)}>
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="clay-card p-6 max-w-md w-full"
-              onClick={e => e.stopPropagation()}
-            >
-              <h2 className="text-2xl font-bold text-white mb-6">افزودن جلسه درسی</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-300 mb-2">روز هفته</label>
-                  <select
-                    value={formData.day_of_week}
-                    onChange={e => setFormData({...formData, day_of_week: e.target.value})}
-                    className="w-full p-2 rounded bg-slate-800 border-slate-700 text-white"
-                  >
-                    {DAYS.map(day => <option key={day} value={day}>{day}</option>)}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">ساعت شروع</label>
-                    <Input
-                      type="time"
-                      value={formData.start_time}
-                      onChange={e => setFormData({...formData, start_time: e.target.value})}
-                      className="bg-slate-800 border-slate-700 text-white"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">ساعت پایان</label>
-                    <Input
-                      type="time"
-                      value={formData.end_time}
-                      onChange={e => setFormData({...formData, end_time: e.target.value})}
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-300 mb-2">کلاس</label>
-                  <select
-                    value={formData.class_id}
-                    onChange={e => setFormData({...formData, class_id: e.target.value})}
-                    className="w-full p-2 rounded bg-slate-800 border-slate-700 text-white"
-                    required
-                  >
-                    <option value="">انتخاب کنید</option>
-                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-300 mb-2">درس</label>
-                  <select
-                    value={formData.subject}
-                    onChange={e => setFormData({...formData, subject: e.target.value})}
-                    className="w-full p-2 rounded bg-slate-800 border-slate-700 text-white"
-                    required
-                  >
-                    <option value="">انتخاب کنید</option>
-                    {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-300 mb-2">معلم</label>
-                  <select
-                    value={formData.teacher_id}
-                    onChange={e => setFormData({...formData, teacher_id: e.target.value})}
-                    className="w-full p-2 rounded bg-slate-800 border-slate-700 text-white"
-                    required
-                  >
-                    <option value="">انتخاب کنید</option>
-                    {teachers.map(t => (
-                      <option key={t.user_id} value={t.user_id}>{t.full_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setShowAddModal(false)} className="flex-1 clay-button">
-                    انصراف
-                  </Button>
-                  <Button type="submit" className="flex-1 clay-button bg-purple-500 text-white">
-                    ذخیره
-                  </Button>
-                </div>
-              </form>
-            </motion.div>
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">کلاس</label>
+              <Select value={selectedClass} onValueChange={setSelectedClass} disabled={!selectedGrade}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectValue placeholder="انتخاب کلاس" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                  {classes.filter(c => c.grade === selectedGrade).map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </CardContent>
+      </Card>
+
+      {selectedClass && (
+        <Card className="clay-card overflow-x-auto">
+          <CardHeader>
+            <CardTitle className="text-white">برنامه هفتگی</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-slate-700">
+                  <th className="p-3 text-center text-gray-300 bg-slate-800">ساعت</th>
+                  {DAYS.map(day => (
+                    <th key={day} className="p-3 text-center text-gray-300 bg-slate-800">{day}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {PERIODS.map(period => (
+                  <tr key={period} className="border-b border-slate-700/50">
+                    <td className="p-3 text-center text-gray-400 bg-slate-900/50 font-bold">
+                      ساعت {period}
+                    </td>
+                    {DAYS.map(day => {
+                      const cell = getScheduleCell(day, period);
+                      const isEditing = editingCell?.day === day && editingCell?.period === period;
+
+                      return (
+                        <td key={`${day}-${period}`} className="p-2 border border-slate-700/30">
+                          {isEditing ? (
+                            <ScheduleCell
+                              cell={cell}
+                              teachers={teachers}
+                              onSave={(data) => handleSaveCell(day, period, data)}
+                              onCancel={() => setEditingCell(null)}
+                            />
+                          ) : (
+                            <div
+                              className="min-h-[80px] p-2 rounded clay-button hover:bg-slate-800/50 cursor-pointer"
+                              onClick={() => setEditingCell({ day, period })}
+                            >
+                              {cell ? (
+                                <div className="space-y-1">
+                                  <div className="font-bold text-white text-sm">{cell.subject}</div>
+                                  <div className="text-xs text-gray-400">
+                                    {teachers.find(t => t.id === cell.teacher_id)?.full_name || "نامشخص"}
+                                  </div>
+                                  {cell.start_time && (
+                                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {cell.start_time} - {cell.end_time}
+                                    </div>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteCell(day, period);
+                                    }}
+                                    className="w-full mt-1 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                  >
+                                    <Trash2 className="w-3 h-3 ml-1" />
+                                    حذف
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-center h-full text-gray-600">
+                                  <Plus className="w-5 h-5" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {!selectedClass && (
+        <Card className="clay-card">
+          <CardContent className="p-12 text-center">
+            <Calendar className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">
+              لطفا سال تحصیلی، پایه و کلاس را انتخاب کنید
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function ScheduleCell({ cell, teachers, onSave, onCancel }) {
+  const [formData, setFormData] = useState({
+    subject: cell?.subject || "",
+    teacher_id: cell?.teacher_id || "",
+    start_time: cell?.start_time || "",
+    end_time: cell?.end_time || ""
+  });
+
+  return (
+    <div className="space-y-2 p-2 bg-slate-900/50 rounded min-h-[200px]">
+      <Select value={formData.subject} onValueChange={(val) => setFormData({...formData, subject: val})}>
+        <SelectTrigger className="bg-slate-800 border-slate-700 text-white text-xs">
+          <SelectValue placeholder="درس" />
+        </SelectTrigger>
+        <SelectContent className="bg-slate-800 border-slate-700 text-white">
+          {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+        </SelectContent>
+      </Select>
+
+      <Select value={formData.teacher_id} onValueChange={(val) => setFormData({...formData, teacher_id: val})}>
+        <SelectTrigger className="bg-slate-800 border-slate-700 text-white text-xs">
+          <SelectValue placeholder="معلم" />
+        </SelectTrigger>
+        <SelectContent className="bg-slate-800 border-slate-700 text-white">
+          {teachers.map(t => (
+            <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Input
+        type="time"
+        value={formData.start_time}
+        onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+        placeholder="شروع"
+        className="bg-slate-800 border-slate-700 text-white text-xs"
+      />
+
+      <Input
+        type="time"
+        value={formData.end_time}
+        onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+        placeholder="پایان"
+        className="bg-slate-800 border-slate-700 text-white text-xs"
+      />
+
+      <div className="flex gap-1">
+        <Button size="sm" onClick={() => onSave(formData)} className="flex-1 bg-green-600 hover:bg-green-700 text-xs">
+          <Save className="w-3 h-3 ml-1" />
+          ذخیره
+        </Button>
+        <Button size="sm" variant="outline" onClick={onCancel} className="border-slate-700 text-white text-xs">
+          انصراف
+        </Button>
+      </div>
     </div>
   );
 }
