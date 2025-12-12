@@ -212,7 +212,6 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد", url: createPageUrl("TeacherDashboard"), icon: LayoutDashboard },
         { title: "مدیریت تکالیف", url: createPageUrl("TeacherAssignments"), icon: FileText },
-        { title: "حضور و غیاب", url: createPageUrl("TeacherAttendance"), icon: Users },
         { title: "پیام‌ها", url: createPageUrl("Messages"), icon: MessageCircle },
         { title: "گزارش‌های عملکرد", url: createPageUrl("TeacherReports"), icon: FileText },
         { title: "قوانین امتیازدهی", url: createPageUrl("ScoringRules"), icon: Trophy },
@@ -223,7 +222,6 @@ export default function Layout({ children, currentPageName }) {
       return [
         { title: "داشبورد مدیریت", url: createPageUrl("AdminDashboard"), icon: LayoutDashboard },
         { title: "مدیریت کاربران", url: createPageUrl("AdminUsers"), icon: Users },
-        { title: "برنامه درسی هفتگی", url: createPageUrl("AdminSchedule"), icon: Activity },
         { title: "مدیریت کلاس‌ها", url: createPageUrl("AdminClasses"), icon: GraduationCap },
         { title: "مدیریت محتوا", url: createPageUrl("AdminContent"), icon: FileText },
         { title: "گزارش فعالیت‌ها", url: createPageUrl("AdminActivityLogs"), icon: Activity },
