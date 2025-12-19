@@ -29,7 +29,11 @@ export default function FeedbackWidget() {
         throw new Error(response.data.error);
       }
 
-      toast.success("بازخورد شما با موفقیت ثبت و ارسال شد.");
+      if (response.data?.email_sent === false) {
+          toast.warning("بازخورد شما ذخیره شد، اما ارسال ایمیل با خطا مواجه شد.");
+      } else {
+          toast.success("بازخورد شما با موفقیت ثبت و به تیم پشتیبانی ایمیل شد.");
+      }
       setIsOpen(false);
       setMessage("");
       setType("bug");
