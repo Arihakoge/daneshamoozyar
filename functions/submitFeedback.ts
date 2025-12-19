@@ -3,7 +3,7 @@ import { Resend } from 'npm:resend';
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
-export default Deno.serve(async (req) => {
+Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response(null, {
             headers: {
