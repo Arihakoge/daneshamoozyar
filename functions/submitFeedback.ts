@@ -1,7 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import { Resend } from 'npm:resend';
-
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') {
@@ -33,68 +30,31 @@ Deno.serve(async (req) => {
         };
         const typeLabel = typeLabels[type] || type;
 
-        // 1. Save to Database (Robustness)
-        try {
-            await base44.asServiceRole.entities.Feedback.create({
-                type,
-                message,
-                page_url: pageUrl,
-                user_id: user ? user.id : null,
-                user_email: user ? user.email : null,
-                user_name: user ? (user.full_name || user.first_name) : 'Guest',
-                status: 'new'
-            });
-        } catch (dbError) {
-            console.error("Failed to save feedback to DB:", dbError);
-            // Continue to email sending...
-        }
+        const subject = `[دانش‌آموز‌یار] ${typeLabel} جدید`;
+        const body = `
+بازخورد جدید دریافت شد
 
-        // 2. Send Email
-        try {
-            const { data, error } = await resend.emails.send({
-                from: 'Feedback System <onboarding@resend.dev>',
-                to: ['daneshamoozyar.taklif@gmail.com'],
-                subject: `[دانش‌آموز‌یار] ${typeLabel} جدید`,
-                html: `
-                    <div dir="rtl" style="font-family: Tahoma, Arial; line-height: 1.6;">
-                        <h2 style="color: #4f46e5;">📝 بازخورد جدید دریافت شد</h2>
-                        <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                            <p><strong>نوع بازخورد:</strong> <span style="color: #dc2626;">${typeLabel}</span></p>
-                            <p><strong>فرستنده:</strong> ${user ? `${user.full_name || user.first_name || ''} (${user.email || 'بدون ایمیل'})` : 'کاربر مهمان'}</p>
-                            <p><strong>صفحه:</strong> ${pageUrl}</p>
-                            <p><strong>زمان:</strong> ${new Date().toLocaleString('fa-IR')}</p>
-                        </div>
-                        <h3>متن پیام:</h3>
-                        <div style="border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; background: #fff;">
-                            ${message.replace(/\n/g, '<br>')}
-                        </div>
-                    </div>
-                `
-            });
+نوع بازخورد: ${typeLabel}
+فرستنده: ${user ? `${user.full_name || 'کاربر'} (${user.email || 'بدون ایمیل'})` : 'کاربر مهمان'}
+صفحه: ${pageUrl}
+زمان: ${new Date().toLocaleString('fa-IR')}
 
-            if (error) {
-                console.error('Resend API Error:', error);
-                // Return specific error if possible
-                return Response.json({ 
-                    success: true, 
-                    email_sent: false, 
-                    warning: "Feedback saved but email failed: " + error.message 
-                });
-            }
+----------------------------------------
+متن پیام:
+${message}
+----------------------------------------
+        `;
 
-            return Response.json({ success: true, email_sent: true, data });
+        // Using built-in SendEmail integration
+        const result = await base44.asServiceRole.integrations.Core.SendEmail({
+            to: 'daneshamoozyar.taklif@gmail.com',
+            subject: subject,
+            body: body
+        });
 
-        } catch (emailError) {
-            console.error("Email sending exception:", emailError);
-            return Response.json({ 
-                success: true, 
-                email_sent: false, 
-                warning: "Feedback saved but email failed." 
-            });
-        }
-
+        return Response.json({ success: true, data: result });
     } catch (e) {
-        console.error('Function critical error:', e);
+        console.error('Function error:', e);
         return Response.json({ error: e.message }, { status: 500 });
     }
 });
