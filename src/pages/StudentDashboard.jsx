@@ -291,16 +291,10 @@ export default function StudentDashboard() {
                             🪙 {assignment.coins_reward}
                           </span>
                         </div>
-                        <a
-                           href={generateGoogleCalendarUrl(assignment)}
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="text-xs flex items-center gap-1 text-gray-400 hover:text-white transition-colors bg-slate-800/50 p-1.5 rounded-lg border border-slate-700/50 hover:border-slate-500"
-                           title="افزودن به تقویم گوگل"
-                        >
-                           <CalendarIcon className="w-3 h-3" />
-                           <Plus className="w-2 h-2" />
-                        </a>
+                        <AddToCalendarButton 
+                            assignment={assignment} 
+                            className="text-xs text-gray-400 hover:text-white bg-slate-800/50 h-7 px-2 border border-slate-700/50 hover:border-slate-500"
+                        />
                       </div>
                     </div>
                   </motion.div>

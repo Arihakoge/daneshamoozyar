@@ -18,6 +18,7 @@ import {
   Save,
   Download
 } from "lucide-react";
+import AddToCalendarButton from "@/components/shared/AddToCalendarButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { toPersianDate, toPersianDateShort, toPersianNumber } from "@/components/utils";
 import PersianDatePicker from "@/components/ui/PersianDatePicker";
@@ -728,12 +729,15 @@ export default function TeacherAssignments() {
                       مهلت: {toPersianDateShort(assignment.due_date)}
                     </p>
                     <div className="flex justify-between items-center">
-                      <p>امتیاز: {toPersianNumber(assignment.max_score)}</p>
-                      <p>پاداش: 🪙 {toPersianNumber(assignment.coins_reward)}</p>
+                    <p>امتیاز: {toPersianNumber(assignment.max_score)}</p>
+                    <p>پاداش: 🪙 {toPersianNumber(assignment.coins_reward)}</p>
                     </div>
-                  </div>
-                </CardContent>
-                <div className="p-4">
+                    </div>
+                    </CardContent>
+                    <div className="px-4 pb-2">
+                    <AddToCalendarButton assignment={assignment} className="w-full justify-center text-gray-300 hover:text-white hover:bg-white/5 mb-2" />
+                    </div>
+                    <div className="p-4 pt-0">
                   <Button 
                     onClick={() => { 
                       setSelectedAssignment(assignment); 
