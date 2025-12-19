@@ -381,8 +381,10 @@ export default function TeacherAssignments() {
     grade: "",
     subject: "",
     class_id: "",
-    type: "homework" // homework, quiz, project
+    type: "homework", // homework, quiz, project
+    guide_resource_id: "" // For linking a learning resource
   });
+  const [resources, setResources] = useState([]); // Available resources to link
 
   // Recurring & Template Options
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
@@ -417,10 +419,12 @@ export default function TeacherAssignments() {
         setAvailableSubjects(userProfile.subjects || (userProfile.subject ? [userProfile.subject] : []));
       }
 
-      const [teacherAssignments, teacherTemplates] = await Promise.all([
+      const [teacherAssignments, teacherTemplates, teacherResources] = await Promise.all([
         base44.entities.Assignment.filter({ teacher_id: currentUser.id }, "-created_date"),
-        base44.entities.AssignmentTemplate.filter({ teacher_id: currentUser.id }, "-created_date")
+        base44.entities.AssignmentTemplate.filter({ teacher_id: currentUser.id }, "-created_date"),
+        base44.entities.LearningResource.filter({ teacher_id: currentUser.id }, "-created_date")
       ]);
+      setResources(teacherResources);
       
       setAssignments(teacherAssignments);
       setTemplates(teacherTemplates);
@@ -936,6 +940,21 @@ export default function TeacherAssignments() {
                         className="clay-card text-white"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">راهنمای تکلیف (اختیاری)</label>
+                    <select
+                        value={newAssignment.guide_resource_id || ""}
+                        onChange={e => setNewAssignment({...newAssignment, guide_resource_id: e.target.value})}
+                        className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700"
+                    >
+                        <option value="">بدون راهنما</option>
+                        {resources.map(r => (
+                            <option key={r.id} value={r.id}>{r.title} ({r.type})</option>
+                        ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">می‌توانید یکی از منابع آموزشی خود را به عنوان راهنما ضمیمه کنید.</p>
                   </div>
                   
                   {/* Advanced Options: Recurring & Template */}

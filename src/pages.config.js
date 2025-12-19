@@ -23,6 +23,7 @@ import AdminContent from './pages/AdminContent';
 import AdminActivityLogs from './pages/AdminActivityLogs';
 import AdminUserTemplates from './pages/AdminUserTemplates';
 import StudentStore from './pages/StudentStore';
+import LearningResources from './pages/LearningResources';
 import __Layout from './Layout.jsx';
 
 
@@ -52,6 +53,7 @@ export const PAGES = {
     "AdminActivityLogs": AdminActivityLogs,
     "AdminUserTemplates": AdminUserTemplates,
     "StudentStore": StudentStore,
+    "LearningResources": LearningResources,
 }
 
 export const pagesConfig = {

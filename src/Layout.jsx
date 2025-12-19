@@ -206,6 +206,7 @@ export default function Layout({ children, currentPageName }) {
         { title: "فروشگاه جوایز", url: createPageUrl("StudentStore"), icon: ShoppingBag },
         { title: "پروفایل من", url: createPageUrl("StudentProfile"), icon: UserIcon },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
+        { title: "منابع آموزشی", url: createPageUrl("LearningResources"), icon: BookOpen },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
       ];
     } else if (role === "teacher") {
@@ -215,6 +216,7 @@ export default function Layout({ children, currentPageName }) {
         { title: "پیام‌ها", url: createPageUrl("Messages"), icon: MessageCircle },
         { title: "گزارش‌های عملکرد", url: createPageUrl("TeacherReports"), icon: FileText },
         { title: "قوانین امتیازدهی", url: createPageUrl("ScoringRules"), icon: Trophy },
+        { title: "منابع آموزشی", url: createPageUrl("LearningResources"), icon: BookOpen },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
       ];

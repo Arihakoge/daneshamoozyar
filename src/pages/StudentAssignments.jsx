@@ -36,6 +36,7 @@ export default function StudentAssignments() {
   const [submitting, setSubmitting] = useState(false);
   const [filterSubject, setFilterSubject] = useState("all");
   const [activePowerups, setActivePowerups] = useState([]);
+  const [assignmentGuide, setAssignmentGuide] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -155,6 +156,23 @@ export default function StudentAssignments() {
     
     return { status: "pending", text: "در انتظار ارسال", color: "orange", isExtended, effectiveDueDate };
   };
+
+  useEffect(() => {
+    const fetchGuide = async () => {
+        if (selectedAssignment && selectedAssignment.guide_resource_id) {
+            try {
+                const resource = await base44.entities.LearningResource.get(selectedAssignment.guide_resource_id);
+                setAssignmentGuide(resource);
+            } catch (e) {
+                console.error("Error fetching guide", e);
+                setAssignmentGuide(null);
+            }
+        } else {
+            setAssignmentGuide(null);
+        }
+    };
+    fetchGuide();
+  }, [selectedAssignment]);
 
   const submitAssignment = async () => {
     if (!selectedAssignment || (!submissionContent.trim() && !submissionFile)) {
@@ -487,6 +505,26 @@ export default function StudentAssignments() {
               </div>
 
               <div className="space-y-6">
+                {assignmentGuide && (
+                    <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700">
+                        <h3 className="text-white font-bold mb-2 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-cyan-400" />
+                            راهنمای انجام تکلیف
+                        </h3>
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-300 text-sm">{assignmentGuide.title}</span>
+                            <a 
+                                href={assignmentGuide.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-cyan-400 text-xs hover:underline flex items-center gap-1"
+                            >
+                                مشاهده راهنما <Paperclip className="w-3 h-3" />
+                            </a>
+                        </div>
+                        {assignmentGuide.description && <p className="text-gray-400 text-xs mt-1">{assignmentGuide.description}</p>}
+                    </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
                     متن پاسخ:
