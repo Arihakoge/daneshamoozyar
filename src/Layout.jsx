@@ -418,7 +418,7 @@ export default function Layout({ children, currentPageName }) {
                       <p className="font-bold text-gray-200 truncate">
                         {currentUser.display_name || currentUser.full_name || "کاربر"}
                       </p>
-                      <p className="text-sm text-gray-400 truncate">
+                      <p className="text-sm text-gray-400 whitespace-normal">
                         {currentUser.student_role === "teacher" && `معلم ${(currentUser.teaching_assignments && currentUser.teaching_assignments.length > 0) ? [...new Set(currentUser.teaching_assignments.map(a => a.subject))].join("، ") : (currentUser.subjects ? currentUser.subjects.join("، ") : (currentUser.subject || ""))}`}
                         {currentUser.student_role === "student" && `دانش‌آموز ${currentUser.grade || ""}`}
                         {currentUser.student_role === "admin" && "مدیر"}

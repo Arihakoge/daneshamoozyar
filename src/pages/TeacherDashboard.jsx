@@ -346,13 +346,21 @@ export default function TeacherDashboard() {
             
             <div className="space-y-4">
               <div className="clay-card p-4 bg-purple-900/30">
-                <p className="text-purple-300 text-sm font-medium">پایه تحصیلی</p>
-                <p className="text-2xl font-bold text-purple-200 mt-1">{user?.grade}</p>
+                <p className="text-purple-300 text-sm font-medium">پایه‌های تحصیلی</p>
+                <p className="text-lg font-bold text-purple-200 mt-1 leading-snug">
+                  {(user?.teaching_assignments && user.teaching_assignments.length > 0) 
+                    ? [...new Set(user.teaching_assignments.map(a => a.grade))].join("، ") 
+                    : (user?.grade || "تعیین نشده")}
+                </p>
               </div>
               
               <div className="clay-card p-4 bg-blue-900/30">
-                <p className="text-blue-300 text-sm font-medium">درس تخصصی</p>
-                <p className="text-2xl font-bold text-blue-200 mt-1">{user?.subject}</p>
+                <p className="text-blue-300 text-sm font-medium">دروس تخصصی</p>
+                <p className="text-lg font-bold text-blue-200 mt-1 leading-snug">
+                  {(user?.teaching_assignments && user.teaching_assignments.length > 0) 
+                    ? [...new Set(user.teaching_assignments.map(a => a.subject))].join("، ") 
+                    : (user?.subjects ? user.subjects.join("، ") : (user?.subject || "تعیین نشده"))}
+                </p>
               </div>
               
               <div className="clay-card p-4 bg-green-900/30">
