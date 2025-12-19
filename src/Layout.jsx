@@ -21,8 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ProfileSetupModal from "@/components/shared/ProfileSetupModal";
-import ReportIssueModal from "@/components/shared/ReportIssueModal";
-import { AlertTriangle } from "lucide-react";
+import FeedbackWidget from "@/components/shared/FeedbackWidget";
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
@@ -30,7 +29,6 @@ export default function Layout({ children, currentPageName }) {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [theme, setTheme] = useState("dark");
 
   const getRandomColor = useCallback(() => {
@@ -445,24 +443,15 @@ export default function Layout({ children, currentPageName }) {
 
               <Button
                 variant="ghost"
-                onClick={() => setShowReportModal(true)}
-                className="clay-button w-full flex items-center gap-4 p-4 mt-2 bg-gradient-to-r from-red-900/40 to-red-800/40 border-red-500/30 text-red-400 hover:text-red-300 hover:bg-red-900/60 transition-all group"
-              >
-                <AlertTriangle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium">گزارش مشکل / پیشنهاد</span>
-              </Button>
-
-              <Button
-                variant="ghost"
                 onClick={() => base44.auth.logout()}
                 className="clay-button w-full flex items-center gap-4 p-4 mt-2 text-red-400 hover:text-red-300"
               >
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">خروج</span>
               </Button>
-              </div>
-              </div>
-              </aside>
+            </div>
+          </div>
+        </aside>
 
         {/* Mobile Sidebar */}
         <AnimatePresence>
@@ -574,14 +563,8 @@ export default function Layout({ children, currentPageName }) {
           currentUser={currentUser}
           onComplete={handleProfileSetupComplete}
         />
-
-        {/* Report Issue Modal */}
-        <ReportIssueModal 
-          isOpen={showReportModal}
-          onClose={() => setShowReportModal(false)}
-          user={currentUser}
-        />
-        </div>
-        </div>
-        );
-        }
+        <FeedbackWidget />
+      </div>
+    </div>
+  );
+}
