@@ -23,9 +23,6 @@ import AdminContent from './pages/AdminContent';
 import AdminActivityLogs from './pages/AdminActivityLogs';
 import AdminUserTemplates from './pages/AdminUserTemplates';
 import StudentStore from './pages/StudentStore';
-import ParentDashboard from './pages/ParentDashboard';
-import ParentChildDetail from './pages/ParentChildDetail';
-import AdminParentManagement from './pages/AdminParentManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -55,9 +52,6 @@ export const PAGES = {
     "AdminActivityLogs": AdminActivityLogs,
     "AdminUserTemplates": AdminUserTemplates,
     "StudentStore": StudentStore,
-    "ParentDashboard": ParentDashboard,
-    "ParentChildDetail": ParentChildDetail,
-    "AdminParentManagement": AdminParentManagement,
 }
 
 export const pagesConfig = {

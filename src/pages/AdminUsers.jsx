@@ -611,14 +611,13 @@ export default function AdminUsers() {
                     <div>
                       <label className="block text-sm text-slate-400 mb-1">نقش در سیستم</label>
                       <select 
-                       value={editForm.student_role} 
-                       onChange={e => setEditForm({...editForm, student_role: e.target.value})}
-                       className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700 focus:border-cyan-500 outline-none"
+                        value={editForm.student_role} 
+                        onChange={e => setEditForm({...editForm, student_role: e.target.value})}
+                        className="w-full p-2 rounded-md bg-slate-800 text-white border border-slate-700 focus:border-cyan-500 outline-none"
                       >
-                       <option value="student">دانش‌آموز</option>
-                       <option value="teacher">معلم</option>
-                       <option value="admin">مدیر</option>
-                       <option value="parent">والدین</option>
+                        <option value="student">دانش‌آموز</option>
+                        <option value="teacher">معلم</option>
+                        <option value="admin">مدیر</option>
                       </select>
                     </div>
                   </div>
