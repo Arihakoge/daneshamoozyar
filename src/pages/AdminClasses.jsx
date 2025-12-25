@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap, Trash2, School, Plus, Save, X } from "lucide-react";
+import { GraduationCap, Trash2, School, Plus, Save, X, Users, BookOpen } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { toPersianDate } from "@/components/utils";
+import { toPersianDate, toPersianNumber } from "@/components/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminClasses() {
   const [classes, setClasses] = useState([]);
+  const [classStats, setClassStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newClass, setNewClass] = useState({ name: "", grade: "هفتم", section: "الف" });
@@ -20,7 +22,22 @@ export default function AdminClasses() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const allClasses = await base44.entities.Class.list();
+      const [allClasses, allUsers] = await Promise.all([
+        base44.entities.Class.list(),
+        base44.entities.PublicProfile.list()
+      ]);
+
+      // Calculate stats per class
+      const stats = {};
+      allClasses.forEach(c => {
+        const students = allUsers.filter(u => u.class_id === c.id && u.student_role === 'student');
+        stats[c.id] = {
+          studentCount: students.length,
+          avgLevel: students.length > 0 ? (students.reduce((acc, curr) => acc + (curr.level || 1), 0) / students.length).toFixed(1) : 0
+        };
+      });
+      setClassStats(stats);
+
       setClasses(allClasses.sort((a, b) => a.name.localeCompare(b.name)));
     } catch (error) {
       console.error("Error loading classes:", error);
@@ -130,13 +147,14 @@ export default function AdminClasses() {
               <TableRow className="border-slate-800 hover:bg-transparent">
                 <TableHead className="text-right text-slate-400">نام کلاس</TableHead>
                 <TableHead className="text-right text-slate-400">پایه تحصیلی</TableHead>
+                <TableHead className="text-right text-slate-400">آمار</TableHead>
                 <TableHead className="text-right text-slate-400">توضیحات</TableHead>
                 <TableHead className="text-left text-slate-400 pl-6">عملیات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {classes.length === 0 ? (
-                 <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">هیچ کلاسی تعریف نشده است</TableCell></TableRow>
+                 <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">هیچ کلاسی تعریف نشده است</TableCell></TableRow>
               ) : (
                 classes.map(classItem => (
                   <TableRow key={classItem.id} className="border-slate-800/50 hover:bg-slate-800/20">
@@ -144,7 +162,21 @@ export default function AdminClasses() {
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: classItem.color }}></div>
                       {classItem.name}
                     </TableCell>
-                    <TableCell className="text-slate-300">{classItem.grade}</TableCell>
+                    <TableCell className="text-slate-300">
+                      <Badge variant="outline" className="border-slate-600 text-slate-300">{classItem.grade}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-3 text-xs">
+                         <div className="flex items-center gap-1 text-slate-300" title="تعداد دانش‌آموز">
+                            <Users className="w-3 h-3" />
+                            {toPersianNumber(classStats[classItem.id]?.studentCount || 0)}
+                         </div>
+                         <div className="flex items-center gap-1 text-slate-300" title="میانگین سطح">
+                            <BookOpen className="w-3 h-3" />
+                            سطح {toPersianNumber(classStats[classItem.id]?.avgLevel || 0)}
+                         </div>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-slate-400 text-sm">{classItem.description}</TableCell>
                     <TableCell className="text-left pl-4">
                       <Button 

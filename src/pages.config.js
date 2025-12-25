@@ -25,6 +25,7 @@ import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherReports from './pages/TeacherReports';
 import TeacherScoreboard from './pages/TeacherScoreboard';
 import YaraChat from './pages/YaraChat';
+import AdminReports from './pages/AdminReports';
 import __Layout from './Layout.jsx';
 
 
@@ -56,6 +57,7 @@ export const PAGES = {
     "TeacherReports": TeacherReports,
     "TeacherScoreboard": TeacherScoreboard,
     "YaraChat": YaraChat,
+    "AdminReports": AdminReports,
 }
 
 export const pagesConfig = {

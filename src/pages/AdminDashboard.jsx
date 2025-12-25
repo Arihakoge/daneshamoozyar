@@ -121,10 +121,12 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex gap-4">
-           <Button className="bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg shadow-cyan-900/20">
-             <Activity className="w-4 h-4 mr-2" />
-             گزارش کامل
-           </Button>
+           <Link to={createPageUrl("AdminReports")}>
+             <Button className="bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg shadow-cyan-900/20">
+               <Activity className="w-4 h-4 mr-2" />
+               گزارش کامل
+             </Button>
+           </Link>
         </div>
       </div>
 
