@@ -29,7 +29,8 @@ export default function Layout({ children, currentPageName }) {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
-  const [theme, setTheme] = useState("dark");
+  // Theme removed, forcing dark mode.
+  // const [theme, setTheme] = useState("dark");
 
   const getRandomColor = useCallback(() => {
     const colors = ["#8B5CF6", "#EC4899", "#06B6D4", "#10B981", "#F59E0B"];
@@ -77,28 +78,34 @@ export default function Layout({ children, currentPageName }) {
       let publicProfile = publicProfiles.length > 0 ? publicProfiles[0] : null;
 
       if (publicProfile) {
-        // Sync vital data from PublicProfile to Auth User
-        const updates = {};
-        if (publicProfile.student_role && publicProfile.student_role !== user.student_role) updates.student_role = publicProfile.student_role;
-        if (publicProfile.grade && publicProfile.grade !== user.grade) updates.grade = publicProfile.grade;
-        if (publicProfile.class_id && publicProfile.class_id !== user.class_id) updates.class_id = publicProfile.class_id;
-        
-        // Sync stats if PublicProfile has them (trusting PublicProfile as primary storage)
-        if (publicProfile.coins !== undefined && publicProfile.coins !== user.coins) updates.coins = publicProfile.coins;
-        if (publicProfile.level !== undefined && publicProfile.level !== user.level) updates.level = publicProfile.level;
-        if (publicProfile.total_xp !== undefined && publicProfile.total_xp !== user.total_xp) updates.total_xp = publicProfile.total_xp;
-        if (publicProfile.avatar_color && publicProfile.avatar_color !== user.avatar_color) updates.avatar_color = publicProfile.avatar_color;
-        if (publicProfile.active_frame && publicProfile.active_frame !== user.active_frame) updates.active_frame = publicProfile.active_frame;
+        // IMPORTANT: Always use PublicProfile data for the UI logic to ensure immediate updates
+        // even if the auth user sync fails or is cached.
+        user = { ...user, ...publicProfile }; // Merge PublicProfile ON TOP of auth user
 
-        if (Object.keys(updates).length > 0) {
-           console.log("Syncing from PublicProfile to Auth:", updates);
-           // Update local user object immediately to reflect changes in UI
-           user = { ...user, ...updates };
-           try {
-             await base44.auth.updateMe(updates);
-           } catch (e) {
+        // Sync vital data from PublicProfile to Auth User for persistence
+        const updates = {};
+        if (publicProfile.student_role) updates.student_role = publicProfile.student_role;
+        if (publicProfile.grade) updates.grade = publicProfile.grade;
+        if (publicProfile.class_id) updates.class_id = publicProfile.class_id;
+        
+        // Sync stats if PublicProfile has them
+        if (publicProfile.coins !== undefined) updates.coins = publicProfile.coins;
+        if (publicProfile.level !== undefined) updates.level = publicProfile.level;
+        if (publicProfile.total_xp !== undefined) updates.total_xp = publicProfile.total_xp;
+        if (publicProfile.avatar_color) updates.avatar_color = publicProfile.avatar_color;
+        if (publicProfile.active_frame) updates.active_frame = publicProfile.active_frame;
+
+        // Try to update auth user, but don't block UI if it fails
+        try {
+             // Only update if there are keys
+             if (Object.keys(updates).length > 0) {
+                 // We don't await this to speed up initial render, or we can await it.
+                 // Given the user complaints about "guest panel stays", 
+                 // we rely on the `user = { ...user, ...publicProfile }` above for immediate UI fix.
+                 await base44.auth.updateMe(updates).catch(e => console.warn("Sync failed", e));
+             }
+        } catch (e) {
              console.warn("Failed to sync auth user:", e);
-           }
         }
       } else {
         // No PublicProfile, initialize new user
@@ -147,12 +154,9 @@ export default function Layout({ children, currentPageName }) {
 
       setCurrentUser(user);
       
-      // Load theme from settings
-      const settings = await base44.entities.UserSettings.filter({ user_id: user.id });
-      if (settings.length > 0 && settings[0].theme) {
-        setTheme(settings[0].theme);
-        document.documentElement.classList.toggle('light-theme', settings[0].theme === 'light');
-      }
+      // Theme loading removed - forcing dark mode
+      // const settings = await base44.entities.UserSettings.filter({ user_id: user.id });
+      document.documentElement.classList.remove('light-theme');
       
       setLoading(false);
     } catch (error) {
@@ -261,42 +265,9 @@ export default function Layout({ children, currentPageName }) {
   }
 
   return (
-    <div dir="rtl" className={`min-h-screen ${theme === 'light' ? 'bg-gradient-to-br from-purple-100 via-blue-100 to-indigo-100' : 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900'}`}>
+    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
       <style>
         {`
-          ${theme === 'light' ? `
-          .clay-card {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.1), -8px -8px 16px rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(200, 200, 220, 0.4);
-            color: #1e293b;
-          }
-
-          .clay-button {
-            background: linear-gradient(145deg, rgba(240, 240, 250, 0.9), rgba(250, 250, 255, 0.6));
-            border-radius: 16px;
-            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1), -4px -4px 8px rgba(255, 255, 255, 0.8);
-            border: 1px solid rgba(200, 200, 220, 0.5);
-            transition: all 0.2s ease;
-            color: #334155;
-            font-weight: 500;
-          }
-
-          .clay-button:hover {
-            box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.1), inset -4px -4px 8px rgba(255, 255, 255, 0.5);
-            color: #8B5CF6;
-            transform: translateY(1px);
-          }
-
-          .clay-button.active {
-            box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.15), inset -4px -4px 8px rgba(255, 255, 255, 0.6);
-            background: rgba(139, 92, 246, 0.15);
-            color: #8B5CF6;
-            font-weight: 600;
-          }
-          ` : `
           .clay-card {
             background: rgba(15, 23, 42, 0.6);
             border-radius: 20px;
@@ -328,7 +299,6 @@ export default function Layout({ children, currentPageName }) {
             color: #8B5CF6;
             font-weight: 600;
           }
-          `}
         `}
       </style>
 

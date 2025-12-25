@@ -26,7 +26,7 @@ export default function EditProfile() {
   const [isPublic, setIsPublic] = useState(true);
   
   // Settings
-  const [theme, setTheme] = useState("dark");
+  // const [theme, setTheme] = useState("dark"); // Theme disabled
   const [fontSize, setFontSize] = useState("medium");
   const [defaultTimeRange, setDefaultTimeRange] = useState("all");
   
@@ -53,7 +53,7 @@ export default function EditProfile() {
       // Load settings
       const settings = await base44.entities.UserSettings.filter({ user_id: user.id });
       if (settings.length > 0) {
-        setTheme(settings[0].theme || "dark");
+        // setTheme(settings[0].theme || "dark");
         setFontSize(settings[0].font_size || "medium");
         setDefaultTimeRange(settings[0].default_time_range || "all");
       }
@@ -128,7 +128,7 @@ export default function EditProfile() {
       // بروزرسانی تنظیمات
       const settingsData = {
         user_id: currentUser.id,
-        theme,
+        theme: "dark", // Force dark
         font_size: fontSize,
         default_time_range: defaultTimeRange
       };
@@ -354,36 +354,13 @@ export default function EditProfile() {
         <Card className="clay-card">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
-              <Sun className="w-5 h-5 text-yellow-400" />
+              <Type className="w-5 h-5 text-yellow-400" />
               تنظیمات ظاهری
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                تم رنگی
-              </label>
-              <Select value={theme} onValueChange={setTheme}>
-                <SelectTrigger className="clay-card text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dark">
-                    <div className="flex items-center gap-2">
-                      <Moon className="w-4 h-4" />
-                      تیره
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="light">
-                    <div className="flex items-center gap-2">
-                      <Sun className="w-4 h-4" />
-                      روشن
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
+            {/* Theme selection removed */}
+            
             <div>
               <label className="block text-sm font-medium text-white mb-2">
                 اندازه فونت

@@ -1,3 +1,4 @@
+import Achievements from './pages/Achievements';
 import AdminActivityLogs from './pages/AdminActivityLogs';
 import AdminClasses from './pages/AdminClasses';
 import AdminContent from './pages/AdminContent';
@@ -19,17 +20,17 @@ import StudentAssignments from './pages/StudentAssignments';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentProfile from './pages/StudentProfile';
 import StudentStore from './pages/StudentStore';
+import TeacherAssignments from './pages/TeacherAssignments';
 import TeacherClasses from './pages/TeacherClasses';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherReports from './pages/TeacherReports';
 import TeacherScoreboard from './pages/TeacherScoreboard';
 import YaraChat from './pages/YaraChat';
-import TeacherAssignments from './pages/TeacherAssignments';
-import Achievements from './pages/Achievements';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Achievements": Achievements,
     "AdminActivityLogs": AdminActivityLogs,
     "AdminClasses": AdminClasses,
     "AdminContent": AdminContent,
@@ -51,13 +52,12 @@ export const PAGES = {
     "StudentDashboard": StudentDashboard,
     "StudentProfile": StudentProfile,
     "StudentStore": StudentStore,
+    "TeacherAssignments": TeacherAssignments,
     "TeacherClasses": TeacherClasses,
     "TeacherDashboard": TeacherDashboard,
     "TeacherReports": TeacherReports,
     "TeacherScoreboard": TeacherScoreboard,
     "YaraChat": YaraChat,
-    "TeacherAssignments": TeacherAssignments,
-    "Achievements": Achievements,
 }
 
 export const pagesConfig = {
