@@ -785,7 +785,7 @@ export default function TeacherAssignments() {
               initial={{ scale: 0.9 }} 
               animate={{ scale: 1 }} 
               exit={{ scale: 0.9 }} 
-              className="clay-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" 
+              className="clay-card p-4 md:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" 
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
@@ -1057,7 +1057,7 @@ export default function TeacherAssignments() {
               initial={{ scale: 0.9 }} 
               animate={{ scale: 1 }} 
               exit={{ scale: 0.9 }} 
-              className="clay-card p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar" 
+              className="clay-card p-4 md:p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar" 
               onClick={e => e.stopPropagation()}
             >
               <div className="flex justify-between items-start mb-6">

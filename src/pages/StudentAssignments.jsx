@@ -488,7 +488,7 @@ export default function StudentAssignments() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="clay-card p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="clay-card p-4 md:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">

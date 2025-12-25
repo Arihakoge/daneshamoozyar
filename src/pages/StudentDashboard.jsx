@@ -28,7 +28,7 @@ function StatsCard({ title, value, icon: Icon, color = "purple", trend, delay = 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="clay-card p-6 relative overflow-hidden hover:shadow-lg transition-shadow duration-300"
+      className="clay-card p-4 md:p-6 relative overflow-hidden hover:shadow-lg transition-shadow duration-300"
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -252,7 +252,7 @@ export default function StudentDashboard() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
-            className="clay-card p-6">
+            className="clay-card p-4 md:p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 shadow-md">
                 <Clock className="w-6 h-6 text-white" />

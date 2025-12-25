@@ -18,7 +18,7 @@ function AdminStatCard({ title, value, icon: Icon, color, delay }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="clay-card relative overflow-hidden p-6 hover:scale-[1.02] transition-transform duration-300"
+      className="clay-card relative overflow-hidden p-4 md:p-6 hover:scale-[1.02] transition-transform duration-300"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-10`} />
       <div className="relative z-10">
@@ -140,7 +140,7 @@ export default function AdminDashboard() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Main Chart */}
-        <div className="lg:col-span-2 clay-card p-6">
+        <div className="lg:col-span-2 clay-card p-4 md:p-6">
            <div className="flex items-center justify-between mb-6">
              <h2 className="text-xl font-bold text-white flex items-center gap-2">
                <TrendingUp className="w-5 h-5 text-cyan-500" />
@@ -172,7 +172,7 @@ export default function AdminDashboard() {
         {/* Quick Actions & Pending */}
         <div className="space-y-6">
            {/* Pending Requests */}
-           <div className="clay-card p-6 border-l-4 border-orange-500">
+           <div className="clay-card p-4 md:p-6 border-l-4 border-orange-500">
               <div className="flex items-center justify-between mb-4">
                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 text-orange-500" />
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
            </div>
 
            {/* Role Distribution */}
-           <div className="clay-card p-6">
+           <div className="clay-card p-4 md:p-6">
                <h2 className="text-lg font-bold text-white mb-4">توزیع کاربران</h2>
                <div className="flex items-center justify-center h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
