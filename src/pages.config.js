@@ -3,7 +3,6 @@ import AdminActivityLogs from './pages/AdminActivityLogs';
 import AdminClasses from './pages/AdminClasses';
 import AdminContent from './pages/AdminContent';
 import AdminDashboard from './pages/AdminDashboard';
-import AdminEditUser from './pages/AdminEditUser';
 import AdminScoreboard from './pages/AdminScoreboard';
 import AdminUserTemplates from './pages/AdminUserTemplates';
 import AdminUsers from './pages/AdminUsers';
@@ -35,7 +34,6 @@ export const PAGES = {
     "AdminClasses": AdminClasses,
     "AdminContent": AdminContent,
     "AdminDashboard": AdminDashboard,
-    "AdminEditUser": AdminEditUser,
     "AdminScoreboard": AdminScoreboard,
     "AdminUserTemplates": AdminUserTemplates,
     "AdminUsers": AdminUsers,
