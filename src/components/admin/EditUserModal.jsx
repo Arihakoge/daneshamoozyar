@@ -92,7 +92,15 @@ export default function EditUserModal({ user, isOpen, onClose, onSave, classes }
               <label className="text-sm text-slate-400 mb-1 block">نقش</label>
               <Select 
                 value={formData.student_role} 
-                onValueChange={val => setFormData({...formData, student_role: val})}
+                onValueChange={val => {
+                  const newData = {...formData, student_role: val};
+                  // Clear student data if not student
+                  if (val !== 'student') {
+                    newData.grade = "";
+                    newData.class_id = "";
+                  }
+                  setFormData(newData);
+                }}
               >
                 <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                   <SelectValue />

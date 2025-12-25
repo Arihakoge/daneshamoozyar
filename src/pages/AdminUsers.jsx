@@ -82,8 +82,8 @@ export default function AdminUsers() {
       const profileData = {
         full_name: updatedData.full_name,
         student_role: updatedData.student_role,
-        grade: updatedData.grade,
-        class_id: updatedData.class_id,
+        grade: updatedData.student_role === 'student' ? updatedData.grade : "",
+        class_id: updatedData.student_role === 'student' ? updatedData.class_id : "",
         teaching_assignments: updatedData.teaching_assignments || [],
         subjects: [...new Set((updatedData.teaching_assignments || []).map(a => a.subject))]
       };
