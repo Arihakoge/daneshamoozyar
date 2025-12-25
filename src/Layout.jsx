@@ -217,6 +217,8 @@ export default function Layout({ children, currentPageName }) {
         { title: "پروفایل من", url: createPageUrl("StudentProfile"), icon: UserIcon },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "منابع آموزشی", url: createPageUrl("LearningResources"), icon: BookOpen },
+        { title: "دفترچه یادداشت", url: createPageUrl("StudentNotebook"), icon: BookOpen },
+        { title: "گروه‌های مطالعه", url: createPageUrl("StudyGroups"), icon: Users },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
       ];
     } else if (role === "teacher") {
