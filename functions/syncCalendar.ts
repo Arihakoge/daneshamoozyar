@@ -22,15 +22,27 @@ export default Deno.serve(async (req) => {
     }
 
     // 2. Fetch Assignments & Submissions
+    // Robustly get grade and class from PublicProfile if missing on User
+    let grade = user.grade;
+    let classId = user.class_id;
+
+    if (!grade) {
+        const profiles = await base44.entities.PublicProfile.filter({ user_id: user.id });
+        if (profiles.length > 0) {
+            grade = profiles[0].grade;
+            classId = profiles[0].class_id;
+        }
+    }
+
     // Get assignments for student's grade
     let assignments = [];
-    if (user.grade) {
+    if (grade) {
       const gradeAssignments = await base44.entities.Assignment.filter(
-        { grade: user.grade, is_active: true }
+        { grade: grade, is_active: true }
       );
       // Filter by class if needed
       assignments = gradeAssignments.filter(a => 
-        !a.class_id || (user.class_id && a.class_id === user.class_id)
+        !a.class_id || (classId && a.class_id === classId)
       );
     }
 

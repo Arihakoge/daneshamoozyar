@@ -68,7 +68,9 @@ ${assignment.description || '-'}
         let accessToken;
         try {
           accessToken = await base44.asServiceRole.connectors.getAccessToken("googlecalendar");
+          if (!accessToken) throw new Error("No access token returned");
         } catch (e) {
+          console.error("Calendar Auth Error:", e);
           return Response.json({ 
             error: 'Calendar not connected', 
             details: 'Please authorize Google Calendar first.',
