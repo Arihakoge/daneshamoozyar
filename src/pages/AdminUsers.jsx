@@ -31,35 +31,41 @@ export default function AdminUsers() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [allUsers, allPublicProfiles, allClasses, requests] = await Promise.all([
-        base44.entities.User.list(),
-        base44.entities.PublicProfile.list('-created_date', 1000),
-        base44.entities.Class.list(),
-        base44.entities.ClassRequest.filter({ status: 'pending' })
-      ]);
+      // Fetch PublicProfiles and Requests first as they are critical and custom entities
+      const allPublicProfiles = await base44.entities.PublicProfile.list();
+      const requests = await base44.entities.ClassRequest.filter({ status: 'pending' });
+      const allClasses = await base44.entities.Class.list();
       
+      // Try to fetch Users, but gracefully handle if it fails (e.g. due to permissions)
+      let allUsers = [];
+      try {
+        allUsers = await base44.entities.User.list();
+      } catch (e) {
+        console.warn("Could not fetch User entity list:", e);
+      }
+      
+      // Prioritize PublicProfiles as the main source of user data
       const profileMap = {};
       allPublicProfiles.forEach(p => profileMap[p.user_id] = p);
       
-      const mergedUsers = allUsers.map(user => {
-        const profile = profileMap[user.id];
-        if (profile) return profile;
-        
-        return {
-          id: `temp_${user.id}`,
-          user_id: user.id,
-          full_name: user.full_name,
-          display_name: user.display_name || user.full_name,
-          student_role: user.student_role || 'guest',
-          grade: user.grade,
-          class_id: user.class_id,
-          avatar_color: user.avatar_color,
-          created_date: user.created_date,
-          _isTemp: true
-        };
-      });
+      // Identify users from 'User' entity that don't have a PublicProfile yet
+      const usersWithNoProfile = allUsers.filter(u => !profileMap[u.id]).map(user => ({
+        id: `temp_${user.id}`,
+        user_id: user.id,
+        full_name: user.full_name,
+        display_name: user.display_name || user.full_name,
+        student_role: user.student_role || 'guest',
+        grade: user.grade,
+        class_id: user.class_id,
+        avatar_color: user.avatar_color,
+        created_date: user.created_date,
+        _isTemp: true
+      }));
       
-      setUsers(mergedUsers.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+      // Merge: PublicProfiles + Temp Users
+      const mergedUsers = [...allPublicProfiles, ...usersWithNoProfile];
+      
+      setUsers(mergedUsers.sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0)));
       setClasses(allClasses);
       setClassRequests(requests);
       
@@ -69,6 +75,8 @@ export default function AdminUsers() {
       
     } catch (error) {
       console.error("Error loading data:", error);
+      // Even if main load fails, try to show partial data if states were set? 
+      // No, just show error. But we split the critical parts above.
       toast.error("خطا در بارگیری اطلاعات");
     }
     setLoading(false);
