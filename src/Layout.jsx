@@ -92,8 +92,13 @@ export default function Layout({ children, currentPageName }) {
 
         if (Object.keys(updates).length > 0) {
            console.log("Syncing from PublicProfile to Auth:", updates);
-           await base44.auth.updateMe(updates);
+           // Update local user object immediately to reflect changes in UI
            user = { ...user, ...updates };
+           try {
+             await base44.auth.updateMe(updates);
+           } catch (e) {
+             console.warn("Failed to sync auth user:", e);
+           }
         }
       } else {
         // No PublicProfile, initialize new user
