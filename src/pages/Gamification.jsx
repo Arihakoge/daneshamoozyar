@@ -147,7 +147,7 @@ export default function Gamification() {
 
   const stats = getStats();
   const progressData = getProgressData();
-  const allBadgeTypes = Object.keys(BADGE_CONFIG);
+  const allBadgeTypes = BADGE_CONFIG ? Object.keys(BADGE_CONFIG) : [];
   const earnedBadgeTypes = badges.map(b => b.badge_type);
 
   return (
