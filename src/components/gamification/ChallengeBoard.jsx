@@ -83,22 +83,9 @@ export default function ChallengeBoard({ currentUser }) {
        }
        
        // Update User Coins
-       const newCoins = (currentUser.coins || 0) + task.reward;
        await base44.auth.updateMe({
-           coins: newCoins
+           coins: (currentUser.coins || 0) + task.reward
        });
-
-       // Update Public Profile (Source of Truth)
-       try {
-         const profiles = await base44.entities.PublicProfile.filter({ user_id: currentUser.id });
-         if (profiles.length > 0) {
-           await base44.entities.PublicProfile.update(profiles[0].id, {
-             coins: newCoins
-           });
-         }
-       } catch (err) {
-         console.error("Error syncing coins to PublicProfile:", err);
-       }
 
        // Update Challenge Entity
        const newClaimed = { ...currentClaimed, [taskId]: true };

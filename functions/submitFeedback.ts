@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') {
@@ -22,30 +22,7 @@ Deno.serve(async (req) => {
         
         const { type, message, pageUrl } = await req.json();
 
-        // 1. Save to Database (Reliability layer)
-        // Using service role to ensure we can write even if user is guest or RLS is strict
-        let savedRecord = null;
-        try {
-            const feedbackData = {
-                type,
-                message,
-                page_url: pageUrl,
-                user_info: user ? `${user.full_name || user.display_name || 'User'} (${user.email || 'No Email'})` : 'Guest',
-                status: 'new'
-            };
-            
-            if (user && user.id) {
-                feedbackData.user_id = user.id;
-            }
-
-            savedRecord = await base44.asServiceRole.entities.Feedback.create(feedbackData);
-        } catch (dbError) {
-            console.error("Database save failed:", dbError);
-            // If DB fails, we still try to send email, but this is critical
-            throw new Error("Failed to save feedback: " + dbError.message);
-        }
-
-        // 2. Send Email Notification
+        // Translate type
         const typeLabels = {
             'bug': 'گزارش باگ',
             'suggestion': 'پیشنهاد',
@@ -56,7 +33,6 @@ Deno.serve(async (req) => {
         const subject = `[دانش‌آموز‌یار] ${typeLabel} جدید`;
         const body = `
 بازخورد جدید دریافت شد
-شناسه: ${savedRecord ? savedRecord.id : 'N/A'}
 
 نوع بازخورد: ${typeLabel}
 فرستنده: ${user ? `${user.full_name || 'کاربر'} (${user.email || 'بدون ایمیل'})` : 'کاربر مهمان'}
@@ -69,26 +45,14 @@ ${message}
 ----------------------------------------
         `;
 
-        let emailSent = false;
-        try {
-            // Using built-in SendEmail integration
-            await base44.asServiceRole.integrations.Core.SendEmail({
-                to: 'daneshamoozyar.taklif@gmail.com',
-                subject: subject,
-                body: body
-            });
-            emailSent = true;
-        } catch (emailError) {
-            console.error("Email sending failed:", emailError);
-            // We don't fail the request if DB save was successful, but we notify frontend
-        }
-
-        return Response.json({ 
-            success: true, 
-            email_sent: emailSent,
-            data: savedRecord 
+        // Using built-in SendEmail integration
+        const result = await base44.asServiceRole.integrations.Core.SendEmail({
+            to: 'daneshamoozyar.taklif@gmail.com',
+            subject: subject,
+            body: body
         });
 
+        return Response.json({ success: true, data: result });
     } catch (e) {
         console.error('Function error:', e);
         return Response.json({ error: e.message }, { status: 500 });

@@ -96,11 +96,6 @@ export const checkAndAwardBadges = async (userId, actionType, data = {}) => {
 
     if (userCoins >= 1000) await award('champion');
 
-    // --- Top Student (Passed via data) ---
-    if (actionType === 'rank_check') {
-        if (data.isTopStudent) await award('top_student');
-        if (data.isClassChampion) await award('class_champion');
-    }
 
     return newBadges;
 
