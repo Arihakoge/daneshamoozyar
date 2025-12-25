@@ -30,7 +30,7 @@ export default function EditProfile() {
   const [fontSize, setFontSize] = useState("medium");
   const [defaultTimeRange, setDefaultTimeRange] = useState("all");
   
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function EditProfile() {
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("خطا در آپلود تصویر:", error);
-      setErrorMessage("خطا در آپلود تصویر");
+      setErrors({...errors, image: "خطا در آپلود تصویر"});
     }
     setUploading(false);
   };
@@ -84,24 +84,23 @@ export default function EditProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    setErrorMessage("");
+    setErrors({});
     setSuccessMessage("");
+    const newErrors = {};
 
     if (!fullName.trim()) {
-      setErrorMessage("نام و نام خانوادگی الزامی است");
-      return;
-    }
-
-    // Persian character validation
-    const persianRegex = /^[\u0600-\u06FF\s]+$/;
-    if (!persianRegex.test(fullName.trim())) {
-      setErrorMessage("نام و نام خانوادگی باید فقط شامل حروف فارسی باشد");
-      return;
+      newErrors.fullName = "نام و نام خانوادگی الزامی است";
+    } else if (!/^[\u0600-\u06FF\s]+$/.test(fullName.trim())) {
+      newErrors.fullName = "نام و نام خانوادگی باید فقط شامل حروف فارسی باشد";
     }
 
     if (phone && !/^09\d{9}$/.test(phone)) {
-      setErrorMessage("شماره تماس باید با 09 شروع شده و 11 رقم باشد");
-      return;
+      newErrors.phone = "شماره تماس باید با 09 شروع شده و 11 رقم باشد";
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
     }
 
     setSaving(true);
@@ -171,7 +170,7 @@ export default function EditProfile() {
 
     } catch (error) {
       console.error("خطا در بروزرسانی پروفایل:", error);
-      setErrorMessage("خطا در بروزرسانی پروفایل. لطفاً دوباره تلاش کنید.");
+      toast.error("خطا در بروزرسانی پروفایل. لطفاً دوباره تلاش کنید.");
     }
 
     setSaving(false);
@@ -202,18 +201,7 @@ export default function EditProfile() {
         <p className="text-gray-300 text-lg">اطلاعات شخصی خود را ویرایش کنید</p>
       </motion.div>
 
-      {errorMessage && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="clay-card p-4 mb-6 bg-red-500/20 border-2 border-red-500"
-        >
-          <div className="flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400" />
-            <p className="text-red-200">{errorMessage}</p>
-          </div>
-        </motion.div>
-      )}
+
 
       {successMessage && (
         <motion.div 
@@ -282,11 +270,19 @@ export default function EditProfile() {
               </label>
               <Input
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(e) => {
+                    setFullName(e.target.value);
+                    if(errors.fullName) setErrors({...errors, fullName: null});
+                }}
                 placeholder="مثال: علی احمدی"
-                className="clay-card text-white"
-                required
+                className={`clay-card text-white ${errors.fullName ? 'border-red-500 ring-2 ring-red-500/20' : ''}`}
               />
+              {errors.fullName && (
+                  <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.fullName}
+                  </p>
+              )}
             </div>
 
             <div>
@@ -307,11 +303,20 @@ export default function EditProfile() {
               </label>
               <Input
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                    setPhone(e.target.value);
+                    if(errors.phone) setErrors({...errors, phone: null});
+                }}
                 placeholder="09123456789"
-                className="clay-card text-white"
+                className={`clay-card text-white ${errors.phone ? 'border-red-500 ring-2 ring-red-500/20' : ''}`}
                 dir="ltr"
               />
+              {errors.phone && (
+                  <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.phone}
+                  </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -350,34 +355,7 @@ export default function EditProfile() {
           </CardContent>
         </Card>
 
-        {/* Appearance Settings */}
-        <Card className="clay-card">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Type className="w-5 h-5 text-yellow-400" />
-              تنظیمات ظاهری
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Theme selection removed */}
-            
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                اندازه فونت
-              </label>
-              <Select value={fontSize} onValueChange={setFontSize}>
-                <SelectTrigger className="clay-card text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="small">کوچک</SelectItem>
-                  <SelectItem value="medium">متوسط</SelectItem>
-                  <SelectItem value="large">بزرگ</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Appearance Settings removed */}
 
         {/* Teacher Settings */}
         {currentUser?.student_role === "teacher" && (

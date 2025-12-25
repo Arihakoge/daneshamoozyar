@@ -3,16 +3,19 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Bot, User as UserIcon, Sparkles, Settings, X } from "lucide-react";
+import { Send, Bot, User as UserIcon, Sparkles, Settings, X, Plus, MessageSquare, Trash2, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { toPersianTimeAgo, toPersianNumber } from "@/components/utils";
+import { toPersianTimeAgo } from "@/components/utils";
 
 export default function YaraChat() {
+  const [conversations, setConversations] = useState([]);
+  const [currentConversation, setCurrentConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [yaraSettings, setYaraSettings] = useState({
     detail_level: "moderate",
     tone: "friendly",
@@ -21,38 +24,85 @@ export default function YaraChat() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    initializeChat();
+    initialize();
   }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const initializeChat = async () => {
+  const initialize = async () => {
     try {
       const user = await base44.auth.me();
       setCurrentUser(user);
       
-      // Load Yara settings
+      // Load settings
       const settings = await base44.entities.YaraSettings.filter({ user_id: user.id });
-      if (settings.length > 0) {
-        setYaraSettings(settings[0]);
-      }
-      
-      const chatHistory = await base44.entities.ChatMessage.filter({ user_id: user.id }, "-created_date");
-      setMessages(chatHistory);
+      if (settings.length > 0) setYaraSettings(settings[0]);
 
-      if (chatHistory.length === 0) {
-        const welcomeMessage = {
-          id: "welcome",
-          message: `سلام ${user.full_name || "دوست عزیز"}! 🌟\n\nمن یارا هستم، دستیار هوشمند شما! آماده‌ام تا در مسیر یادگیری کمکتان کنم.\n\n✨ می‌تونم کمکتون کنم:\n• راهنمایی برای حل تکالیف\n• توضیح مفاهیم درسی\n• ایجاد برنامه مطالعه\n• تحلیل عملکرد و پیشرفت\n• انگیزه‌بخشی و پشتیبانی\n\nچطور می‌تونم کمکتون کنم؟`,
-          is_from_user: false,
-          created_date: new Date().toISOString()
-        };
-        setMessages([welcomeMessage]);
+      // Load conversations
+      const userConversations = await base44.entities.YaraConversation.filter({ user_id: user.id }, "-updated_date");
+      setConversations(userConversations);
+
+      if (userConversations.length > 0) {
+        selectConversation(userConversations[0]);
+      } else {
+        createNewConversation(false);
       }
     } catch (error) {
-      console.error("خطا در بارگیری چت:", error);
+      console.error("Error initializing Yara:", error);
+    }
+  };
+
+  const createNewConversation = async (setActive = true) => {
+    // If we're already in a new empty conversation, don't create another one
+    if (currentConversation && !currentConversation.id && messages.length === 0) return;
+
+    // Reset current conversation state to "new"
+    const newConv = { id: null, title: "مکالمه جدید", messages: [] };
+    if (setActive) {
+        setCurrentConversation(newConv);
+        setMessages([]);
+        if (window.innerWidth < 768) setSidebarOpen(false);
+    }
+    return newConv;
+  };
+
+  const selectConversation = async (conversation) => {
+    setCurrentConversation(conversation);
+    setLoading(true);
+    try {
+      const msgs = await base44.entities.YaraMessage.filter({ conversation_id: conversation.id }, "created_date");
+      setMessages(msgs);
+      if (window.innerWidth < 768) setSidebarOpen(false);
+    } catch (error) {
+      console.error("Error loading messages:", error);
+    }
+    setLoading(false);
+  };
+
+  const deleteConversation = async (e, convId) => {
+    e.stopPropagation();
+    if (!window.confirm("آیا از حذف این مکالمه مطمئن هستید؟")) return;
+    
+    try {
+      await base44.entities.YaraConversation.delete(convId);
+      // Delete messages associated (optional, or handle via cascade if supported, but here manually)
+      const msgs = await base44.entities.YaraMessage.filter({ conversation_id: convId });
+      for (const m of msgs) await base44.entities.YaraMessage.delete(m.id);
+
+      const updatedConversations = conversations.filter(c => c.id !== convId);
+      setConversations(updatedConversations);
+
+      if (currentConversation?.id === convId) {
+        if (updatedConversations.length > 0) {
+          selectConversation(updatedConversations[0]);
+        } else {
+          createNewConversation();
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
     }
   };
 
@@ -63,155 +113,111 @@ export default function YaraChat() {
   const sendMessage = async () => {
     if (!inputMessage.trim() || loading) return;
 
-    const userMessage = {
-      id: Date.now() + "_user",
-      message: inputMessage,
-      is_from_user: true,
-      created_date: new Date().toISOString()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const content = inputMessage;
     setInputMessage("");
     setLoading(true);
 
+    // Optimistic UI update
+    const tempUserMsg = {
+        role: "user",
+        content: content,
+        created_date: new Date().toISOString(),
+        id: "temp_user_" + Date.now()
+    };
+    setMessages(prev => [...prev, tempUserMsg]);
+
     try {
-      // جمع‌آوری اطلاعات کامل از سیستم
-      let contextData = "";
-      
-      if (currentUser.student_role === "student" && currentUser.grade) {
-        const assignments = await base44.entities.Assignment.filter({ grade: currentUser.grade });
-        const submissions = await base44.entities.Submission.filter({ student_id: currentUser.id });
-        const gradedSubs = submissions.filter(s => s.score !== null);
-        const avgScore = gradedSubs.length > 0 
-          ? (gradedSubs.reduce((sum, s) => sum + s.score, 0) / gradedSubs.length).toFixed(1)
-          : 0;
-        
-        contextData = `
-اطلاعات دانش‌آموز:
-- پایه: ${currentUser.grade}
-- تعداد تکالیف ارسال شده: ${submissions.length}
-- میانگین نمرات: ${avgScore}
-- سکه‌ها: ${currentUser.coins || 0}
-- سطح: ${currentUser.level || 1}
+      let convId = currentConversation?.id;
+      let isNew = false;
 
-تکالیف فعلی:
-${assignments.slice(0, 5).map(a => `- ${a.title} (${a.subject}) - مهلت: ${a.due_date || 'نامشخص'}`).join('\n')}
-`;
-      } else if (currentUser.student_role === "teacher") {
-        const teacherAssignments = await base44.entities.Assignment.filter({ 
-          teacher_id: currentUser.id,
-          grade: currentUser.grade,
-          subject: currentUser.subject 
+      // Create conversation if it doesn't exist yet
+      if (!convId) {
+        const title = content.length > 30 ? content.substring(0, 30) + "..." : content;
+        const newConv = await base44.entities.YaraConversation.create({
+            user_id: currentUser.id,
+            title: title,
+            last_message: content
         });
-        const allSubmissions = await base44.entities.Submission.list();
-        const relevantSubmissions = allSubmissions.filter(s => 
-          teacherAssignments.some(a => a.id === s.assignment_id)
-        );
-        const students = await base44.entities.PublicProfile.filter({ 
-          grade: currentUser.grade, 
-          student_role: "student" 
-        });
-        
-        // تحلیل عملکرد دانش‌آموزان
-        const studentPerformance = students.map(student => {
-          const studentSubs = relevantSubmissions.filter(s => s.student_id === student.user_id);
-          const gradedSubs = studentSubs.filter(s => s.score !== null);
-          const avg = gradedSubs.length > 0 
-            ? (gradedSubs.reduce((sum, s) => sum + s.score, 0) / gradedSubs.length).toFixed(1)
-            : 0;
-          return { name: student.display_name || student.full_name, avg, count: gradedSubs.length };
-        });
-        
-        const weakStudents = studentPerformance.filter(s => s.avg < 10 && s.count > 0);
-        const strongStudents = studentPerformance.filter(s => s.avg >= 15);
-        
-        contextData = `
-اطلاعات معلم:
-- درس: ${currentUser.subject}
-- پایه: ${currentUser.grade}
-- تعداد تکالیف: ${teacherAssignments.length}
-- تعداد دانش‌آموزان: ${students.length}
-- تعداد ارسالی‌ها: ${relevantSubmissions.length}
-
-دانش‌آموزان ضعیف (نمره زیر 10):
-${weakStudents.length > 0 ? weakStudents.map(s => `- ${s.name}: میانگین ${s.avg}`).join('\n') : 'ندارد'}
-
-دانش‌آموزان قوی (نمره بالای 15):
-${strongStudents.length > 0 ? strongStudents.slice(0, 5).map(s => `- ${s.name}: میانگین ${s.avg}`).join('\n') : 'ندارد'}
-`;
+        convId = newConv.id;
+        setCurrentConversation(newConv);
+        setConversations(prev => [newConv, ...prev]);
+        isNew = true;
+      } else {
+         // Update existing conversation last_message
+         await base44.entities.YaraConversation.update(convId, { last_message: content });
+         setConversations(prev => prev.map(c => c.id === convId ? { ...c, last_message: content } : c));
       }
 
-      // تعیین لحن و سطح جزئیات بر اساس تنظیمات
+      // Save User Message
+      await base44.entities.YaraMessage.create({
+        conversation_id: convId,
+        role: "user",
+        content: content
+      });
+
+      // Prepare context and call LLM
+      const contextData = await getContextData(currentUser);
       const tonePrompts = {
         friendly: "با لحن بسیار دوستانه و صمیمی",
         professional: "با لحن حرفه‌ای و رسمی اما گرم",
         motivational: "با لحن انگیزشی و پرانرژی"
       };
       
-      const detailPrompts = {
-        brief: "پاسخ کوتاه و مختصر بده (حداکثر 3 خط)",
-        moderate: "پاسخ متوسط و جامع بده",
-        detailed: "پاسخ کامل و مفصل با جزئیات و مثال‌های بیشتر بده"
-      };
-
-      const stylePrompts = {
-        simple: "از زبان ساده و روزمره استفاده کن",
-        formal: "از زبان رسمی و ادبی استفاده کن"
-      };
-
       const response = await base44.integrations.Core.InvokeLLM({
         prompt: `
-تو یارا هستی، یک دستیار آموزشی هوشمند. به زبان فارسی پاسخ بده و این قوانین را رعایت کن:
-
-**قوانین اصلی:**
-1. هرگز پاسخ مستقیم تکلیف نده، فقط راهنمایی و روش حل را توضیح بده
-2. از ایموجی مناسب استفاده کن
-3. روش‌های یادگیری و تکنیک‌های مطالعه پیشنهاد بده
-4. در تحلیل داده‌ها دقیق و آماری باش
-5. برای سوالات معلم، تحلیل‌های آماری و پیشنهادات عملی ارائه بده
-
-**تنظیمات پاسخ:**
-- لحن: ${tonePrompts[yaraSettings.tone]}
-- سطح جزئیات: ${detailPrompts[yaraSettings.detail_level]}
-- سبک زبان: ${stylePrompts[yaraSettings.language_style]}
-
-**اطلاعات موجود در سیستم:**
-${contextData}
-
-**پیام کاربر:** "${inputMessage}"
-
-پاسخ:
+          تو یارا هستی، یک دستیار آموزشی هوشمند. به زبان فارسی پاسخ بده.
+          
+          تاریخچه مکالمه (در صورت نیاز استفاده کن):
+          ${messages.slice(-5).map(m => `${m.role === 'user' ? 'کاربر' : 'یارا'}: ${m.content}`).join('\n')}
+          
+          **قوانین:**
+          1. پاسخ مستقیم تکلیف نده، راهنمایی کن.
+          2. از ایموجی استفاده کن.
+          3. خلاق و دقیق باش.
+          
+          **تنظیمات:**
+          - لحن: ${tonePrompts[yaraSettings.tone]}
+          - جزئیات: ${yaraSettings.detail_level}
+          - سبک: ${yaraSettings.language_style}
+          
+          **اطلاعات سیستم:**
+          ${contextData}
+          
+          **پیام جدید کاربر:** "${content}"
+          
+          پاسخ:
         `
       });
 
-      const yaraResponse = {
-        id: Date.now() + "_yara",
-        message: response,
-        is_from_user: false,
-        created_date: new Date().toISOString()
-      };
-
-      setMessages(prev => [...prev, yaraResponse]);
-
-      await base44.entities.ChatMessage.create({
-        user_id: currentUser.id,
-        message: inputMessage,
-        is_from_user: true,
-        response: response
+      // Save Yara Message
+      const aiMsg = await base44.entities.YaraMessage.create({
+        conversation_id: convId,
+        role: "assistant",
+        content: response
       });
 
+      setMessages(prev => [...prev, aiMsg]);
+      
     } catch (error) {
-      console.error("خطا در ارسال پیام:", error);
-      const errorMessage = {
-        id: Date.now() + "_error",
-        message: "متاسفم، مشکلی پیش آمده. لطفا دوباره تلاش کنید. 😔",
-        is_from_user: false,
-        created_date: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      console.error("Error sending message:", error);
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "متاسفم، مشکلی پیش آمده. لطفا دوباره تلاش کنید. 😔",
+        id: "error_" + Date.now()
+      }]);
     }
 
     setLoading(false);
+  };
+
+  const getContextData = async (user) => {
+      // Simplified context gathering logic
+      if (user.student_role === "student") {
+          return `دانش‌آموز پایه ${user.grade || 'نامشخص'}.`;
+      } else if (user.student_role === "teacher") {
+          return `معلم درس ${user.subject || 'نامشخص'}.`;
+      }
+      return "";
   };
 
   const handleKeyPress = (e) => {
@@ -220,16 +226,13 @@ ${contextData}
       sendMessage();
     }
   };
-
+  
   const saveSettings = async () => {
     try {
       const existingSettings = await base44.entities.YaraSettings.filter({ user_id: currentUser.id });
-      
       const settingsData = {
         user_id: currentUser.id,
-        detail_level: yaraSettings.detail_level,
-        tone: yaraSettings.tone,
-        language_style: yaraSettings.language_style
+        ...yaraSettings
       };
       
       if (existingSettings.length > 0) {
@@ -237,227 +240,212 @@ ${contextData}
       } else {
         await base44.entities.YaraSettings.create(settingsData);
       }
-      
       setShowSettings(false);
     } catch (error) {
-      console.error("خطا در ذخیره تنظیمات:", error);
+      console.error("Error saving settings:", error);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-screen flex flex-col">
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="clay-card p-6 mb-4"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
-              <Bot className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                یارا - دستیار هوشمند 
-                <Sparkles className="w-6 h-6 text-purple-400" />
-              </h1>
-              <p className="text-gray-300">همراه شما در مسیر یادگیری</p>
-            </div>
-          </div>
-          <Button
-            onClick={() => setShowSettings(true)}
-            className="clay-button bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
-          >
-            <Settings className="w-5 h-5 mr-2" />
-            تنظیمات
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* Settings Modal */}
+    <div className="flex h-[calc(100vh-6rem)] max-w-7xl mx-auto gap-4">
+      {/* Sidebar */}
       <AnimatePresence>
-        {showSettings && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowSettings(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="clay-card p-6 max-w-lg w-full"
-              onClick={(e) => e.stopPropagation()}
+        {(sidebarOpen || window.innerWidth >= 768) && (
+            <motion.div 
+                initial={{ x: 100, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 100, opacity: 0 }}
+                className={`${window.innerWidth < 768 ? 'fixed inset-0 z-40 bg-slate-900 p-4' : 'w-80'} flex flex-col`}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-purple-400" />
-                  تنظیمات یارا
-                </h2>
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowSettings(false)}
-                  className="clay-button"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
+                <div className="clay-card h-full flex flex-col p-4 bg-slate-800/50">
+                    <div className="flex items-center justify-between mb-4">
+                         <h2 className="text-white font-bold flex items-center gap-2">
+                             <MessageSquare className="w-5 h-5 text-purple-400" />
+                             مکالمات
+                         </h2>
+                         {window.innerWidth < 768 && (
+                             <Button size="icon" variant="ghost" onClick={() => setSidebarOpen(false)}>
+                                 <X className="w-5 h-5 text-gray-400" />
+                             </Button>
+                         )}
+                    </div>
+                    
+                    <Button 
+                        onClick={() => createNewConversation()} 
+                        className="w-full mb-4 bg-purple-600 hover:bg-purple-700 text-white gap-2"
+                    >
+                        <Plus className="w-4 h-4" />
+                        مکالمه جدید
+                    </Button>
 
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    سطح جزئیات پاسخ‌ها
-                  </label>
-                  <Select 
-                    value={yaraSettings.detail_level} 
-                    onValueChange={(value) => setYaraSettings({...yaraSettings, detail_level: value})}
-                  >
-                    <SelectTrigger className="clay-card text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="brief">مختصر و کوتاه</SelectItem>
-                      <SelectItem value="moderate">متوسط</SelectItem>
-                      <SelectItem value="detailed">کامل و مفصل</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <div className="flex-1 overflow-y-auto space-y-2">
+                        {conversations.map(conv => (
+                            <div 
+                                key={conv.id}
+                                onClick={() => selectConversation(conv)}
+                                className={`p-3 rounded-lg cursor-pointer transition-colors group relative ${currentConversation?.id === conv.id ? 'bg-purple-500/20 border border-purple-500/30' : 'hover:bg-white/5 border border-transparent'}`}
+                            >
+                                <div className="font-medium text-white truncate pr-6">{conv.title}</div>
+                                <div className="text-xs text-gray-400 truncate mt-1">{conv.last_message}</div>
+                                
+                                <button 
+                                    onClick={(e) => deleteConversation(e, conv.id)}
+                                    className="absolute left-2 top-3 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    لحن یارا
-                  </label>
-                  <Select 
-                    value={yaraSettings.tone} 
-                    onValueChange={(value) => setYaraSettings({...yaraSettings, tone: value})}
-                  >
-                    <SelectTrigger className="clay-card text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="friendly">دوستانه و صمیمی</SelectItem>
-                      <SelectItem value="professional">حرفه‌ای</SelectItem>
-                      <SelectItem value="motivational">انگیزشی</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    سبک زبان
-                  </label>
-                  <Select 
-                    value={yaraSettings.language_style} 
-                    onValueChange={(value) => setYaraSettings({...yaraSettings, language_style: value})}
-                  >
-                    <SelectTrigger className="clay-card text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="simple">ساده و روزمره</SelectItem>
-                      <SelectItem value="formal">رسمی و ادبی</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    onClick={() => setShowSettings(false)}
-                    variant="outline"
-                    className="flex-1 clay-button text-white"
-                  >
-                    انصراف
-                  </Button>
-                  <Button
-                    onClick={saveSettings}
-                    className="flex-1 clay-button bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                  >
-                    ذخیره تنظیمات
-                  </Button>
-                </div>
-              </div>
             </motion.div>
-          </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="flex-1 clay-card p-6 overflow-hidden flex flex-col">
-        <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
-          <AnimatePresence>
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className={`flex gap-3 ${message.is_from_user ? 'flex-row-reverse' : 'flex-row'}`}
-              >
-                <div className={`p-3 rounded-full ${message.is_from_user ? 'bg-purple-900/50' : 'bg-gray-700'}`}>
-                  {message.is_from_user ? (
-                    <UserIcon className="w-6 h-6 text-purple-400" />
-                  ) : (
-                    <Bot className="w-6 h-6 text-pink-400" />
-                  )}
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden clay-card relative">
+        {/* Header */}
+        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-slate-800/30">
+            <div className="flex items-center gap-3">
+                <Button size="icon" variant="ghost" className="md:hidden" onClick={() => setSidebarOpen(true)}>
+                    <Menu className="w-5 h-5 text-white" />
+                </Button>
+                <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500">
+                     <Bot className="w-6 h-6 text-white" />
                 </div>
-                
-                <div className={`flex-1 clay-card p-4 max-w-[85%] ${message.is_from_user ? 'bg-purple-900/50' : 'bg-pink-900/50'}`}>
-                  <div className={`text-sm font-medium mb-2 ${message.is_from_user ? 'text-purple-400' : 'text-pink-400'}`}>
-                    {message.is_from_user ? 'شما' : 'یارا'}
-                  </div>
-                  <div className="text-white whitespace-pre-wrap leading-relaxed">
-                    {message.message}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-2 text-left">
-                    {toPersianTimeAgo(message.created_date)}
-                  </div>
+                <div>
+                    <h1 className="text-lg font-bold text-white flex items-center gap-2">
+                        یارا
+                        <Sparkles className="w-4 h-4 text-purple-400" />
+                    </h1>
+                    <p className="text-xs text-gray-400">
+                        {currentConversation?.id ? currentConversation.title : "مکالمه جدید"}
+                    </p>
                 </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          
-          {loading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex gap-3"
+            </div>
+            <Button
+                onClick={() => setShowSettings(true)}
+                size="sm"
+                variant="ghost"
+                className="text-gray-400 hover:text-white"
             >
-              <div className="p-3 rounded-full bg-gray-700">
-                <Bot className="w-6 h-6 text-pink-400" />
-              </div>
-              <div className="flex-1 clay-card p-4 bg-pink-900/50">
-                <div className="text-sm font-medium mb-2 text-pink-400">یارا</div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-          
-          <div ref={messagesEndRef} />
+                <Settings className="w-5 h-5" />
+            </Button>
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <Input
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="پیام خود را بنویسید..."
-            className="flex-1 clay-card border-0 text-lg p-4 bg-gray-800/70 text-white"
-            disabled={loading}
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={loading || !inputMessage.trim()}
-            className="clay-button px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 disabled:opacity-50"
-          >
-            <Send className="w-5 h-5" />
-          </Button>
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 p-8">
+                    <Bot className="w-16 h-16 mb-4 text-purple-500/50" />
+                    <p className="text-lg text-white mb-2">سلام! من یارا هستم.</p>
+                    <p className="max-w-md">هر سوالی داری بپرس، من اینجام تا در یادگیری کمکت کنم.</p>
+                </div>
+            ) : (
+                messages.map((msg, idx) => (
+                    <motion.div
+                        key={msg.id || idx}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                    >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-purple-500/20' : 'bg-pink-500/20'}`}>
+                            {msg.role === 'user' ? <UserIcon className="w-4 h-4 text-purple-400" /> : <Bot className="w-4 h-4 text-pink-400" />}
+                        </div>
+                        <div className={`max-w-[85%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-tr-sm' : 'bg-slate-700/50 text-gray-100 rounded-tl-sm'}`}>
+                            <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                            {msg.created_date && (
+                                <div className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-purple-200' : 'text-gray-400'}`}>
+                                    {toPersianTimeAgo(msg.created_date)}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                ))
+            )}
+            {loading && (
+                <div className="flex gap-3">
+                     <div className="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center">
+                         <Bot className="w-4 h-4 text-pink-400" />
+                     </div>
+                     <div className="bg-slate-700/50 p-3 rounded-2xl rounded-tl-sm flex items-center gap-1">
+                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></div>
+                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                     </div>
+                </div>
+            )}
+            <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <div className="p-4 bg-slate-800/30 border-t border-white/10">
+            <div className="flex gap-2">
+                <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="پیام خود را بنویسید..."
+                    className="bg-slate-900/50 border-slate-700 text-white focus:border-purple-500"
+                    disabled={loading}
+                />
+                <Button 
+                    onClick={sendMessage} 
+                    disabled={!inputMessage.trim() || loading}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                    <Send className="w-4 h-4" />
+                </Button>
+            </div>
         </div>
       </div>
+
+      {/* Settings Modal (kept similar logic) */}
+      <AnimatePresence>
+        {showSettings && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+            <motion.div 
+                initial={{ scale: 0.95 }} 
+                animate={{ scale: 1 }} 
+                className="bg-slate-900 border border-slate-700 p-6 rounded-xl w-full max-w-md"
+                onClick={e => e.stopPropagation()}
+            >
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-purple-400" />
+                    تنظیمات یارا
+                </h3>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-sm text-gray-400 block mb-1">سطح جزئیات</label>
+                        <Select value={yaraSettings.detail_level} onValueChange={v => setYaraSettings({...yaraSettings, detail_level: v})}>
+                            <SelectTrigger className="bg-slate-800 border-slate-700 text-white"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="brief">مختصر</SelectItem>
+                                <SelectItem value="moderate">متوسط</SelectItem>
+                                <SelectItem value="detailed">با جزئیات</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <label className="text-sm text-gray-400 block mb-1">لحن</label>
+                        <Select value={yaraSettings.tone} onValueChange={v => setYaraSettings({...yaraSettings, tone: v})}>
+                            <SelectTrigger className="bg-slate-800 border-slate-700 text-white"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="friendly">دوستانه</SelectItem>
+                                <SelectItem value="professional">رسمی</SelectItem>
+                                <SelectItem value="motivational">انگیزشی</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <Button onClick={saveSettings} className="w-full bg-purple-600 hover:bg-purple-700 text-white mt-4">
+                        ذخیره تنظیمات
+                    </Button>
+                </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

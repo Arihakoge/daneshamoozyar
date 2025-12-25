@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ProfileSetupModal from "@/components/shared/ProfileSetupModal";
-import FeedbackWidget from "@/components/shared/FeedbackWidget";
+// import FeedbackWidget from "@/components/shared/FeedbackWidget";
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
@@ -538,7 +538,7 @@ export default function Layout({ children, currentPageName }) {
           currentUser={currentUser}
           onComplete={handleProfileSetupComplete}
         />
-        <FeedbackWidget />
+        {/* FeedbackWidget removed */}
       </div>
     </div>
   );
