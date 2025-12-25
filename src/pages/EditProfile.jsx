@@ -23,7 +23,6 @@ export default function EditProfile() {
   const [instagram, setInstagram] = useState("");
   const [telegram, setTelegram] = useState("");
   const [profileImage, setProfileImage] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
   
   // Settings
   // const [theme, setTheme] = useState("dark"); // Theme disabled
@@ -48,7 +47,6 @@ export default function EditProfile() {
       setInstagram(user.social_links?.instagram || "");
       setTelegram(user.social_links?.telegram || "");
       setProfileImage(user.profile_image_url || "");
-      setIsPublic(user.is_profile_public !== false);
       
       // Load settings
       const settings = await base44.entities.UserSettings.filter({ user_id: user.id });
@@ -115,7 +113,7 @@ export default function EditProfile() {
           instagram: instagram || "",
           telegram: telegram || ""
         },
-        is_profile_public: isPublic,
+        is_profile_public: true,
         profile_image_url: profileImage || "",
         last_profile_update: new Date().toISOString()
       };
@@ -386,24 +384,6 @@ export default function EditProfile() {
             </CardContent>
           </Card>
         )}
-
-        {/* Privacy */}
-        <Card className="clay-card">
-          <CardHeader>
-            <CardTitle className="text-white">تنظیمات حریم خصوصی</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                className="w-5 h-5 rounded"
-              />
-              <span className="text-white">پروفایل من برای همه قابل مشاهده باشد</span>
-            </label>
-          </CardContent>
-        </Card>
 
         {/* Action Buttons */}
         <div className="flex gap-4">

@@ -211,6 +211,15 @@ export default function Messages() {
       let name = "";
       let classId = "";
 
+      // Find all admin users
+      const admins = allUsers.filter(u => u.student_role === 'admin');
+      const adminIds = admins.map(u => u.id);
+
+      // Add admins to participants if it's a group or class chat
+      if (chatType === "group" || chatType === "class") {
+        participants = [...new Set([...participants, ...adminIds])];
+      }
+
       if (chatType === "private") {
         const otherUser = allUsers.find(u => u.id === selectedUsers[0]);
         name = otherUser?.full_name || "کاربر";
