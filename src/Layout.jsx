@@ -236,6 +236,7 @@ export default function Layout({ children, currentPageName }) {
         { title: "مدیریت کاربران", url: createPageUrl("AdminUsers"), icon: Users },
         { title: "مدیریت کلاس‌ها", url: createPageUrl("AdminClasses"), icon: GraduationCap },
         { title: "مدیریت محتوا", url: createPageUrl("AdminContent"), icon: FileText },
+        { title: "گزارش‌های تحلیلی", url: createPageUrl("AdminReports"), icon: Activity },
         { title: "گزارش فعالیت‌ها", url: createPageUrl("AdminActivityLogs"), icon: Activity },
         { title: "الگوهای کاربری", url: createPageUrl("AdminUserTemplates"), icon: FileText },
         { title: "پیام‌ها", url: createPageUrl("Messages"), icon: MessageCircle },
