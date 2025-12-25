@@ -185,6 +185,28 @@ export default function UnifiedScoreboard({ defaultViewMode = "all" }) {
 
   const topThree = filteredAndSortedStudents.slice(0, 3);
   const listStudents = filteredAndSortedStudents.slice(3);
+
+  // Check for Top Student Badge
+  useEffect(() => {
+    if (!currentUser || currentUser.student_role !== 'student' || loading) return;
+    
+    // Only check if we are viewing the relevant leaderboard (Grade view) and sorted by score
+    if (viewMode === 'grade' && sortBy === 'combined' && !searchTerm) {
+      if (filteredAndSortedStudents.length > 0) {
+        const topStudent = filteredAndSortedStudents[0];
+        // Check if current user is the top student
+        // Note: publicProfile uses user_id, currentUser uses id
+        if (topStudent.user_id === currentUser.id) {
+           checkAndAwardBadges(currentUser.id, 'rank_check', { isTopStudent: true })
+             .then(newBadges => {
+               if (newBadges.includes('top_student')) {
+                 toast.success("تبریک! شما نشان دانش‌آموز برتر را دریافت کردید!");
+               }
+             });
+        }
+      }
+    }
+  }, [filteredAndSortedStudents, currentUser, loading, viewMode, sortBy, searchTerm]);
   
   if (loading) {
     return (
