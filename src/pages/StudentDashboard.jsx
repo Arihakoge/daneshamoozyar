@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star, Award, Target, Calendar as CalendarIcon, RefreshCw, Plus } from "lucide-react";
+import { BookOpen, Clock, Trophy, TrendingUp, Calendar, AlertCircle, Star, Award, Target, Calendar as CalendarIcon, RefreshCw, Plus, Eye } from "lucide-react";
 import AddToCalendarButton from "@/components/shared/AddToCalendarButton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -51,6 +51,8 @@ export default function StudentDashboard() {
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncingCalendar, setSyncingCalendar] = useState(false);
+  const [recommendedResources, setRecommendedResources] = useState([]);
+
   useEffect(() => {
     loadDashboardData();
   }, []);
@@ -136,6 +138,14 @@ export default function StudentDashboard() {
 
         const userBadges = await base44.entities.Badge.filter({ user_id: currentUser.id });
         setBadges(userBadges);
+
+        // Load Recommended Resources
+        try {
+            const allResources = await base44.entities.LearningResource.filter({ grade: currentUser.grade || "هفتم", is_active: true });
+            // Sort by view count and pick top 3
+            const sorted = allResources.sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 3);
+            setRecommendedResources(sorted);
+        } catch(e) { console.error("Error fetching recommended resources", e); }
       }
     } catch (error) {
       console.error("خطا در بارگیری داده‌ها:", error);
@@ -247,6 +257,32 @@ export default function StudentDashboard() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
+          
+          {/* Recommended Resources Section */}
+          {recommendedResources.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+               <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                 <BookOpen className="w-5 h-5 text-yellow-400" />
+                 منابع پیشنهادی برای شما
+               </h3>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 {recommendedResources.map((res, idx) => (
+                    <Link to={createPageUrl("LearningResources")} key={res.id}>
+                        <div className="clay-card p-4 hover:scale-105 transition-transform h-full flex flex-col justify-between">
+                            <div>
+                                <span className="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-gray-300 mb-2 inline-block">{res.subject || "عمومی"}</span>
+                                <h4 className="font-bold text-white text-sm line-clamp-2 mb-1">{res.title}</h4>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-gray-400 mt-2">
+                                <Eye className="w-3 h-3" /> {toPersianNumber(res.view_count || 0)} بازدید
+                            </div>
+                        </div>
+                    </Link>
+                 ))}
+               </div>
+            </motion.div>
+          )}
+
           <motion.div
             id="upcoming-assignments"
             initial={{ opacity: 0, x: -20 }}
