@@ -110,9 +110,9 @@ export default function AdminActivityLogs() {
           </CardContent>
         </Card>
 
-        <Card className="clay-card">
-          <CardContent className="p-0">
-            <Table>
+        <Card className="clay-card overflow-hidden">
+          <CardContent className="p-0 overflow-x-auto">
+            <Table className="min-w-[800px]">
               <TableHeader className="bg-black/20">
                 <TableRow className="border-white/10 hover:bg-black/30">
                   <TableHead className="text-slate-300">کاربر</TableHead>

@@ -483,12 +483,12 @@ export default function AdminContent() {
               </Card>
             </div>
 
-            <Card className="clay-card">
+            <Card className="clay-card overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-white">پر بازدیدترین منابع</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Table>
+              <CardContent className="overflow-x-auto">
+                <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow className="border-white/10">
                       <TableHead className="text-slate-400">عنوان</TableHead>
