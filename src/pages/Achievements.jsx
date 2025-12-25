@@ -55,7 +55,7 @@ const levelTiers = [
   { min: 61, max: 70, name: "نخبه", color: "from-red-400 to-red-600" },
   { min: 71, max: 80, name: "قهرمان", color: "from-yellow-400 to-yellow-600" },
   { min: 81, max: 90, name: "افسانه‌ای", color: "from-cyan-400 to-cyan-600" },
-  { min: 91, max: 100, name: "اسطوره", color: "from-amber-300 via-yellow-400 to-amber-500" }
+  { min: 91, max: 100, name: "لجند", color: "from-amber-300 via-yellow-400 to-amber-500" }
 ];
 
 function getLevelInfo(coins) {
