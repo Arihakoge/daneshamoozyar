@@ -140,9 +140,9 @@ export default function AdminClasses() {
         </Dialog>
       </div>
 
-      <Card className="clay-card">
-        <CardContent className="p-0">
-          <Table>
+      <Card className="clay-card overflow-hidden">
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader className="bg-slate-900/50">
               <TableRow className="border-slate-800 hover:bg-transparent">
                 <TableHead className="text-right text-slate-400">نام کلاس</TableHead>

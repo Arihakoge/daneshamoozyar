@@ -295,8 +295,8 @@ export default function AdminUsers() {
             )}
         </CardHeader>
         
-        <CardContent className="p-0">
-            <Table>
+        <CardContent className="p-0 overflow-x-auto">
+            <Table className="min-w-[800px]">
                 <TableHeader className="bg-slate-900/30">
                     <TableRow className="border-slate-800 hover:bg-transparent">
                         <TableHead className="w-10">

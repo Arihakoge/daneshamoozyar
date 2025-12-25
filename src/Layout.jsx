@@ -323,7 +323,7 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Main Content */}
         <main className="flex-1 lg:mr-80 pt-20 lg:pt-0 transition-all duration-300 flex flex-col min-h-screen">
-          <div className="p-6 flex-1">
+          <div className="p-4 md:p-6 flex-1">
             {children}
           </div>
           <footer className="py-8 text-center text-gray-400 border-t border-gray-700/30 mt-auto bg-black/10 backdrop-blur-sm">
