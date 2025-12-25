@@ -3,11 +3,11 @@ import AdminActivityLogs from './pages/AdminActivityLogs';
 import AdminClasses from './pages/AdminClasses';
 import AdminContent from './pages/AdminContent';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminReports from './pages/AdminReports';
 import AdminScoreboard from './pages/AdminScoreboard';
 import AdminUserTemplates from './pages/AdminUserTemplates';
 import AdminUsers from './pages/AdminUsers';
 import CompleteProfile from './pages/CompleteProfile';
-import ContentGenerator from './pages/ContentGenerator';
 import EditProfile from './pages/EditProfile';
 import Gamification from './pages/Gamification';
 import Home from './pages/Home';
@@ -25,7 +25,6 @@ import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherReports from './pages/TeacherReports';
 import TeacherScoreboard from './pages/TeacherScoreboard';
 import YaraChat from './pages/YaraChat';
-import AdminReports from './pages/AdminReports';
 import __Layout from './Layout.jsx';
 
 
@@ -35,11 +34,11 @@ export const PAGES = {
     "AdminClasses": AdminClasses,
     "AdminContent": AdminContent,
     "AdminDashboard": AdminDashboard,
+    "AdminReports": AdminReports,
     "AdminScoreboard": AdminScoreboard,
     "AdminUserTemplates": AdminUserTemplates,
     "AdminUsers": AdminUsers,
     "CompleteProfile": CompleteProfile,
-    "ContentGenerator": ContentGenerator,
     "EditProfile": EditProfile,
     "Gamification": Gamification,
     "Home": Home,
@@ -57,7 +56,6 @@ export const PAGES = {
     "TeacherReports": TeacherReports,
     "TeacherScoreboard": TeacherScoreboard,
     "YaraChat": YaraChat,
-    "AdminReports": AdminReports,
 }
 
 export const pagesConfig = {

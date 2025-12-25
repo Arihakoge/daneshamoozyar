@@ -240,7 +240,6 @@ export default function Layout({ children, currentPageName }) {
         { title: "گزارش فعالیت‌ها", url: createPageUrl("AdminActivityLogs"), icon: Activity },
         { title: "الگوهای کاربری", url: createPageUrl("AdminUserTemplates"), icon: FileText },
         { title: "پیام‌ها", url: createPageUrl("Messages"), icon: MessageCircle },
-        { title: "تولید محتوای AI", url: createPageUrl("ContentGenerator"), icon: MessageCircle },
         { title: "ویرایش پروفایل", url: createPageUrl("EditProfile"), icon: Edit },
         { title: "یارا - دستیار هوشمند", url: createPageUrl("YaraChat"), icon: MessageCircle },
         ];
