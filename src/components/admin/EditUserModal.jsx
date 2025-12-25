@@ -144,7 +144,7 @@ export default function EditUserModal({ user, isOpen, onClose, onSave, classes }
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700 text-white">
                       {classes.filter(c => !formData.grade || c.grade === formData.grade).map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.section}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>کلاس {c.section}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
