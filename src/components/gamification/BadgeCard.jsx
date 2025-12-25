@@ -5,7 +5,7 @@ import {
   Flame, TrendingUp, Award, Heart, Users 
 } from "lucide-react";
 
-const badgeConfigs = {
+export const BADGE_CONFIG = {
   top_student: {
     name: "دانش‌آموز برتر",
     icon: Crown,
@@ -163,7 +163,7 @@ const badgeConfigs = {
 };
 
 export default function BadgeCard({ badgeType, earned = false, earnedAt, size = "medium", onClick }) {
-  const config = badgeConfigs[badgeType];
+  const config = BADGE_CONFIG[badgeType];
   if (!config) return null;
 
   const Icon = config.icon;
@@ -212,5 +212,3 @@ export default function BadgeCard({ badgeType, earned = false, earnedAt, size = 
     </motion.div>
   );
 }
-
-export { badgeConfigs };
