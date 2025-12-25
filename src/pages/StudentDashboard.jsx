@@ -10,6 +10,7 @@ import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
 import BadgeCard from "@/components/gamification/BadgeCard";
 import LevelProgress from "@/components/gamification/LevelProgress";
+import { calculateLevel } from "@/components/gamification/LevelSystem";
 
 
 function StatsCard({ title, value, icon: Icon, color = "purple", trend, delay = 0 }) {
@@ -237,7 +238,7 @@ export default function StudentDashboard() {
 
         <StatsCard
           title="سطح فعلی"
-          value={`⭐ ${user?.level || 1}`}
+          value={`⭐ ${toPersianNumber(user ? calculateLevel(user.total_xp).level : 1)}`}
           icon={Star}
           color="orange"
           delay={0.4}
@@ -321,7 +322,7 @@ export default function StudentDashboard() {
           className="space-y-6">
           
           {/* Level Progress Card */}
-          <LevelProgress level={user?.level || 1} coins={user?.coins || 0} xp={user?.total_xp || 0} />
+          <LevelProgress level={user ? calculateLevel(user.total_xp).level : 1} coins={user?.coins || 0} xp={user?.total_xp || 0} />
 
           {/* Recent Badges */}
           <div className="clay-card p-6">

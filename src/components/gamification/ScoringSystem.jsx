@@ -31,10 +31,11 @@ export const applySubmissionRules = async (submission, assignment) => {
       // applySubmissionRules is called in StudentAssignments.js (Student context)
       
       await base44.auth.updateMe({
-        coins: (student.coins || 0) + pointsAwarded
+        coins: (student.coins || 0) + pointsAwarded,
+        total_xp: (student.total_xp || 0) + pointsAwarded
       });
       
-      toast.success(`شما ${pointsAwarded} سکه پاداش برای ارسال زودهنگام دریافت کردید!`);
+      toast.success(`شما ${pointsAwarded} سکه و امتیاز تجربه پاداش برای ارسال زودهنگام دریافت کردید!`);
     }
 
   } catch (error) {
@@ -78,7 +79,8 @@ export const applyGradingRules = async (submission, assignment) => {
       if (studentProfiles.length > 0) {
         const profile = studentProfiles[0];
         await base44.entities.PublicProfile.update(profile.id, {
-          coins: (profile.coins || 0) + pointsAwarded
+          coins: (profile.coins || 0) + pointsAwarded,
+          total_xp: (profile.total_xp || 0) + pointsAwarded
         });
         // Also try to update the User entity if possible (though usually read-only for others)
         // Admin can update users, Teacher can't update other User entities directly usually, but PublicProfile is fine.
