@@ -133,18 +133,18 @@ export default function EditUserModal({ user, isOpen, onClose, onSave, classes }
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-400 mb-1 block">کلاس</label>
+                  <label className="text-sm text-slate-400 mb-1 block">شعبه کلاس</label>
                   <Select 
                     value={formData.class_id} 
                     onValueChange={val => setFormData({...formData, class_id: val})}
                     disabled={!formData.grade}
                   >
                     <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                      <SelectValue />
+                      <SelectValue placeholder="انتخاب شعبه..." />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700 text-white">
                       {classes.filter(c => !formData.grade || c.grade === formData.grade).map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>{c.section}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
