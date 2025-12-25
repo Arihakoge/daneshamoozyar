@@ -1,59 +1,63 @@
-import StudentDashboard from './pages/StudentDashboard';
-import TeacherDashboard from './pages/TeacherDashboard';
-import YaraChat from './pages/YaraChat';
-import StudentAssignments from './pages/StudentAssignments';
-import StudentProfile from './pages/StudentProfile';
-import TeacherAssignments from './pages/TeacherAssignments';
-import AdminDashboard from './pages/AdminDashboard';
-import TeacherClasses from './pages/TeacherClasses';
-import AdminUsers from './pages/AdminUsers';
-import AdminClasses from './pages/AdminClasses';
-import CompleteProfile from './pages/CompleteProfile';
-import Scoreboard from './pages/Scoreboard';
-import TeacherScoreboard from './pages/TeacherScoreboard';
-import AdminScoreboard from './pages/AdminScoreboard';
-import EditProfile from './pages/EditProfile';
-import AdminEditUser from './pages/AdminEditUser';
-import TeacherReports from './pages/TeacherReports';
-import Achievements from './pages/Achievements';
-import ContentGenerator from './pages/ContentGenerator';
-import Messages from './pages/Messages';
-import ScoringRules from './pages/ScoringRules';
-import AdminContent from './pages/AdminContent';
 import AdminActivityLogs from './pages/AdminActivityLogs';
+import AdminClasses from './pages/AdminClasses';
+import AdminContent from './pages/AdminContent';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminEditUser from './pages/AdminEditUser';
+import AdminScoreboard from './pages/AdminScoreboard';
 import AdminUserTemplates from './pages/AdminUserTemplates';
-import StudentStore from './pages/StudentStore';
+import AdminUsers from './pages/AdminUsers';
+import CompleteProfile from './pages/CompleteProfile';
+import ContentGenerator from './pages/ContentGenerator';
+import EditProfile from './pages/EditProfile';
+import Gamification from './pages/Gamification';
+import Home from './pages/Home';
 import LearningResources from './pages/LearningResources';
+import Messages from './pages/Messages';
+import Scoreboard from './pages/Scoreboard';
+import ScoringRules from './pages/ScoringRules';
+import StudentAssignments from './pages/StudentAssignments';
+import StudentDashboard from './pages/StudentDashboard';
+import StudentProfile from './pages/StudentProfile';
+import StudentStore from './pages/StudentStore';
+import TeacherClasses from './pages/TeacherClasses';
+import TeacherDashboard from './pages/TeacherDashboard';
+import TeacherReports from './pages/TeacherReports';
+import TeacherScoreboard from './pages/TeacherScoreboard';
+import YaraChat from './pages/YaraChat';
+import TeacherAssignments from './pages/TeacherAssignments';
+import Achievements from './pages/Achievements';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "StudentDashboard": StudentDashboard,
-    "TeacherDashboard": TeacherDashboard,
-    "YaraChat": YaraChat,
-    "StudentAssignments": StudentAssignments,
-    "StudentProfile": StudentProfile,
-    "TeacherAssignments": TeacherAssignments,
-    "AdminDashboard": AdminDashboard,
-    "TeacherClasses": TeacherClasses,
-    "AdminUsers": AdminUsers,
-    "AdminClasses": AdminClasses,
-    "CompleteProfile": CompleteProfile,
-    "Scoreboard": Scoreboard,
-    "TeacherScoreboard": TeacherScoreboard,
-    "AdminScoreboard": AdminScoreboard,
-    "EditProfile": EditProfile,
-    "AdminEditUser": AdminEditUser,
-    "TeacherReports": TeacherReports,
-    "Achievements": Achievements,
-    "ContentGenerator": ContentGenerator,
-    "Messages": Messages,
-    "ScoringRules": ScoringRules,
-    "AdminContent": AdminContent,
     "AdminActivityLogs": AdminActivityLogs,
+    "AdminClasses": AdminClasses,
+    "AdminContent": AdminContent,
+    "AdminDashboard": AdminDashboard,
+    "AdminEditUser": AdminEditUser,
+    "AdminScoreboard": AdminScoreboard,
     "AdminUserTemplates": AdminUserTemplates,
-    "StudentStore": StudentStore,
+    "AdminUsers": AdminUsers,
+    "CompleteProfile": CompleteProfile,
+    "ContentGenerator": ContentGenerator,
+    "EditProfile": EditProfile,
+    "Gamification": Gamification,
+    "Home": Home,
     "LearningResources": LearningResources,
+    "Messages": Messages,
+    "Scoreboard": Scoreboard,
+    "ScoringRules": ScoringRules,
+    "StudentAssignments": StudentAssignments,
+    "StudentDashboard": StudentDashboard,
+    "StudentProfile": StudentProfile,
+    "StudentStore": StudentStore,
+    "TeacherClasses": TeacherClasses,
+    "TeacherDashboard": TeacherDashboard,
+    "TeacherReports": TeacherReports,
+    "TeacherScoreboard": TeacherScoreboard,
+    "YaraChat": YaraChat,
+    "TeacherAssignments": TeacherAssignments,
+    "Achievements": Achievements,
 }
 
 export const pagesConfig = {
