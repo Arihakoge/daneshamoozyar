@@ -37,7 +37,11 @@ const persianMonthNames = [
 export function toPersianDate(date) {
   if (!date) return '';
   try {
-    const d = new Date(date);
+    let dateStr = date;
+    if (typeof date === 'string' && !date.includes('Z') && !date.match(/[+-]\d{2}:?\d{2}$/)) {
+        dateStr += 'Z';
+    }
+    const d = new Date(dateStr);
     const [jy, jm, jd] = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
     return `${toPersianNumber(jd)} ${persianMonthNames[jm - 1]} ${toPersianNumber(jy)}`;
   } catch {
@@ -48,7 +52,11 @@ export function toPersianDate(date) {
 export function toPersianDateShort(date) {
   if (!date) return '';
   try {
-    const d = new Date(date);
+    let dateStr = date;
+    if (typeof date === 'string' && !date.includes('Z') && !date.match(/[+-]\d{2}:?\d{2}$/)) {
+        dateStr += 'Z';
+    }
+    const d = new Date(dateStr);
     const [jy, jm, jd] = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
     return `${toPersianNumber(jd)} ${persianMonthNames[jm - 1]}`;
   } catch {
@@ -60,7 +68,13 @@ export function toPersianTimeAgo(date) {
   if (!date) return '';
   try {
     const now = new Date();
-    const past = new Date(date);
+    
+    let dateStr = date;
+    if (typeof date === 'string' && !date.includes('Z') && !date.match(/[+-]\d{2}:?\d{2}$/)) {
+        dateStr += 'Z';
+    }
+    
+    const past = new Date(dateStr);
     const diff = now - past;
     
     const seconds = Math.floor(diff / 1000);
@@ -80,8 +94,12 @@ export function toPersianTimeAgo(date) {
 export function formatDaysRemaining(dueDate) {
   if (!dueDate) return '';
   try {
+    let dateStr = dueDate;
+    if (typeof dueDate === 'string' && !dueDate.includes('Z') && !dueDate.match(/[+-]\d{2}:?\d{2}$/)) {
+        dateStr += 'Z';
+    }
     const now = new Date();
-    const due = new Date(dueDate);
+    const due = new Date(dateStr);
     const diff = due - now;
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
     
@@ -97,8 +115,12 @@ export function formatDaysRemaining(dueDate) {
 export function isOverdue(dueDate) {
   if (!dueDate) return false;
   try {
+    let dateStr = dueDate;
+    if (typeof dueDate === 'string' && !dueDate.includes('Z') && !dueDate.match(/[+-]\d{2}:?\d{2}$/)) {
+        dateStr += 'Z';
+    }
     const now = new Date();
-    const due = new Date(dueDate);
+    const due = new Date(dateStr);
     return now > due;
   } catch {
     return false;
