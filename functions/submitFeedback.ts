@@ -26,14 +26,19 @@ Deno.serve(async (req) => {
         // Using service role to ensure we can write even if user is guest or RLS is strict
         let savedRecord = null;
         try {
-            savedRecord = await base44.asServiceRole.entities.Feedback.create({
+            const feedbackData = {
                 type,
                 message,
                 page_url: pageUrl,
-                user_id: user ? user.id : null,
                 user_info: user ? `${user.full_name || user.display_name || 'User'} (${user.email || 'No Email'})` : 'Guest',
                 status: 'new'
-            });
+            };
+            
+            if (user && user.id) {
+                feedbackData.user_id = user.id;
+            }
+
+            savedRecord = await base44.asServiceRole.entities.Feedback.create(feedbackData);
         } catch (dbError) {
             console.error("Database save failed:", dbError);
             // If DB fails, we still try to send email, but this is critical
