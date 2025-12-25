@@ -98,8 +98,8 @@ export default function AdminReports() {
   const exportReport = () => {
     // Basic CSV Export logic
     const headers = "نام,نقش,امتیاز,سکه\n";
-    const rows = reportData.topStudents.map(u => `${u.name},دانش‌آموز,${u.xp},${u.coins}`).join("\n");
-    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const rows = reportData.topStudents.map(u => `"${u.name}",دانش‌آموز,${u.xp},${u.coins}`).join("\n");
+    const blob = new Blob(["\uFEFF", headers + rows], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);

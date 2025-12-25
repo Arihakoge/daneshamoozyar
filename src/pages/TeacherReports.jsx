@@ -210,10 +210,10 @@ export default function TeacherReports() {
     const headers = Object.keys(csvData[0] || {});
     const csvContent = [
       headers.join(","),
-      ...csvData.map(row => headers.map(h => row[h]).join(","))
+      ...csvData.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(","))
     ].join("\n");
 
-    const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF", csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `گزارش_${user?.subject}_${new Date().toLocaleDateString("fa-IR")}.csv`;
