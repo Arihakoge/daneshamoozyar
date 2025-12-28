@@ -17,16 +17,16 @@ import Scoreboard from './pages/Scoreboard';
 import ScoringRules from './pages/ScoringRules';
 import StudentAssignments from './pages/StudentAssignments';
 import StudentDashboard from './pages/StudentDashboard';
+import StudentNotebook from './pages/StudentNotebook';
 import StudentProfile from './pages/StudentProfile';
 import StudentStore from './pages/StudentStore';
+import StudyGroups from './pages/StudyGroups';
 import TeacherAssignments from './pages/TeacherAssignments';
 import TeacherClasses from './pages/TeacherClasses';
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherReports from './pages/TeacherReports';
 import TeacherScoreboard from './pages/TeacherScoreboard';
 import YaraChat from './pages/YaraChat';
-import StudentNotebook from './pages/StudentNotebook';
-import StudyGroups from './pages/StudyGroups';
 import __Layout from './Layout.jsx';
 
 
@@ -50,16 +50,16 @@ export const PAGES = {
     "ScoringRules": ScoringRules,
     "StudentAssignments": StudentAssignments,
     "StudentDashboard": StudentDashboard,
+    "StudentNotebook": StudentNotebook,
     "StudentProfile": StudentProfile,
     "StudentStore": StudentStore,
+    "StudyGroups": StudyGroups,
     "TeacherAssignments": TeacherAssignments,
     "TeacherClasses": TeacherClasses,
     "TeacherDashboard": TeacherDashboard,
     "TeacherReports": TeacherReports,
     "TeacherScoreboard": TeacherScoreboard,
     "YaraChat": YaraChat,
-    "StudentNotebook": StudentNotebook,
-    "StudyGroups": StudyGroups,
 }
 
 export const pagesConfig = {
