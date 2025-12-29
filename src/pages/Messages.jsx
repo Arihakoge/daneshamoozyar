@@ -13,6 +13,7 @@ export default function Messages() {
   const [user, setUser] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [activeChatMessages, setActiveChatMessages] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [file, setFile] = useState(null);
@@ -58,6 +59,7 @@ export default function Messages() {
 
   useEffect(() => {
     if (selectedConversation) {
+      setActiveChatMessages([]); // Clear previous messages on switch
       loadMessages(selectedConversation.id);
       const interval = setInterval(() => {
         loadMessages(selectedConversation.id);
@@ -112,7 +114,7 @@ export default function Messages() {
         { conversation_id: conversationId },
         "created_date"
       );
-      setMessages(msgs);
+      setActiveChatMessages(msgs);
       
       // Mark messages as read
       const unreadMessages = msgs.filter(m => 
@@ -181,6 +183,15 @@ export default function Messages() {
 
       setNewMessage("");
       setFile(null);
+      
+      // Immediate update for better UX
+      const newMsgObj = {
+        ...messageData,
+        id: "temp_" + Date.now(),
+        created_date: new Date().toISOString()
+      };
+      setActiveChatMessages(prev => [...prev, newMsgObj]);
+      
       loadMessages(selectedConversation.id);
       loadData();
     } catch (error) {
@@ -414,7 +425,7 @@ export default function Messages() {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                {messages
+                {activeChatMessages
                   .filter(m => !inChatSearch || (m.content && m.content.includes(inChatSearch)) || (m.file_name && m.file_name.includes(inChatSearch)))
                   .map((msg) => {
                   const sender = allUsers.find(u => u.id === msg.sender_id);

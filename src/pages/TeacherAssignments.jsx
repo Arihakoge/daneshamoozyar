@@ -635,6 +635,8 @@ export default function TeacherAssignments() {
          }
       }
 
+      toast.success("نمره و بازخورد ثبت شد");
+      setSubmissionsModalOpen(false);
       loadData();
     } catch (error) {
       console.error("خطا در ثبت نمره:", error);

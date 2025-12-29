@@ -244,6 +244,7 @@ export default function StudentAssignments() {
       // Update Daily Challenge
       updateDailyChallenge(user.id, "submit_assignment");
 
+      toast.success("تکلیف با موفقیت ثبت شد");
       setSelectedAssignment(null);
       setSubmissionContent("");
       setSubmissionFile(null);
