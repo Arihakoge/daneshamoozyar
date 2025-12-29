@@ -331,8 +331,9 @@ export default function Layout({ children, currentPageName }) {
           <footer className="py-8 text-center text-gray-400 border-t border-gray-700/30 mt-auto bg-black/10 backdrop-blur-sm">
             <p className="mb-4 font-medium text-sm">طراحی شده توسط آرش با ❤️ و ☕</p>
             <div className="flex justify-center">
-              <a href="https://www.coffeebede.com/daneshamoozyar" target="_blank" rel="noopener noreferrer" className="inline-block hover:scale-105 transition-transform duration-200">
-                <img className="h-12 w-auto" src="https://coffeebede.ir/DashboardTemplateV2/app-assets/images/banner/default-yellow.svg" alt="CoffeeBede" />
+              <a href="https://biomaze.ir/" target="_blank" rel="noopener noreferrer" className="inline-block hover:scale-105 transition-transform duration-200 clay-card px-6 py-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
+                <span className="text-yellow-400 font-bold block">محل تبلیغات شما</span>
+                <span className="text-[10px] text-yellow-500/60 block mt-0.5">کلیک کنید</span>
               </a>
               </div>
               <p className="mt-4 text-[10px] text-gray-500 opacity-60">با کمک پارک علم و فناوری یزد</p>
