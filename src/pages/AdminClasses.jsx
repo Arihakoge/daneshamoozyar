@@ -81,7 +81,7 @@ export default function AdminClasses() {
 
   return (
     <div className="font-sans p-6 max-w-[1200px] mx-auto">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
              <School className="w-8 h-8 text-emerald-500" />

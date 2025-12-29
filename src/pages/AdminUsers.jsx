@@ -262,7 +262,7 @@ export default function AdminUsers() {
             
             {/* Bulk Actions */}
             {selectedUsers.length > 0 && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-4 flex items-center gap-2">
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-4 flex flex-wrap items-center gap-2">
                     <span className="text-sm text-purple-400 font-bold ml-2">{selectedUsers.length} انتخاب شده</span>
                     <Select value={bulkAction} onValueChange={setBulkAction}>
                         <SelectTrigger className="w-[180px] h-8 bg-purple-900/20 border-purple-500/30 text-white"><SelectValue placeholder="عملیات..." /></SelectTrigger>

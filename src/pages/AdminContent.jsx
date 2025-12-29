@@ -166,7 +166,7 @@ export default function AdminContent() {
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="clay-card border-none bg-black/20">
+          <TabsList className="clay-card border-none bg-black/20 flex flex-wrap h-auto p-2 gap-2">
             <TabsTrigger value="resources" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-slate-300">
               <FileText className="w-4 h-4 ml-2" /> منابع آموزشی
             </TabsTrigger>
@@ -180,8 +180,8 @@ export default function AdminContent() {
 
           {/* Resources Tab */}
           <TabsContent value="resources">
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative w-64">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div className="relative w-full md:w-64">
                 <Search className="absolute right-3 top-2.5 h-4 w-4 text-slate-500" />
                 <Input placeholder="جستجو در منابع..." className="pr-10 bg-slate-900 border-slate-800" />
               </div>
