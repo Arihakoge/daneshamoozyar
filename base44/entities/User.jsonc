@@ -1,0 +1,83 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "display_name": {
+      "type": "string",
+      "description": "\u0646\u0627\u0645 \u0646\u0645\u0627\u06cc\u0634\u06cc \u06a9\u0627\u0631\u0628\u0631 (\u0642\u0627\u0628\u0644 \u0648\u06cc\u0631\u0627\u06cc\u0634)"
+    },
+    "bio": {
+      "type": "string",
+      "description": "\u062f\u0631\u0628\u0627\u0631\u0647 \u0645\u0646"
+    },
+    "phone": {
+      "type": "string",
+      "description": "\u0634\u0645\u0627\u0631\u0647 \u062a\u0645\u0627\u0633"
+    },
+    "social_links": {
+      "type": "object",
+      "properties": {
+        "instagram": {
+          "type": "string"
+        },
+        "telegram": {
+          "type": "string"
+        }
+      },
+      "description": "\u0634\u0628\u06a9\u0647\u200c\u0647\u0627\u06cc \u0627\u062c\u062a\u0645\u0627\u0639\u06cc"
+    },
+    "is_profile_public": {
+      "type": "boolean",
+      "default": true,
+      "description": "\u0622\u06cc\u0627 \u067e\u0631\u0648\u0641\u0627\u06cc\u0644 \u0639\u0645\u0648\u0645\u06cc \u0627\u0633\u062a\u061f"
+    },
+    "profile_image_url": {
+      "type": "string",
+      "description": "\u0622\u062f\u0631\u0633 \u062a\u0635\u0648\u06cc\u0631 \u067e\u0631\u0648\u0641\u0627\u06cc\u0644"
+    },
+    "last_profile_update": {
+      "type": "string",
+      "format": "date-time",
+      "description": "\u0622\u062e\u0631\u06cc\u0646 \u0632\u0645\u0627\u0646 \u0628\u0631\u0648\u0632\u0631\u0633\u0627\u0646\u06cc \u067e\u0631\u0648\u0641\u0627\u06cc\u0644"
+    },
+    "student_role": {
+      "type": "string",
+      "enum": [
+        "student",
+        "teacher",
+        "admin",
+        "guest"
+      ],
+      "default": "student",
+      "description": "\u0646\u0642\u0634 \u06a9\u0627\u0631\u0628\u0631"
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "\u0647\u0641\u062a\u0645",
+        "\u0647\u0634\u062a\u0645",
+        "\u0646\u0647\u0645"
+      ],
+      "description": "\u067e\u0627\u06cc\u0647 \u062a\u062d\u0635\u06cc\u0644\u06cc"
+    },
+    "class_id": {
+      "type": "string",
+      "description": "\u0634\u0646\u0627\u0633\u0647 \u06a9\u0644\u0627\u0633"
+    },
+    "coins": {
+      "type": "number",
+      "default": 0,
+      "description": "\u062a\u0639\u062f\u0627\u062f \u0633\u06a9\u0647\u200c\u0647\u0627"
+    },
+    "level": {
+      "type": "number",
+      "default": 1,
+      "description": "\u0633\u0637\u062d \u06a9\u0627\u0631\u0628\u0631"
+    },
+    "avatar_color": {
+      "type": "string",
+      "description": "\u0631\u0646\u06af \u0622\u0648\u0627\u062a\u0627\u0631 \u067e\u06cc\u0634\u200c\u0641\u0631\u0636"
+    }
+  },
+  "required": []
+}

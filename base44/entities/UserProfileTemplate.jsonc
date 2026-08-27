@@ -1,0 +1,46 @@
+{
+  "name": "UserProfileTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "\u0646\u0627\u0645 \u0627\u0644\u06af\u0648"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "student",
+        "teacher",
+        "admin"
+      ],
+      "description": "\u0646\u0642\u0634 \u067e\u06cc\u0634\u200c\u0641\u0631\u0636"
+    },
+    "default_coins": {
+      "type": "number",
+      "default": 0,
+      "description": "\u062a\u0639\u062f\u0627\u062f \u0633\u06a9\u0647 \u0627\u0648\u0644\u06cc\u0647"
+    },
+    "default_level": {
+      "type": "number",
+      "default": 1,
+      "description": "\u0633\u0637\u062d \u0627\u0648\u0644\u06cc\u0647"
+    },
+    "default_grade": {
+      "type": "string",
+      "enum": [
+        "\u0647\u0641\u062a\u0645",
+        "\u0647\u0634\u062a\u0645",
+        "\u0646\u0647\u0645"
+      ],
+      "description": "\u067e\u0627\u06cc\u0647 \u062a\u062d\u0635\u06cc\u0644\u06cc \u067e\u06cc\u0634\u200c\u0641\u0631\u0636 (\u0627\u062e\u062a\u06cc\u0627\u0631\u06cc)"
+    },
+    "welcome_message": {
+      "type": "string",
+      "description": "\u067e\u06cc\u0627\u0645 \u062e\u0648\u0634\u200c\u0622\u0645\u062f\u06af\u0648\u06cc\u06cc"
+    }
+  },
+  "required": [
+    "name",
+    "role"
+  ]
+}

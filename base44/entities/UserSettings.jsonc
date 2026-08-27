@@ -1,0 +1,56 @@
+{
+  "name": "UserSettings",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "\u0634\u0646\u0627\u0633\u0647 \u06a9\u0627\u0631\u0628\u0631"
+    },
+    "theme": {
+      "type": "string",
+      "enum": [
+        "dark",
+        "light"
+      ],
+      "default": "dark",
+      "description": "\u062a\u0645 \u0631\u0646\u06af\u06cc"
+    },
+    "font_size": {
+      "type": "string",
+      "enum": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "default": "medium",
+      "description": "\u0627\u0646\u062f\u0627\u0632\u0647 \u0641\u0648\u0646\u062a"
+    },
+    "default_time_range": {
+      "type": "string",
+      "enum": [
+        "week",
+        "month",
+        "semester",
+        "all"
+      ],
+      "default": "all",
+      "description": "\u0628\u0627\u0632\u0647 \u0632\u0645\u0627\u0646\u06cc \u067e\u06cc\u0634\u200c\u0641\u0631\u0636 \u06af\u0632\u0627\u0631\u0634\u200c\u0647\u0627 (\u0628\u0631\u0627\u06cc \u0645\u0639\u0644\u0645)"
+    },
+    "notifications_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "\u0641\u0639\u0627\u0644 \u0628\u0648\u062f\u0646 \u0627\u0639\u0644\u0627\u0646\u200c\u0647\u0627"
+    },
+    "completed_tours": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "\u0644\u06cc\u0633\u062a \u062a\u0648\u0631\u0647\u0627\u06cc \u0622\u0645\u0648\u0632\u0634\u06cc \u062a\u06a9\u0645\u06cc\u0644 \u0634\u062f\u0647"
+    }
+  },
+  "required": [
+    "user_id"
+  ]
+}
